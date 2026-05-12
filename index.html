@@ -2730,12 +2730,14 @@ function renderAtendimentos() {
               </div>
               <div class="form-group" style="margin-top:0.75rem">
                 <label style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-light)">Serviço Realizado</label>
+                <input type="text" placeholder="🔍 Filtrar serviços..." oninput="(function(el){var v=el.value.toLowerCase();el.nextElementSibling.querySelectorAll('.service-chip').forEach(function(c){c.style.display=c.textContent.toLowerCase().includes(v)?'':'none';});})(this)" style="width:100%;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px;font-family:Jost,sans-serif;outline:none;margin-bottom:6px">
                 <div id="eatend-srv-${a.id}" style="display:flex;flex-wrap:wrap;gap:6px;padding:6px 0">
                   ${db.servicos.filter(s=>s.status==='ativo').map(s=>`<span class="service-chip${(a.servicoIds&&a.servicoIds.includes(s.id))||a.servicoNomes===s.nome?' selected':''}" style="font-size:12px;cursor:pointer" onclick="this.classList.toggle('selected')">${s.nome}</span>`).join('')}
                 </div>
               </div>
               <div class="form-group" style="margin-top:0.5rem">
                 <label style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-light)">Materiais Utilizados</label>
+                <input type="text" placeholder="🔍 Filtrar materiais..." oninput="(function(el){var v=el.value.toLowerCase();el.nextElementSibling.querySelectorAll('.material-chip').forEach(function(c){c.style.display=c.textContent.toLowerCase().includes(v)?'':'none';});})(this)" style="width:100%;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px;font-family:Jost,sans-serif;outline:none;margin-bottom:6px">
                 <div id="eatend-mat-${a.id}" style="display:flex;flex-wrap:wrap;gap:6px;padding:6px 0">
                   ${db.materiais.map(m=>`<span class="material-chip${a.materiais&&a.materiais[m.id]?' selected':''}" style="font-size:12px;cursor:pointer" onclick="this.classList.toggle('selected')">${m.nome} (estoque: ${m.qtd} ${m.unidade})</span>`).join('')}
                 </div>
@@ -3435,7 +3437,10 @@ function gerarCamposDatas() {
       <span style="font-size:11px;color:var(--text-light);min-width:60px">Sessão ${i+1}</span>
       <input type="date" id="ag-data-${i}" style="padding:0.4rem 0.6rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none" value="${existing[i]||''}">
       <input type="time" id="ag-hora-${i}" style="width:90px;padding:0.4rem 0.4rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none" value="${existingHora[i]||''}">
-      <div style="display:flex;flex-wrap:wrap;gap:4px">${chipsHtml}</div>`;
+      <div style="display:flex;flex-wrap:wrap;gap:4px">
+        <input type="text" placeholder="🔍 Filtrar serviços..." oninput="(function(el){var v=el.value.toLowerCase();el.parentElement.querySelectorAll('.service-chip').forEach(function(c){c.style.display=c.textContent.toLowerCase().includes(v)?'':'none';});})(this)" style="width:100%;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px;font-family:Jost,sans-serif;outline:none;margin-bottom:4px">
+        ${chipsHtml}
+      </div>`;
     campos.appendChild(div);
   }
 }
@@ -3904,7 +3909,12 @@ function editarAgenda(agId) {
       <span style="font-size:11px;color:var(--text-light);min-width:55px;padding-top:4px">Sessão ${i+1}</span>
       <input type="date" id="agedit-data-${agId}-${i}" value="${s.data}"
         style="padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:Jost,sans-serif;outline:none;${s.status==='realizado'?'opacity:0.5;pointer-events:none':''}">
-      <div id="agedit-chips-${agId}-${i}" style="display:flex;flex-wrap:wrap;gap:4px">${chipsHtml}</div>
+      <input type="time" id="agedit-hora-${agId}-${i}" value="${s.hora||''}"
+        style="width:90px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:Jost,sans-serif;outline:none;${s.status==='realizado'?'opacity:0.5;pointer-events:none':''}">
+      <div id="agedit-chips-${agId}-${i}" style="display:flex;flex-wrap:wrap;gap:4px">
+        <input type="text" placeholder="🔍 Filtrar serviços..." oninput="(function(el){var v=el.value.toLowerCase();el.parentElement.querySelectorAll('.service-chip').forEach(function(c){c.style.display=c.textContent.toLowerCase().includes(v)?'':'none';});})(this)" style="width:100%;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px;font-family:Jost,sans-serif;outline:none;margin-bottom:4px">
+        ${chipsHtml}
+      </div>
       <span class="badge-pill ${s.status==='realizado'?'badge-ativo':'badge-pendente'}" style="font-size:10px;align-self:center">${s.status==='realizado'?'✓ Realizado':'Pendente'}</span>
       ${s.status !== 'realizado' ? `<button onclick="removerSessaoEdit('${agId}',${i})" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:14px;padding:0 4px;align-self:center">✕</button>` : ''}
     </div>`;
@@ -3965,7 +3975,12 @@ function adicionarSessaoEdit(agId) {
     <span style="font-size:11px;color:var(--text-light);min-width:55px;padding-top:4px">Sessão ${i+1}</span>
     <input type="date" id="agedit-data-${agId}-${i}" value="${hoje}"
       style="padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:Jost,sans-serif;outline:none">
-    <div id="agedit-chips-${agId}-${i}" style="display:flex;flex-wrap:wrap;gap:4px">${chipsNova}</div>
+    <input type="time" id="agedit-hora-${agId}-${i}" value=""
+      style="width:90px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:Jost,sans-serif;outline:none">
+    <div id="agedit-chips-${agId}-${i}" style="display:flex;flex-wrap:wrap;gap:4px">
+      <input type="text" placeholder="🔍 Filtrar serviços..." oninput="(function(el){var v=el.value.toLowerCase();el.parentElement.querySelectorAll('.service-chip').forEach(function(c){c.style.display=c.textContent.toLowerCase().includes(v)?'':'none';});})(this)" style="width:100%;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px;font-family:Jost,sans-serif;outline:none;margin-bottom:4px">
+      ${chipsNova}
+    </div>
     <span class="badge-pill badge-pendente" style="font-size:10px;align-self:center">Pendente</span>
     <button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:14px;padding:0 4px;align-self:center">✕</button>`;
   container.appendChild(div);
@@ -4002,9 +4017,10 @@ function salvarEdicaoAgenda(agId) {
       if (chipsContainer) {
         chipsContainer.querySelectorAll('.service-chip.selected').forEach(function(el){ srvSelecionados.push(el.textContent.trim()); });
       }
-      const sess = { data: dateInput.value, status: status, atendimentoId: null };
+      const sess = { data: dateInput.value, hora: (document.getElementById(`agedit-hora-${agId}-${i}`)||{value:''}).value, status: status, atendimentoId: null };
       if (srvSelecionados.length) { sess.servicoIds = srvSelecionados; sess.servico = srvSelecionados.join(' + '); }
       else if (oldSessao && oldSessao.servico) { sess.servico = oldSessao.servico; sess.servicoIds = oldSessao.servicoIds||[]; }
+      if (oldSessao && oldSessao.checkinData) { sess.checkinData = oldSessao.checkinData; sess.checkinHora = oldSessao.checkinHora; sess.checkinNome = oldSessao.checkinNome; }
       novasSessoes.push(sess);
     });
     if (novasSessoes.length) {
@@ -4904,21 +4920,42 @@ function renderAcomp() {
 
     var sessoesHtml = sessoesPag.map(function(s) {
       var idxReal = ag.sessoes.indexOf(s);
-      var cls = s.status==='realizado' ? 'badge-ativo' : s.data < hoje ? 'badge-danger' : 'badge-pendente';
-      var lbl = s.status==='realizado' ? '✓ Realizado' : s.data < hoje ? 'Atrasado' : 'Pendente';
+      var cls = s.status==='realizado' ? 'badge-ativo' : s.status==='presente' ? 'badge-presente' : s.data < hoje ? 'badge-danger' : 'badge-pendente';
+      var lbl = s.status==='realizado' ? '✓ Realizado' : s.status==='presente' ? '✅ Presente' : s.data < hoje ? 'Não compareceu' : 'Pendente';
       var sid = ag.id+'_s'+idxReal;
       var selecionados = s.servicoIds || (s.servico ? [s.servico] : []);
-      var chips = db.servicos.filter(function(sv){ return sv.status==='ativo'; }).map(function(sv){
-        var sel = selecionados.indexOf(sv.nome)>=0 || selecionados.indexOf(sv.id)>=0;
-        return '<span class="service-chip'+(sel?' selected':'')+'" style="font-size:11px;padding:2px 8px;cursor:pointer" onclick="toggleServicoSessao(\''+ag.id+'\','+idxReal+',\''+sv.nome+'\',this)">'+sv.nome+'</span>';
-      }).join('');
+      var nomesSelec = db.servicos.filter(function(sv){ return selecionados.indexOf(sv.nome)>=0 || selecionados.indexOf(sv.id)>=0; }).map(function(sv){ return sv.nome; });
+      var textoServico = nomesSelec.length ? nomesSelec.join(' + ') : (s.servico || '—');
+      var fotoRowId = 'fotorow_'+sid;
       return '<tr>'
-        +'<td style="font-size:12px;vertical-align:top;padding-top:8px">Sessão '+(idxReal+1)+'</td>'
-        +'<td style="font-size:12px;vertical-align:top;padding-top:8px">'+fmtDate(s.data)+(s.hora?' · '+s.hora:'')+'</td>'
-        +'<td><div id="chips_'+sid+'" style="display:flex;flex-wrap:wrap;gap:4px;padding:4px 0">'+chips+'</div></td>'
-        +'<td style="vertical-align:top;padding-top:8px"><span class="badge-pill '+cls+'" style="font-size:11px">'+lbl+'</span></td>'
-        +'<td style="vertical-align:top;padding-top:6px"><button class="btn btn-secondary btn-sm" style="font-size:10px;padding:2px 8px" onclick="salvarServicoSessao(\''+ag.id+'\','+idxReal+',\''+sid+'\')">💾</button></td>'
-        +'</tr>';
+        +'<td style="font-size:12px;vertical-align:middle;padding:6px 4px">Sessão '+(idxReal+1)+'</td>'
+        +'<td style="font-size:12px;vertical-align:middle;padding:6px 4px">'+fmtDate(s.data)+(s.hora?' · '+s.hora:'')+'</td>'
+        +'<td style="vertical-align:middle;padding:6px 4px">'
+        +'<span style="font-size:12px;color:var(--text-mid)">'+textoServico+'</span> '
+        +'<button class="btn btn-secondary btn-sm _btn-serv-sessao" style="font-size:10px;padding:2px 7px;margin-left:4px" data-agid="'+ag.id.replace(/"/g,'&quot;')+'" data-idx="'+idxReal+'">✏️</button>'
+        +'<button class="btn btn-secondary btn-sm _btn-foto-sessao" style="font-size:10px;padding:2px 7px;margin-left:2px" data-fotoid="'+fotoRowId+'" data-agid="'+ag.id.replace(/"/g,'&quot;')+'" data-data="'+s.data+'" data-servico="'+textoServico.replace(/"/g,'&quot;')+'">📷</button>'
+        +'</td>'
+        +'<td style="vertical-align:middle;padding:6px 4px"><span class="badge-pill '+cls+'" style="font-size:11px">'+lbl+'</span></td>'
+        +'<td style="vertical-align:middle;padding:6px 4px"><button class="btn btn-secondary btn-sm _btn-salv-sessao" style="font-size:10px;padding:2px 8px" data-agid="'+ag.id.replace(/"/g,'&quot;')+'" data-idx="'+idxReal+'" data-sid="'+sid+'">💾</button></td>'
+        +'</tr>'
+        +'<tr id="'+fotoRowId+'" style="display:none">'
+        +'<td colspan="5" style="padding:0.75rem 1rem;background:var(--off-white);border-radius:8px">'
+        +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.5rem">'
+        +'<div><label style="font-size:10px;letter-spacing:1.5px;color:var(--text-light);text-transform:uppercase;display:block;margin-bottom:4px">Foto Antes</label>'
+        +'<label for="fp_antes_'+sid+'" id="fp_antes_'+sid+'_lbl" style="display:flex;flex-direction:column;align-items:center;justify-content:center;border:1.5px dashed var(--border);border-radius:8px;padding:0.75rem;cursor:pointer;background:white;transition:all 0.15s">'
+        +'<span style="font-size:20px">📷</span><span style="font-size:11px;color:var(--text-light);margin-top:4px">Selecionar</span></label>'
+        +'<input type="file" id="fp_antes_'+sid+'" accept="image/*" style="display:none" data-sid="'+sid+'" data-tipo="antes"></div>'
+        +'<div><label style="font-size:10px;letter-spacing:1.5px;color:var(--text-light);text-transform:uppercase;display:block;margin-bottom:4px">Foto Depois</label>'
+        +'<label for="fp_depois_'+sid+'" id="fp_depois_'+sid+'_lbl" style="display:flex;flex-direction:column;align-items:center;justify-content:center;border:1.5px dashed var(--border);border-radius:8px;padding:0.75rem;cursor:pointer;background:white;transition:all 0.15s">'
+        +'<span style="font-size:20px">📷</span><span style="font-size:11px;color:var(--text-light);margin-top:4px">Selecionar</span></label>'
+        +'<input type="file" id="fp_depois_'+sid+'" accept="image/*" style="display:none" data-sid="'+sid+'" data-tipo="depois"></div>'
+        +'</div>'
+        +'<input type="text" id="fp_obs_'+sid+'" placeholder="Observação..." style="width:100%;padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;font-family:Jost,sans-serif;outline:none;margin-bottom:0.5rem;box-sizing:border-box">'
+        +'<div style="display:flex;gap:0.5rem">'
+        +'<button class="btn btn-primary btn-sm _btn-salv-foto" style="font-size:11px" data-agid="'+ag.id.replace(/"/g,'&quot;')+'" data-sid="'+sid+'" data-data="'+s.data+'" data-servico="'+textoServico.replace(/"/g,'&quot;')+'">✓ Salvar</button>'
+        +'<button class="btn btn-secondary btn-sm _btn-fecha-foto" style="font-size:11px" data-fotoid="'+fotoRowId+'">Cancelar</button>'
+        +'</div>'
+        +'</td></tr>';
     }).join('');
 
     // Controles de paginação das sessões
@@ -5511,7 +5548,10 @@ function gerarCamposNovoCiclo(agId) {
       <span style="font-size:11px;color:var(--text-light);min-width:60px">Sessão ${i+1}</span>
       <input type="date" id="nc-data-${i}" style="padding:0.4rem 0.6rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none">
       <input type="time" id="nc-hora-${i}" style="width:90px;padding:0.4rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none">
-      <div style="display:flex;flex-wrap:wrap;gap:4px">${chipsHtml}</div>`;
+      <div style="display:flex;flex-wrap:wrap;gap:4px">
+        <input type="text" placeholder="🔍 Filtrar serviços..." oninput="(function(el){var v=el.value.toLowerCase();el.parentElement.querySelectorAll('.service-chip').forEach(function(c){c.style.display=c.textContent.toLowerCase().includes(v)?'':'none';});})(this)" style="width:100%;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px;font-family:Jost,sans-serif;outline:none;margin-bottom:4px">
+        ${chipsHtml}
+      </div>`;
     container.appendChild(div);
   }
 }
@@ -6238,7 +6278,6 @@ function _buildFotologHtml(agId) {
   }, 0);
   return '<div class="fotolog-wrap" id="' + wrapId + '">'
     + '<div class="fotolog-titulo"><span>📷 Fotolog de Evolução</span>'
-    + '<button onclick="abrirModalNovaFoto(\'' + agId + '\')" style="background:var(--gold);border:none;color:white;border-radius:8px;padding:4px 12px;font-size:11px;cursor:pointer;font-family:Jost,sans-serif">+ Adicionar</button>'
     + '</div><div style="padding:1rem;color:var(--text-light);font-size:12px">Carregando...</div></div>';
 }
 
@@ -6253,7 +6292,7 @@ function _fotologConteudo(agId, fotos) {
   var keys = Object.keys(grupos).sort(function(a,b){ return b.localeCompare(a); });
 
   var fotosHtml = keys.length === 0
-    ? '<div class="fotolog-vazio">📷 Nenhuma foto ainda — clique em + Adicionar para registrar a evolução</div>'
+    ? '<div class="fotolog-vazio">📷 Nenhuma foto ainda — use o botão 📷 em cada sessão para registrar</div>'
     : '<div class="fotolog-grid">' + keys.map(function(k) {
         var g = grupos[k];
         var antes = g.fotos.find(function(f){ return f.tipo === 'antes'; });
@@ -6273,9 +6312,7 @@ function _fotologConteudo(agId, fotos) {
       }).join('') + '</div>';
 
   return '<div class="fotolog-wrap">'
-    + '<div class="fotolog-titulo"><span>📷 Fotolog de Evolução</span>'
-    + '<button onclick="abrirModalNovaFoto(\'' + agId + '\')" style="background:var(--gold);border:none;color:white;border-radius:8px;padding:4px 12px;font-size:11px;cursor:pointer;font-family:Jost,sans-serif">+ Adicionar</button>'
-    + '</div>'
+    + '<div class="fotolog-titulo"><span>📷 Fotolog de Evolução</span></div>'
     + fotosHtml
     + '</div>';
 }
@@ -6288,9 +6325,13 @@ function _fotoSlot(agId, grupoKey, foto, tipo) {
       + '<button class="fotolog-foto-del" onclick="event.stopPropagation();excluirFoto(\'' + agId + '\',\'' + foto.id + '\')" title="Remover foto">✕</button>'
       + '</div>';
   }
-  return '<div class="fotolog-foto-empty" onclick="abrirModalNovaFoto(\'' + agId + '\',\'' + grupoKey + '\',\'' + tipo + '\')">'
+  // Slot vazio com grupoKey existente: abre seletor direto sem modal
+  var inputId = 'slot_' + tipo + '_' + grupoKey.replace(/[^a-z0-9]/gi,'_');
+  return '<div class="fotolog-foto-empty" onclick="document.getElementById(\'' + inputId + '\').click()">'
     + '<span style="font-size:20px">+</span>'
     + '<span>' + tipo + '</span>'
+    + '<input type="file" id="' + inputId + '" accept="image/*" style="display:none"'
+    + ' data-agid="' + agId + '" data-grupokey="' + grupoKey.replace(/"/g,'&quot;') + '" data-tipo="' + tipo + '">'
     + '</div>';
 }
 
@@ -6430,9 +6471,13 @@ function excluirFoto(agId, fotoId) {
 function excluirGrupoFoto(agId, grupoKey) {
   if (!confirm('Excluir este registro de evolução (antes + depois)?')) return;
   var parts = grupoKey.split('||');
-  var data = parts[0], servico = parts[1] || '';
+  var idOuData = parts[0], servico = parts[1] || '';
   _idbGetFotos(agId, function(fotos) {
-    var paraExcluir = fotos.filter(function(f){ return f.data === data && (f.servico||'') === servico; });
+    var paraExcluir = fotos.filter(function(f){
+      // Filtra por grupoId se disponível, senão por data+servico
+      if (f.grupoId && f.grupoId === idOuData) return true;
+      return f.data === idOuData && (f.servico||'') === servico;
+    });
     var pend = paraExcluir.length;
     if (pend === 0) { renderAcomp(); return; }
     paraExcluir.forEach(function(f) {
@@ -6443,10 +6488,12 @@ function excluirGrupoFoto(agId, grupoKey) {
 
 function salvarObsFoto(agId, grupoKey, obs) {
   var parts = grupoKey.split('||');
-  var data = parts[0], servico = parts[1] || '';
+  var idOuData = parts[0], servico = parts[1] || '';
   _idbGetFotos(agId, function(fotos) {
-    fotos.filter(function(f){ return f.data === data && (f.servico||'') === servico; })
-      .forEach(function(f) { f.obs = obs; _idbSalvarFoto(f); });
+    fotos.filter(function(f){
+      if (f.grupoId && f.grupoId === idOuData) return true;
+      return f.data === idOuData && (f.servico||'') === servico;
+    }).forEach(function(f) { f.obs = obs; _idbSalvarFoto(f); });
   });
 }
 
@@ -7080,6 +7127,196 @@ if (_sessaoSalva) {
   mostrarLoginScreen();
 }
 addLog('INFO', 'Sistema carregado. Servicos:'+db.servicos.length+' Atend:'+db.atendimentos.length);
+
+// ===== LISTENER GLOBAL — botões de sessão no Acompanhamento =====
+document.addEventListener('click', function(e) {
+  var b1 = e.target.closest('._btn-serv-sessao');
+  if (b1) { _abrirModalServSessao(b1.dataset.agid, parseInt(b1.dataset.idx)); return; }
+  var b2 = e.target.closest('._btn-salv-sessao');
+  if (b2) { salvarServicoSessao(b2.dataset.agid, parseInt(b2.dataset.idx), b2.dataset.sid); return; }
+  var b3 = e.target.closest('._btn-foto-sessao');
+  if (b3) {
+    var row = document.getElementById(b3.dataset.fotoid);
+    if (row) row.style.display = row.style.display === 'none' ? '' : 'none';
+    return;
+  }
+  var b4 = e.target.closest('._btn-fecha-foto');
+  if (b4) {
+    var row2 = document.getElementById(b4.dataset.fotoid);
+    if (row2) row2.style.display = 'none';
+    return;
+  }
+  var b5 = e.target.closest('._btn-salv-foto');
+  if (b5) {
+    var agId = b5.dataset.agid;
+    var sid  = b5.dataset.sid;
+    var data = b5.dataset.data;
+    var servico = b5.dataset.servico;
+    var obs  = (document.getElementById('fp_obs_'+sid)||{value:''}).value;
+    var inpA = document.getElementById('fp_antes_'+sid);
+    var inpD = document.getElementById('fp_depois_'+sid);
+    if (!inpA.files.length && !inpD.files.length && !obs.trim()) {
+      showToast('Adicione pelo menos uma foto ou escreva uma observação!'); return;
+    }
+    var grupoId = uid();
+    var novas = [];
+    function _ler(inp, tipo, cb) {
+      if (!inp || !inp.files || !inp.files[0]) { cb(); return; }
+      var r = new FileReader();
+      r.onload = function(ev) {
+        novas.push({ id: uid(), grupoId: grupoId, agId: agId, tipo: tipo, url: ev.target.result, data: data, servico: servico, obs: obs });
+        cb();
+      };
+      r.readAsDataURL(inp.files[0]);
+    }
+    function _fim() {
+      if (!novas.length) {
+        _idbSalvarFoto({ id: uid(), grupoId: grupoId, agId: agId, tipo: 'obs', url: '', data: data, servico: servico, obs: obs }, function() {
+          renderAcomp(); showToast('📝 Observação salva!');
+        });
+        return;
+      }
+      var pend = novas.length;
+      novas.forEach(function(f) {
+        _idbSalvarFoto(f, function() {
+          pend--;
+          if (pend === 0) { renderAcomp(); showToast('📷 Fotos salvas!'); }
+        });
+      });
+    }
+    if (inpA && inpA.files.length && inpD && inpD.files.length) {
+      _ler(inpA, 'antes', function() { _ler(inpD, 'depois', _fim); });
+    } else if (inpA && inpA.files.length) {
+      _ler(inpA, 'antes', _fim);
+    } else if (inpD && inpD.files.length) {
+      _ler(inpD, 'depois', _fim);
+    } else { _fim(); }
+    return;
+  }
+});
+
+document.addEventListener('change', function(e) {
+  var inp = e.target;
+  // Preview inline nas linhas de sessão
+  if (inp.id && (inp.id.startsWith('fp_antes_') || inp.id.startsWith('fp_depois_'))) {
+    var lbl = document.getElementById(inp.id + '_lbl');
+    if (!lbl || !inp.files || !inp.files[0]) return;
+    var r = new FileReader();
+    r.onload = function(ev) {
+      lbl.innerHTML = '<img src="' + ev.target.result + '" style="max-height:80px;max-width:100%;border-radius:6px;object-fit:cover"><span style="font-size:10px;color:var(--text-light);margin-top:4px">✓ Selecionada</span>';
+      lbl.style.padding = '4px';
+    };
+    r.readAsDataURL(inp.files[0]);
+    return;
+  }
+  // Slot vazio no fotolog — salvar direto no grupo existente
+  if (inp.id && inp.id.startsWith('slot_') && inp.dataset.grupokey) {
+    if (!inp.files || !inp.files[0]) return;
+    var agId = inp.dataset.agid;
+    var grupoKey = inp.dataset.grupokey;
+    var tipo = inp.dataset.tipo;
+    // Buscar dados do grupo para reutilizar data e servico
+    _idbGetFotos(agId, function(fotos) {
+      var parts = grupoKey.split('||');
+      var idOuData = parts[0], servico = parts[1] || '';
+      var ref = fotos.find(function(f){
+        if (f.grupoId && f.grupoId === idOuData) return true;
+        return f.data === idOuData;
+      });
+      var data = ref ? ref.data : _hoje();
+      var srv  = ref ? (ref.servico || '') : servico;
+      var obs  = ref ? (ref.obs || '') : '';
+      var grupoId = ref ? ref.grupoId : idOuData;
+      var reader = new FileReader();
+      reader.onload = function(ev) {
+        _idbSalvarFoto({ id: uid(), grupoId: grupoId, agId: agId, tipo: tipo, url: ev.target.result, data: data, servico: srv, obs: obs }, function() {
+          renderAcomp(); showToast('📷 Foto adicionada!');
+        });
+      };
+      reader.readAsDataURL(inp.files[0]);
+    });
+    return;
+  }
+});
+
+function _abrirModalServSessao(agId, sessaoIdx) {
+  var ag = db.agenda.find(function(a){ return a.id===agId; });
+  if (!ag || !ag.sessoes[sessaoIdx]) return;
+  var s = ag.sessoes[sessaoIdx];
+  var selecionados = s.servicoIds || (s.servico ? [s.servico] : []);
+  var old = document.getElementById('modal-serv-sessao');
+  if (old) old.remove();
+  var overlay = document.createElement('div');
+  overlay.id = 'modal-serv-sessao';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(44,26,34,0.65);z-index:999998;display:flex;align-items:center;justify-content:center;padding:1rem';
+  var box = document.createElement('div');
+  box.style.cssText = 'background:white;border-radius:16px;max-width:560px;width:100%;height:80vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.3);overflow:hidden';
+  var header = document.createElement('div');
+  header.style.cssText = 'padding:1rem 1.25rem;background:linear-gradient(135deg,#1C1C1E,#2C2C2E);border-radius:16px 16px 0 0;display:flex;justify-content:space-between;align-items:center;flex-shrink:0';
+  header.innerHTML = '<span style="font-family:\'Cormorant Garamond\',serif;font-size:16px;color:#FAF0F2;letter-spacing:2px">✏️ Serviços · Sessão '+(sessaoIdx+1)+'</span>';
+  var btnX = document.createElement('button');
+  btnX.style.cssText = 'background:none;border:none;color:#FAF0F2;font-size:20px;cursor:pointer';
+  btnX.textContent = '✕';
+  btnX.onclick = function(){ overlay.remove(); };
+  header.appendChild(btnX);
+  var body = document.createElement('div');
+  body.style.cssText = 'padding:1rem 1.25rem;overflow-y:auto;flex:1';
+  var filtro = document.createElement('input');
+  filtro.type = 'text';
+  filtro.placeholder = '🔍 Filtrar serviços...';
+  filtro.style.cssText = 'width:100%;padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;font-family:Jost,sans-serif;outline:none;margin-bottom:10px';
+  var chipsDiv = document.createElement('div');
+  chipsDiv.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px';
+  db.servicos.filter(function(sv){ return sv.status==='ativo'; }).forEach(function(sv){
+    var sel = selecionados.indexOf(sv.nome)>=0 || selecionados.indexOf(sv.id)>=0;
+    var chip = document.createElement('span');
+    chip.className = 'service-chip'+(sel?' selected':'');
+    chip.style.cssText = 'font-size:12px;padding:4px 10px;cursor:pointer';
+    chip.textContent = sv.nome;
+    chip.addEventListener('click', function(){ this.classList.toggle('selected'); });
+    chipsDiv.appendChild(chip);
+  });
+  filtro.oninput = function(){
+    var v = this.value.toLowerCase();
+    chipsDiv.querySelectorAll('.service-chip').forEach(function(c){
+      c.style.display = c.textContent.toLowerCase().includes(v) ? '' : 'none';
+    });
+  };
+  body.appendChild(filtro); body.appendChild(chipsDiv);
+  var footer = document.createElement('div');
+  footer.style.cssText = 'padding:0.75rem 1.25rem;border-top:1px solid var(--border);display:flex;gap:0.75rem;flex-shrink:0';
+  var btnS = document.createElement('button');
+  btnS.className = 'btn btn-primary'; btnS.textContent = '✓ Salvar';
+  btnS.onclick = function(){
+    var sels = [];
+    chipsDiv.querySelectorAll('.service-chip.selected').forEach(function(el){ sels.push(el.textContent.trim()); });
+    ag.sessoes[sessaoIdx].servicoIds = sels;
+    ag.sessoes[sessaoIdx].servico = sels.join(' + ');
+    saveData(); overlay.remove();
+    if (typeof renderAcomp === 'function') renderAcomp();
+    showToast('Serviços da sessão '+(sessaoIdx+1)+' salvos!');
+  };
+  var btnC = document.createElement('button');
+  btnC.className = 'btn btn-secondary'; btnC.textContent = 'Cancelar';
+  btnC.onclick = function(){ overlay.remove(); };
+  footer.appendChild(btnS); footer.appendChild(btnC);
+  box.appendChild(header); box.appendChild(body); box.appendChild(footer);
+  overlay.appendChild(box); document.body.appendChild(overlay);
+}
+
+function salvarServicoSessao(agId, sessaoIdx, sid) {
+  var ag = db.agenda.find(function(a){ return a.id===agId; });
+  if (!ag || !ag.sessoes[sessaoIdx]) return;
+  var container = document.getElementById('chips_'+sid);
+  if (!container) return;
+  var selecionados = [];
+  container.querySelectorAll('.service-chip.selected').forEach(function(el){ selecionados.push(el.textContent.trim()); });
+  ag.sessoes[sessaoIdx].servicoIds = selecionados;
+  ag.sessoes[sessaoIdx].servico = selecionados.join(' + ');
+  saveData();
+  if (typeof renderAcomp === 'function') renderAcomp();
+  showToast('Serviços da sessão '+(sessaoIdx+1)+' salvos!');
+}
 </script>
 <!-- MODAL ASSINATURA DIGITAL -->
 <div id="modalAssinatura" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.7);overflow-y:auto">
