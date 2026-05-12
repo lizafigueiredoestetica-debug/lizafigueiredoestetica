@@ -6278,7 +6278,14 @@ function _supaGetFotos(agId, cb) {
   fetch(SUPA_URL + '/rest/v1/fotos?agId=eq.' + encodeURIComponent(agId) + '&select=*', {
     headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY }
   }).then(function(r) { return r.json(); })
-    .then(function(rows) { cb(Array.isArray(rows) ? rows : []); })
+    .then(function(rows) {
+      if (!Array.isArray(rows)) { cb([]); return; }
+      // Só retorna fotos com URL válida (https) ou sem foto (obs)
+      var validas = rows.filter(function(f) {
+        return !f.url || f.url === '' || f.url.startsWith('http');
+      });
+      cb(validas);
+    })
     .catch(function() { cb([]); });
 }
 
