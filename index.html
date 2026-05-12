@@ -6225,40 +6225,166 @@ function _abrirIDB(cb) {
   req.onerror = function() { console.error('IDB erro'); cb(null); };
 }
 
+// ── Supabase Storage helpers ──────────────────────────────
+var SUPA_BUCKET = 'fotos';
+
+function _supaFotoPath(foto) {
+  // Caminho: agId/grupoId_tipo.jpg
+  return foto.agId + '/' + (foto.grupoId || foto.id) + '_' + foto.tipo + '.jpg';
+}
+
+function _supaUploadFoto(foto, cb) {
+  // Converte base64 para Blob e faz upload no Supabase Storage
+  try {
+    var base64 = foto.url;
+    if (!base64 || !base64.startsWith('data:')) { cb && cb(foto); return; }
+    var parts = base64.split(',');
+    var byteString = atob(parts[1]);
+    var ab = new ArrayBuffer(byteString.length);
+    var ia = new Uint8Array(ab);
+    for (var i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
+    var blob = new Blob([ab], { type: 'image/jpeg' });
+    var path = _supaFotoPath(foto);
+    fetch(SUPA_URL + '/storage/v1/object/' + SUPA_BUCKET + '/' + path, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPA_KEY,
+        'Authorization': 'Bearer ' + SUPA_KEY,
+        'Content-Type': 'image/jpeg',
+        'x-upsert': 'true'
+      },
+      body: blob
+    }).then(function(r) {
+      if (r.ok) {
+        // Substituir url base64 pela url pública do Storage
+        var publicUrl = SUPA_URL + '/storage/v1/object/public/' + SUPA_BUCKET + '/' + path;
+        foto.url = publicUrl;
+        foto.storageUrl = publicUrl;
+      }
+      cb && cb(foto);
+    }).catch(function() { cb && cb(foto); });
+  } catch(e) { cb && cb(foto); }
+}
+
+function _supaDeleteFoto(path, cb) {
+  fetch(SUPA_URL + '/storage/v1/object/' + SUPA_BUCKET + '/' + path, {
+    method: 'DELETE',
+    headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY }
+  }).then(function() { cb && cb(); }).catch(function() { cb && cb(); });
+}
+
+// ── Tabela fotos no Supabase (metadados) ──────────────────
+function _supaGetFotos(agId, cb) {
+  fetch(SUPA_URL + '/rest/v1/fotos?agId=eq.' + encodeURIComponent(agId) + '&select=*', {
+    headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY }
+  }).then(function(r) { return r.json(); })
+    .then(function(rows) { cb(Array.isArray(rows) ? rows : []); })
+    .catch(function() { cb([]); });
+}
+
+function _supaSalvarFoto(foto, cb) {
+  // Upsert na tabela fotos
+  fetch(SUPA_URL + '/rest/v1/fotos', {
+    method: 'POST',
+    headers: {
+      'apikey': SUPA_KEY,
+      'Authorization': 'Bearer ' + SUPA_KEY,
+      'Content-Type': 'application/json',
+      'Prefer': 'resolution=merge-duplicates'
+    },
+    body: JSON.stringify(foto)
+  }).then(function() { cb && cb(); }).catch(function() { cb && cb(); });
+}
+
+function _supaExcluirFoto(fotoId, url, cb) {
+  // Apaga da tabela e do Storage
+  fetch(SUPA_URL + '/rest/v1/fotos?id=eq.' + encodeURIComponent(fotoId), {
+    method: 'DELETE',
+    headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY }
+  }).then(function() {
+    // Apagar do Storage se tiver storageUrl
+    if (url && url.includes('/storage/v1/object/public/')) {
+      var path = url.split('/storage/v1/object/public/' + SUPA_BUCKET + '/')[1];
+      if (path) { _supaDeleteFoto(path, cb); return; }
+    }
+    cb && cb();
+  }).catch(function() { cb && cb(); });
+}
+
+// ── API pública usada pelo sistema (substitui IDB) ────────
 function _idbGetFotos(agId, cb) {
-  _abrirIDB(function(db2) {
-    if (!db2) { cb([]); return; }
-    var tx = db2.transaction('fotos', 'readonly');
-    var store = tx.objectStore('fotos');
-    var result = [];
-    var req = store.openCursor();
-    req.onsuccess = function(e) {
-      var cursor = e.target.result;
-      if (cursor) {
-        if (cursor.value.agId === agId) result.push(cursor.value);
-        cursor.continue();
-      } else { cb(result); }
-    };
-    req.onerror = function() { cb([]); };
+  _supaGetFotos(agId, function(rows) {
+    if (rows.length > 0) { cb(rows); return; }
+    // Fallback: busca no IDB local (dados antigos)
+    _abrirIDB(function(db2) {
+      if (!db2) { cb([]); return; }
+      var tx = db2.transaction('fotos', 'readonly');
+      var store = tx.objectStore('fotos');
+      var result = [];
+      var req = store.openCursor();
+      req.onsuccess = function(e) {
+        var cursor = e.target.result;
+        if (cursor) {
+          if (cursor.value.agId === agId) result.push(cursor.value);
+          cursor.continue();
+        } else { cb(result); }
+      };
+      req.onerror = function() { cb([]); };
+    });
   });
 }
 
 function _idbSalvarFoto(foto, cb) {
-  _abrirIDB(function(db2) {
-    if (!db2) { cb && cb(); return; }
-    var tx = db2.transaction('fotos', 'readwrite');
-    tx.objectStore('fotos').put(foto);
-    tx.oncomplete = function() { cb && cb(); };
-    tx.onerror = function() { cb && cb(); };
-  });
+  if (foto.url && foto.url.startsWith('data:')) {
+    // Upload da imagem para Storage primeiro
+    _supaUploadFoto(foto, function(fotoAtualizada) {
+      _supaSalvarFoto(fotoAtualizada, cb);
+    });
+  } else {
+    // Só texto/obs ou já tem URL pública
+    _supaSalvarFoto(foto, cb);
+  }
 }
 
 function _idbExcluirFoto(fotoId, cb) {
+  // Busca a foto para ter a url antes de excluir
+  fetch(SUPA_URL + '/rest/v1/fotos?id=eq.' + encodeURIComponent(fotoId) + '&select=url', {
+    headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY }
+  }).then(function(r) { return r.json(); })
+    .then(function(rows) {
+      var url = rows && rows[0] ? rows[0].url : '';
+      _supaExcluirFoto(fotoId, url, cb);
+    }).catch(function() { _supaExcluirFoto(fotoId, '', cb); });
+}
+
+// ── Migração automática IDB → Supabase (roda uma vez) ─────
+function _migrarFotosIDB() {
+  if (localStorage.getItem('lizafig_fotos_migradas')) return;
   _abrirIDB(function(db2) {
-    if (!db2) { cb && cb(); return; }
-    var tx = db2.transaction('fotos', 'readwrite');
-    tx.objectStore('fotos').delete(fotoId);
-    tx.oncomplete = function() { cb && cb(); };
+    if (!db2) return;
+    var tx = db2.transaction('fotos', 'readonly');
+    var store = tx.objectStore('fotos');
+    var fotos = [];
+    var req = store.openCursor();
+    req.onsuccess = function(e) {
+      var cursor = e.target.result;
+      if (cursor) { fotos.push(cursor.value); cursor.continue(); }
+      else {
+        if (!fotos.length) { localStorage.setItem('lizafig_fotos_migradas', '1'); return; }
+        addLog('INFO', '📦 Migrando ' + fotos.length + ' foto(s) do dispositivo para a nuvem...');
+        var pend = fotos.length;
+        fotos.forEach(function(f) {
+          _idbSalvarFoto(f, function() {
+            pend--;
+            if (pend === 0) {
+              localStorage.setItem('lizafig_fotos_migradas', '1');
+              addLog('INFO', '✅ Migração de fotos concluída!');
+              renderAcomp && renderAcomp();
+            }
+          });
+        });
+      }
+    };
   });
 }
 
@@ -7127,6 +7253,7 @@ if (_sessaoSalva) {
   mostrarLoginScreen();
 }
 addLog('INFO', 'Sistema carregado. Servicos:'+db.servicos.length+' Atend:'+db.atendimentos.length);
+setTimeout(_migrarFotosIDB, 3000);
 
 // ===== LISTENER GLOBAL — botões de sessão no Acompanhamento =====
 document.addEventListener('click', function(e) {
