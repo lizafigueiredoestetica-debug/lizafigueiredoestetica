@@ -1213,6 +1213,8 @@
 
     <button class="btn btn-secondary btn-sm" onclick="configurarSenhaAssinatura()" title="Senha assinatura">🔑</button>
     <button class="btn btn-secondary btn-sm admin-only" data-perm="usuarios" onclick="gerenciarUsuarios()">👥 Usuários</button>
+    <button class="btn btn-secondary btn-sm admin-only" onclick="exportData()" title="Fazer backup dos dados" style="background:white;border-color:#8A9A5A;color:#5A6A3A">⬇️ Backup</button>
+    <label class="btn btn-secondary btn-sm admin-only" title="Restaurar backup" style="background:white;border-color:#B07880;color:#B07880;cursor:pointer">⬆️ Restaurar<input type="file" accept=".json" style="display:none" onchange="importData(event)"></label>
     <button class="btn btn-sm" onclick="toggleLog()" style="background:white;color:#6B5B52;border:1px solid var(--border);">📋</button>
   </div>
 </div>
@@ -7261,6 +7263,7 @@ if (_sessaoSalva) {
 }
 addLog('INFO', 'Sistema carregado. Servicos:'+db.servicos.length+' Atend:'+db.atendimentos.length);
 setTimeout(_migrarFotosIDB, 3000);
+setTimeout(_backupAutomaticoDiario, 5000);
 
 // ===== LISTENER GLOBAL — botões de sessão no Acompanhamento =====
 document.addEventListener('click', function(e) {
@@ -7450,6 +7453,24 @@ function salvarServicoSessao(agId, sessaoIdx, sid) {
   saveData();
   if (typeof renderAcomp === 'function') renderAcomp();
   showToast('Serviços da sessão '+(sessaoIdx+1)+' salvos!');
+}
+function _backupAutomaticoDiario() {
+  var hoje = _hoje();
+  var ultimoBackup = localStorage.getItem('lizafig_ultimo_backup');
+  if (ultimoBackup === hoje) return; // já fez backup hoje
+  if (!db || (!db.agenda.length && !db.atendimentos.length && !db.servicos.length)) return; // sem dados, não faz backup
+  try {
+    var blob = new Blob([JSON.stringify(db, null, 2)], { type: 'application/json' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'liza-backup-' + hoje + '.json';
+    a.click();
+    localStorage.setItem('lizafig_ultimo_backup', hoje);
+    addLog('INFO', '💾 Backup automático realizado — ' + hoje);
+    showToast('💾 Backup automático do dia salvo!');
+  } catch(e) {
+    addLog('WARN', '⚠️ Backup automático falhou: ' + e.message);
+  }
 }
 </script>
 <!-- MODAL ASSINATURA DIGITAL -->
