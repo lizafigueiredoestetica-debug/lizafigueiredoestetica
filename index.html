@@ -7265,6 +7265,13 @@ addLog('INFO', 'Sistema carregado. Servicos:'+db.servicos.length+' Atend:'+db.at
 setTimeout(_migrarFotosIDB, 3000);
 setTimeout(_backupAutomaticoDiario, 5000);
 
+// ── Polling automático — busca atualizações da nuvem a cada 30s ──
+setInterval(async function() {
+  if (_inicializando || _sincronizando) return;
+  var carregou = await _carregarDaNuvem();
+  if (carregou) renderAll();
+}, 30000);
+
 // ===== LISTENER GLOBAL — botões de sessão no Acompanhamento =====
 document.addEventListener('click', function(e) {
   var b1 = e.target.closest('._btn-serv-sessao');
