@@ -7263,13 +7263,40 @@ if (_sessaoSalva) {
 }
 addLog('INFO', 'Sistema carregado. Servicos:'+db.servicos.length+' Atend:'+db.atendimentos.length);
 setTimeout(_migrarFotosIDB, 3000);
-setTimeout(_backupAutomaticoDiario, 5000);
 
-// ── Polling automático — busca atualizações da nuvem a cada 30s ──
+// ── Polling automático com verificação de timestamp ──
+var _ultimoSavedAt = db._savedAt || 0;
 setInterval(async function() {
   if (_inicializando || _sincronizando) return;
-  var carregou = await _carregarDaNuvem();
-  if (carregou) renderAll();
+  try {
+    var resp = await fetch(SUPA_URL + '/rest/v1/dados?id=eq.principal&select=conteudo,atualizado_em', {
+      headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY }
+    });
+    if (!resp.ok) return;
+    var rows = await resp.json();
+    if (!rows || !rows.length || !rows[0].conteudo) return;
+    var dados = rows[0].conteudo;
+    if (typeof dados === 'string') dados = JSON.parse(dados);
+    if (!dados || typeof dados !== 'object') return;
+    var savedAtNuvem = dados._savedAt || 0;
+    if (savedAtNuvem <= _ultimoSavedAt) return;
+    _ultimoSavedAt = savedAtNuvem;
+    db = dados;
+    if(!db.categorias) db.categorias = [];
+    if(!db.agenda) db.agenda = [];
+    if(!db.anamneses) db.anamneses = [];
+    if(!db.acomp) db.acomp = [];
+    if(!db.entradaEstoque) db.entradaEstoque = [];
+    if(!db.servicos) db.servicos = [];
+    if(!db.materiais) db.materiais = [];
+    if(!db.atendimentos) db.atendimentos = [];
+    if(!db.despAdm) db.despAdm = [];
+    if(!db.despExtra) db.despExtra = [];
+    localStorage.setItem('lizafig_db', JSON.stringify(db));
+    _atualizarStatusSync('ok', new Date().toLocaleString('pt-BR'));
+    addLog('INFO', '🔄 Dados atualizados do Supabase — ' + db.atendimentos.length + ' atend, ' + db.agenda.length + ' agend');
+    renderAll();
+  } catch(e) { addLog('WARN', '⚠️ Polling falhou: ' + e.message); }
 }, 30000);
 
 // ===== LISTENER GLOBAL — botões de sessão no Acompanhamento =====
@@ -7460,24 +7487,6 @@ function salvarServicoSessao(agId, sessaoIdx, sid) {
   saveData();
   if (typeof renderAcomp === 'function') renderAcomp();
   showToast('Serviços da sessão '+(sessaoIdx+1)+' salvos!');
-}
-function _backupAutomaticoDiario() {
-  var hoje = _hoje();
-  var ultimoBackup = localStorage.getItem('lizafig_ultimo_backup');
-  if (ultimoBackup === hoje) return; // já fez backup hoje
-  if (!db || (!db.agenda.length && !db.atendimentos.length && !db.servicos.length)) return; // sem dados, não faz backup
-  try {
-    var blob = new Blob([JSON.stringify(db, null, 2)], { type: 'application/json' });
-    var a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'liza-backup-' + hoje + '.json';
-    a.click();
-    localStorage.setItem('lizafig_ultimo_backup', hoje);
-    addLog('INFO', '💾 Backup automático realizado — ' + hoje);
-    showToast('💾 Backup automático do dia salvo!');
-  } catch(e) {
-    addLog('WARN', '⚠️ Backup automático falhou: ' + e.message);
-  }
 }
 </script>
 <!-- MODAL ASSINATURA DIGITAL -->
