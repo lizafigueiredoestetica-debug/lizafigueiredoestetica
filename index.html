@@ -4992,6 +4992,8 @@ function salvarFichaAnamnese() {
   addLog('INFO', '📋 Ficha de anamnese salva — ' + nome);
   _salvarAnamnese(ficha);
   showToast('Ficha salva com sucesso!');
+  _anamneseAtualId = null;
+  limparFormAnamnese();
 }
 
 function importarAnamnese(e) {
