@@ -69,7 +69,7 @@ function waRetorno(agId) {
 }
 
 // ===================== AGENDA =====================
-let agendaFiltro = 'hoje';
+// agendaFiltro declarado em agenda.js
 
 function setAgendaFiltro(filtro, btn) {
   agendaFiltro = filtro;
