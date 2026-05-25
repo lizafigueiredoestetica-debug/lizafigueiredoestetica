@@ -199,9 +199,9 @@ function renderAll() {
   renderCategorias();
   renderAnamnese();
   renderAcomp();
-  renderDespAdm && renderDespAdm();
-  renderDespExtra && renderDespExtra();
-  renderFinanceiro && renderFinanceiro();
+  if (typeof renderDespAdm === 'function') renderDespAdm();
+  if (typeof renderDespExtra === 'function') renderDespExtra();
+  if (typeof renderFinanceiro === 'function') renderFinanceiro();
   _atualizarBadges();
 }
 
