@@ -1,0 +1,328 @@
+/* =====================================================
+   LIZA FIGUEIREDO ESTÉTICA — sidebar.css
+   Sidebar, topbar, hamburger, mobile drawer, overlay
+   ===================================================== */
+
+/* ── APP LAYOUT ── */
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* ── SIDEBAR ── */
+.sidebar {
+  width: 240px;
+  min-width: 240px;
+  background: linear-gradient(180deg, #1C1C1E 0%, #111113 100%);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  z-index: 200;
+  box-shadow: 4px 0 24px rgba(0,0,0,0.25);
+  overflow-y: auto;
+  transition: width 0.3s;
+}
+
+/* ── SIDEBAR BRAND ── */
+.sidebar-brand {
+  padding: 1.75rem 1.5rem 1.25rem;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.sidebar-logo {
+  width: 40px; height: 40px; min-width: 40px;
+  background: linear-gradient(135deg, #D4A0A8, #B07880);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 18px; font-weight: 600;
+  color: white;
+  box-shadow: 0 4px 12px rgba(212,160,168,0.35);
+}
+.sidebar-brand-text { overflow: hidden; }
+.sidebar-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 16px;
+  color: white;
+  letter-spacing: 1px;
+  white-space: nowrap;
+}
+.sidebar-title span { color: #FAF0F2; font-style: italic; }
+.sidebar-sub {
+  font-size: 9px;
+  color: rgba(240,228,168,0.5);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+/* ── SIDEBAR TOGGLE ── */
+.sidebar-toggle {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.5);
+  cursor: pointer;
+  font-size: 18px;
+  padding: 6px;
+  border-radius: 8px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.sidebar-toggle:hover { background: rgba(255,255,255,0.1); color: white; }
+
+/* ── SIDEBAR NAV ── */
+.sidebar-nav {
+  flex: 1;
+  padding: 1rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.sidebar-label {
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.25);
+  padding: 0.75rem 0.75rem 0.25rem;
+  margin-top: 0.5rem;
+}
+.nav-tab {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0.65rem 0.85rem;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 400;
+  color: rgba(255,255,255,0.6);
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  background: none;
+  border: none;
+  font-family: 'Jost', sans-serif;
+  letter-spacing: 0.3px;
+  width: 100%;
+  text-align: left;
+  position: relative;
+}
+.nav-tab:hover {
+  background: rgba(255,255,255,0.07);
+  color: rgba(255,255,255,0.9);
+}
+.nav-tab.active {
+  background: linear-gradient(135deg, rgba(212,160,168,0.2), rgba(212,160,168,0.1));
+  color: #FAF0F2;
+  font-weight: 500;
+  box-shadow: inset 0 0 0 1px rgba(212,160,168,0.3);
+}
+.nav-tab .badge {
+  margin-left: auto;
+  background: rgba(212,160,168,0.2);
+  color: #FAF0F2;
+  border-radius: 20px;
+  padding: 1px 8px;
+  font-size: 10px;
+  font-weight: 600;
+  min-width: 24px;
+  text-align: center;
+}
+.nav-tab.active .badge {
+  background: rgba(212,160,168,0.35);
+}
+
+/* ── SIDEBAR FOOTER ── */
+.sidebar-footer {
+  padding: 1rem 0.75rem;
+  border-top: 1px solid rgba(255,255,255,0.07);
+}
+.sidebar-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0.6rem 0.75rem;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.05);
+}
+.sidebar-avatar {
+  width: 32px; height: 32px;
+  background: linear-gradient(135deg, #D4A0A8, #B07880);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 600; color: white;
+  flex-shrink: 0;
+}
+.sidebar-username {
+  font-size: 12px;
+  color: rgba(255,255,255,0.7);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sidebar-logout {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.35);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 4px;
+  border-radius: 6px;
+  transition: color 0.2s;
+}
+.sidebar-logout:hover { color: var(--danger); }
+
+/* ── SIDEBAR MINI ── */
+.sidebar.mini {
+  width: 68px;
+  min-width: 68px;
+}
+.sidebar.mini .sidebar-brand-text { display: none; }
+.sidebar.mini .sidebar-label { display: none; }
+.sidebar.mini .sidebar-username { display: none; }
+.sidebar.mini .sidebar-sub { display: none; }
+.sidebar.mini .nav-tab span:not(.badge) { display: none; }
+.sidebar.mini .nav-tab .badge { display: none; }
+.sidebar.mini .nav-tab { justify-content: center; padding: 0.65rem; }
+.sidebar.mini .sidebar-brand { justify-content: center; padding: 1.25rem 0.75rem; }
+.sidebar.mini .sidebar-user { justify-content: center; }
+.sidebar.mini .sidebar-logout { display: none; }
+.sidebar.mini .sidebar-toggle { margin-left: 0; }
+
+/* ── TOOLTIP MINI ── */
+.sidebar.mini .nav-tab { position: relative; }
+.sidebar.mini .nav-tab:hover::after {
+  content: attr(data-label);
+  position: absolute;
+  left: 72px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #1C1C1E;
+  color: white;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  white-space: nowrap;
+  z-index: 300;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+/* ── MAIN CONTENT ── */
+.app-content {
+  margin-left: 240px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+.app-content.mini { margin-left: 68px; }
+
+/* ── TOPBAR ── */
+.topbar {
+  background: white;
+  border-bottom: 1px solid var(--border);
+  padding: 0.85rem 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 1px 8px rgba(0,0,0,0.06);
+}
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+.topbar-date {
+  font-size: 12px;
+  color: var(--text-light);
+  letter-spacing: 0.5px;
+}
+.topbar-save {
+  font-size: 11px;
+  color: var(--text-light);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ── HAMBURGER ── */
+.btn-hamburger {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: 8px;
+  flex-direction: column;
+  gap: 5px;
+  flex-shrink: 0;
+}
+.btn-hamburger span {
+  display: block;
+  width: 22px;
+  height: 2px;
+  background: var(--text-mid);
+  border-radius: 2px;
+  transition: all 0.25s;
+}
+.btn-hamburger.aberto span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.btn-hamburger.aberto span:nth-child(2) { opacity: 0; }
+.btn-hamburger.aberto span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+/* ── OVERLAY ── */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 199;
+  backdrop-filter: blur(2px);
+}
+.sidebar-overlay.ativo { display: block; }
+
+/* ── MOBILE ── */
+@media(max-width: 768px) {
+  .btn-hamburger { display: flex; }
+
+  .sidebar, .sidebar.mini {
+    width: 260px !important;
+    min-width: 260px !important;
+    transform: translateX(-100%);
+    transition: transform 0.28s cubic-bezier(.4,0,.2,1);
+    z-index: 200;
+  }
+  .sidebar.drawer-aberto {
+    transform: translateX(0) !important;
+  }
+
+  /* Forçar sidebar expandida no mobile mesmo que mini */
+  .sidebar.mini .sidebar-brand-text,
+  .sidebar.mini .sidebar-label,
+  .sidebar.mini .sidebar-username,
+  .sidebar.mini .sidebar-sub { display: block !important; }
+  .sidebar.mini .nav-tab span:not(.badge) { display: inline !important; }
+  .sidebar.mini .nav-tab .badge { display: inline !important; }
+  .sidebar.mini .nav-tab { justify-content: flex-start !important; padding: 0.65rem 0.85rem !important; }
+  .sidebar.mini .sidebar-brand { justify-content: flex-start !important; padding: 1.75rem 1.5rem 1.25rem !important; }
+  .sidebar.mini .sidebar-user { justify-content: flex-start !important; }
+  .sidebar.mini .sidebar-logout { display: inline !important; }
+  .sidebar.mini .sidebar-toggle { display: none !important; }
+
+  .app-content,
+  .app-content.mini { margin-left: 0 !important; }
+
+  .topbar { padding: 0.6rem 1rem; flex-wrap: nowrap; }
+  .topbar-date { display: none !important; }
+  .topbar .admin-only { display: none !important; }
+}
