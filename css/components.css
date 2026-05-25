@@ -1,0 +1,240 @@
+/* =====================================================
+   LIZA FIGUEIREDO ESTÉTICA — components.css
+   Agenda, calendário, fotolog, tela boas-vindas check-in
+   ===================================================== */
+
+/* ── AGENDA ── */
+.agenda-filtros { display:flex; gap:0.5rem; margin-bottom:1.5rem; flex-wrap:wrap; }
+.agenda-btn {
+  padding: 0.5rem 1.2rem;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: white;
+  color: var(--text-light);
+  transition: all 0.2s;
+  font-family: 'Jost', sans-serif;
+  letter-spacing: 0.5px;
+}
+.agenda-btn.active, .agenda-btn:hover {
+  background: #D4A0A8;
+  color: white;
+  border-color: #D4A0A8;
+}
+.agenda-cliente-card {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin-bottom: 0.75rem;
+  overflow: hidden;
+  transition: box-shadow 0.2s;
+  cursor: pointer;
+}
+.agenda-cliente-card:hover { box-shadow: 0 4px 20px var(--shadow); }
+.agenda-cliente-header {
+  padding: 1rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid transparent;
+}
+.agenda-cliente-header.open { border-bottom-color: var(--border); }
+.agenda-cliente-nome { font-weight: 600; font-size: 14px; color: var(--text-dark); }
+.agenda-cliente-info { font-size: 12px; color: var(--text-light); margin-top:2px; }
+.agenda-cliente-badges { display:flex; gap:0.5rem; align-items:center; }
+.agenda-sessoes-wrap { padding: 1rem 1.5rem; display:none; }
+.agenda-sessoes-wrap.open { display:block; }
+.agenda-sessao-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 0.8rem;
+  border-radius: 8px;
+  margin-bottom: 0.4rem;
+  border: 1px solid var(--border);
+  background: var(--off-white);
+}
+.agenda-sessao-row.hoje { border-left: 3px solid #D4A0A8; background: var(--rose-light); }
+.agenda-sessao-row.realizado { background: #F0FFF0; border-color: #7DB87D; opacity:0.8; }
+.agenda-sessao-row.atrasado { background: #FFF5F5; border-left: 3px solid var(--danger); }
+.agenda-sessao-data { font-size: 13px; font-weight: 500; min-width: 90px; }
+.agenda-sessao-servico { font-size: 12px; color: var(--text-mid); flex:1; padding: 0 1rem; }
+.agenda-sessao-status { font-size: 11px; }
+
+/* ── CALENDÁRIO ── */
+.cal-wrap { background: white; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 1.5rem; }
+.cal-header { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.25rem; border-bottom: 1px solid var(--border); background: linear-gradient(135deg,#FDFBF8,#FAF5EE); flex-wrap: wrap; gap: 0.5rem; }
+.cal-nav { display: flex; align-items: center; gap: 0.5rem; }
+.cal-nav-btn { background: none; border: 1px solid var(--border); border-radius: 8px; width: 32px; height: 32px; cursor: pointer; font-size: 14px; color: var(--text-mid); display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+.cal-nav-btn:hover { background: var(--rose-light); border-color: var(--gold); }
+.cal-title { font-family: "Cormorant Garamond", serif; font-size: 18px; font-weight: 500; color: var(--text-dark); letter-spacing: 1px; min-width: 160px; text-align: center; }
+.cal-view-toggle { display: flex; gap: 4px; background: var(--cream); border-radius: 8px; padding: 3px; }
+.cal-view-btn { padding: 4px 14px; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; border: none; background: none; color: var(--text-light); font-family: "Jost", sans-serif; transition: all 0.15s; }
+.cal-view-btn.active { background: white; color: var(--text-dark); box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+.cal-today-btn { padding: 4px 12px; border-radius: 8px; font-size: 11px; border: 1px solid var(--border); background: white; color: var(--text-mid); cursor: pointer; font-family: "Jost", sans-serif; letter-spacing: 0.5px; }
+.cal-today-btn:hover { border-color: var(--gold); color: var(--gold-dark); }
+.cal-month-grid { display: grid; grid-template-columns: repeat(7, 1fr); }
+.cal-dow { padding: 0.5rem; text-align: center; font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-light); font-weight: 500; border-bottom: 1px solid var(--border); background: var(--off-white); }
+.cal-dow.fim-semana { color: var(--gold-dark); }
+.cal-day { min-height: 80px; padding: 6px; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); position: relative; vertical-align: top; transition: background 0.1s; }
+.cal-day:nth-child(7n) { border-right: none; }
+.cal-day.outro-mes { background: var(--off-white); }
+.cal-day.outro-mes .cal-day-num { opacity: 0.35; }
+.cal-day.hoje-cal { background: #FFF8F9; }
+.cal-day.hoje-cal .cal-day-num { background: var(--gold); color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-weight: 600; }
+.cal-day-num { font-size: 12px; font-weight: 500; color: var(--text-mid); margin-bottom: 4px; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; }
+.cal-event { font-size: 10px; padding: 2px 5px; border-radius: 4px; margin-bottom: 2px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: opacity 0.15s; line-height: 1.4; }
+.cal-event:hover { opacity: 0.8; }
+.cal-event.pendente { background: #FCE4EC; color: #880E4F; }
+.cal-event.hoje-ev { background: var(--gold); color: white; }
+.cal-event.realizado { background: #E8F5E9; color: #2E7D32; }
+.cal-event.atrasado { background: #FFEBEE; color: #C62828; }
+.cal-event.presente { background: #E3F2FD; color: #1565C0; }
+.cal-more { font-size: 10px; color: var(--gold-dark); cursor: pointer; padding: 1px 4px; }
+.cal-week-grid { display: grid; grid-template-columns: 52px repeat(7, 1fr); }
+.cal-week-time { padding: 0.35rem 8px; font-size: 10px; color: var(--text-light); text-align: right; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.cal-week-header { padding: 0.6rem 4px; text-align: center; border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); background: var(--off-white); }
+.cal-week-header:last-child { border-right: none; }
+.cal-week-dow { font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--text-light); }
+.cal-week-day-num { font-size: 16px; font-weight: 500; color: var(--text-mid); line-height: 1.2; }
+.cal-week-header.hoje-col .cal-week-day-num { color: var(--gold-dark); font-weight: 600; }
+.cal-week-header.hoje-col { background: #FFF8F9; }
+.cal-week-cell { border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); min-height: 36px; padding: 2px 3px; }
+.cal-week-cell:last-child { border-right: none; }
+.cal-week-cell.hoje-col { background: #FFFBFC; }
+.cal-week-event { font-size: 10px; padding: 2px 5px; border-radius: 4px; margin-bottom: 2px; cursor: pointer; line-height: 1.4; }
+.cal-week-event:hover { opacity: 0.8; }
+.cal-modal { position: fixed; inset: 0; background: rgba(28,28,30,0.5); z-index: 9990; display: flex; align-items: center; justify-content: center; padding: 1rem; }
+.cal-modal-box { background: white; border-radius: 16px; max-width: 400px; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.3); overflow: hidden; }
+.cal-modal-header { padding: 1.1rem 1.5rem; background: linear-gradient(135deg,#1C1C1E,#2C2C2E); display: flex; justify-content: space-between; align-items: center; }
+.cal-modal-body { padding: 1.25rem 1.5rem; }
+.cal-modal-label { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-light); margin-bottom: 4px; }
+.cal-modal-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+@media(max-width: 600px) {
+  .cal-day { min-height: 50px; padding: 3px; }
+  .cal-event { font-size: 9px; padding: 1px 3px; }
+  .cal-week-grid { grid-template-columns: 32px repeat(7,1fr); }
+}
+
+/* ── FOTOLOG ── */
+.fotolog-wrap { margin-top: 1.25rem; border-top: 1px solid var(--border); padding-top: 1rem; }
+.fotolog-titulo { font-size: 10px; letter-spacing: 2px; color: var(--text-light); text-transform: uppercase; margin-bottom: 0.75rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; }
+.fotolog-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; }
+.fotolog-card { background: var(--off-white); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+.fotolog-card-header { padding: 0.6rem 0.75rem; background: white; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap; }
+.fotolog-card-data { font-size: 11px; font-weight: 500; color: var(--text-mid); }
+.fotolog-card-servico { font-size: 11px; color: var(--text-light); }
+.fotolog-fotos { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 6px; }
+.fotolog-foto-wrap { position: relative; aspect-ratio: 3/4; background: var(--cream); border-radius: 6px; overflow: hidden; cursor: pointer; }
+.fotolog-foto-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.2s; }
+.fotolog-foto-wrap:hover img { transform: scale(1.03); }
+.fotolog-foto-label { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.45); color: white; font-size: 10px; text-align: center; padding: 3px 0; letter-spacing: 1px; text-transform: uppercase; }
+.fotolog-foto-del { position: absolute; top: 4px; right: 4px; background: rgba(255,59,48,0.85); color: white; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 11px; cursor: pointer; display: none; align-items: center; justify-content: center; }
+.fotolog-foto-wrap:hover .fotolog-foto-del { display: flex; }
+.fotolog-foto-empty { aspect-ratio: 3/4; border: 1.5px dashed var(--border); border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; font-size: 11px; color: var(--text-light); gap: 4px; transition: border-color 0.15s, background 0.15s; }
+.fotolog-foto-empty:hover { border-color: var(--gold); background: var(--rose-light); color: var(--gold-dark); }
+.fotolog-foto-obs { padding: 0 6px 6px; }
+.fotolog-foto-obs input { width: 100%; padding: 4px 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 11px; font-family: Jost,sans-serif; outline: none; box-sizing: border-box; color: var(--text-mid); }
+.fotolog-vazio { text-align: center; padding: 1.5rem; color: var(--text-light); font-size: 13px; }
+
+/* ── LIGHTBOX ── */
+.foto-lightbox { position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 1rem; }
+.foto-lightbox img { max-width: 90vw; max-height: 85vh; border-radius: 8px; object-fit: contain; }
+.foto-lightbox-close { position: absolute; top: 1rem; right: 1rem; background: rgba(255,255,255,0.15); border: none; color: white; font-size: 24px; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+@media(max-width:600px) { .fotolog-grid { grid-template-columns: 1fr; } }
+
+/* ── TELA BOAS-VINDAS CHECK-IN ── */
+.bv-tela {
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+  background: linear-gradient(160deg, #111113 0%, #1C1C1E 50%, #0A1A12 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  text-align: center;
+  animation: bvEntrar 0.5s cubic-bezier(.4,0,.2,1);
+}
+@keyframes bvEntrar {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
+}
+.bv-logo { margin-bottom: 2rem; }
+.bv-icone {
+  width: 90px; height: 90px;
+  background: linear-gradient(135deg, #D4A0A8, #B07880);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 38px;
+  margin: 0 auto 1rem;
+  box-shadow: 0 0 40px rgba(212,160,168,0.35);
+  animation: bvPulse 2s ease-in-out infinite;
+}
+@keyframes bvPulse {
+  0%, 100% { box-shadow: 0 0 30px rgba(212,160,168,0.3); }
+  50%       { box-shadow: 0 0 55px rgba(212,160,168,0.6); }
+}
+.bv-marca {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 15px;
+  color: rgba(212,160,168,0.6);
+  letter-spacing: 5px;
+  text-transform: uppercase;
+  margin-bottom: 2.5rem;
+}
+.bv-saudacao {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(28px, 7vw, 52px);
+  color: #FAF0F2;
+  font-weight: 400;
+  line-height: 1.2;
+  margin-bottom: 0.5rem;
+  animation: bvSlideUp 0.6s 0.2s both;
+}
+.bv-saudacao span { color: #D4A0A8; font-style: italic; }
+.bv-servico {
+  font-family: 'Jost', sans-serif;
+  font-size: clamp(14px, 3vw, 18px);
+  color: rgba(255,255,255,0.55);
+  letter-spacing: 1px;
+  margin-bottom: 2rem;
+  animation: bvSlideUp 0.6s 0.35s both;
+}
+.bv-servico strong { color: rgba(255,255,255,0.85); font-weight: 500; }
+.bv-mensagem {
+  font-family: 'Jost', sans-serif;
+  font-size: clamp(13px, 2.5vw, 16px);
+  color: rgba(138,154,90,0.9);
+  letter-spacing: 0.5px;
+  margin-bottom: 3rem;
+  animation: bvSlideUp 0.6s 0.5s both;
+}
+.bv-barra {
+  width: 200px; height: 2px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+}
+.bv-barra-prog {
+  height: 100%;
+  background: linear-gradient(90deg, #8A9A5A, #D4A0A8);
+  border-radius: 2px;
+  animation: bvProgress var(--bv-dur, 6s) linear forwards;
+}
+@keyframes bvProgress { from { width: 0%; } to { width: 100%; } }
+.bv-rodape {
+  font-size: 11px;
+  color: rgba(255,255,255,0.2);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  animation: bvSlideUp 0.6s 0.65s both;
+}
+@keyframes bvSlideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
