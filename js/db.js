@@ -1,0 +1,146 @@
+/* =====================================================
+   LIZA FIGUEIREDO ESTÉTICA — db.js
+   Objeto db, loadData, saveData, export/import backup,
+   filtros de período, renderAll, badges
+   ===================================================== */
+
+let db = {
+  servicos: [],
+  materiais: [],
+  atendimentos: [],
+  despAdm: [],
+  despExtra: [],
+  categorias: [],
+  agenda: [],
+  anamneses: [],
+  acomp: []
+};
+
+let currentPeriod = 'hoje';
+let selectedServicos = [];
+let selectedMateriais = {};
+
+// ── Carregar dados (cache local + Supabase) ──
+async function loadData() {
+  const raw = localStorage.getItem('lizafig_db');
+  if(raw) {
+    try { db = JSON.parse(raw); } catch(e) {}
+  }
+  if(!db.categorias) db.categorias = [];
+  if(!db.agenda) db.agenda = [];
+  if(!db.anamneses) db.anamneses = [];
+  if(!db.acomp) db.acomp = [];
+  if(!db.entradaEstoque) db.entradaEstoque = [];
+
+  var carregouNuvem = await _carregarDaNuvem();
+  if (!carregouNuvem) {
+    const ls = localStorage.getItem('lizafig_lastsync') || localStorage.getItem('lizafig_lastsave');
+    var el = document.getElementById('lastSave');
+    if(ls && el) el.textContent = '📴 Offline — cache de ' + ls;
+  } else {
+    _ultimoSync = new Date().toISOString();
+  }
+}
+
+// ── Salvar localmente ──
+function saveData() {
+  localStorage.setItem('lizafig_db', JSON.stringify(db));
+  const now = new Date().toLocaleString('pt-BR');
+  localStorage.setItem('lizafig_lastsave', now);
+  _atualizarStatusSync('ok', now);
+  addLog('INFO', '💾 Dados salvos — ' + now);
+}
+
+// ── Export JSON backup ──
+function exportData() {
+  const blob = new Blob([JSON.stringify(db, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'liza-figueiredo-backup-' + _hoje() + '.json';
+  a.click();
+  showToast('Backup exportado com sucesso!');
+}
+
+// ── Import JSON backup ──
+function importData(e) {
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    try {
+      db = JSON.parse(ev.target.result);
+      saveData();
+      renderAll();
+      showToast('Backup restaurado! Migrando para nuvem...');
+      setTimeout(function(){ _migrarParaNovaArquitetura(); }, 1000);
+    } catch(err) { showToast('Erro ao importar arquivo.'); }
+  };
+  reader.readAsText(file);
+}
+
+// ── Limpar todos os dados ──
+function limparTodosDados() {
+  if(!confirm('⚠️ Isso vai APAGAR todos os dados cadastrados.\n\nAs categorias serão mantidas.\n\nTem certeza?')) return;
+  db.servicos = [];
+  db.materiais = [];
+  db.atendimentos = [];
+  db.despAdm = [];
+  db.despExtra = [];
+  saveData();
+  renderAll();
+  showToast('Todos os dados foram apagados.');
+}
+
+// ── Filtro por período ──
+function setPeriod(p, btn) {
+  currentPeriod = p;
+  document.querySelectorAll('.period-btn').forEach(function(b){ b.classList.remove('active'); });
+  if(btn) btn.classList.add('active');
+  renderDashboard();
+}
+
+function filterByPeriod(items, dateField) {
+  const now = new Date();
+  const today = now.toISOString().split('T')[0];
+  return items.filter(function(item) {
+    const d = item[dateField];
+    if(!d) return true;
+    if(currentPeriod === 'hoje') return d === today;
+    if(currentPeriod === 'semana') {
+      const w = new Date(now); w.setDate(w.getDate()-7);
+      return d >= w.toISOString().split('T')[0];
+    }
+    if(currentPeriod === 'mes') return d.startsWith(now.getFullYear()+'-'+(String(now.getMonth()+1).padStart(2,'0')));
+    return true;
+  });
+}
+
+// ── renderAll e badges ──
+function renderAll() {
+  renderDashboard();
+  renderServicos();
+  renderMateriais();
+  renderAtendimentos();
+  renderDespAdm();
+  renderDespExtra();
+  renderCategorias();
+  renderAnamnese();
+  renderAcomp();
+  renderAgenda();
+  updateBadges();
+}
+
+function updateBadges() {
+  var hoje = _hoje();
+  var ag = 0;
+  db.agenda.forEach(function(a){ a.sessoes.forEach(function(s){ if(s.status==='pendente'&&s.data>=hoje) ag++; }); });
+  var bAg = document.getElementById('badgeAgenda'); if(bAg) bAg.textContent = ag;
+  var bAt = document.getElementById('badgeAtend'); if(bAt) bAt.textContent = db.atendimentos.length;
+  var bSv = document.getElementById('badgeServ'); if(bSv) bSv.textContent = db.servicos.filter(function(s){return s.status==='ativo';}).length;
+  var bMt = document.getElementById('badgeMat'); if(bMt) bMt.textContent = db.materiais.length;
+  var bDa = document.getElementById('badgeDespAdm'); if(bDa) bDa.textContent = db.despAdm.length;
+  var bDe = document.getElementById('badgeDespExtra'); if(bDe) bDe.textContent = db.despExtra.length;
+  var bCt = document.getElementById('badgeCat'); if(bCt) bCt.textContent = db.categorias.length;
+  var bAn = document.getElementById('badgeAnamnese'); if(bAn) bAn.textContent = db.anamneses.length;
+  var bAc = document.getElementById('badgeAcomp'); if(bAc) bAc.textContent = db.agenda.length;
+}
