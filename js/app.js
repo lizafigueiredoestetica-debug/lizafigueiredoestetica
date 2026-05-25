@@ -3,17 +3,32 @@
    init, drawer, boas-vindas, aniversariantes, relatório, boot
    ===================================================== */
 
-// ── DATA BRASÍLIA (UTC-3) ──
-function _hoje() {
-  var d = new Date();
-  // Ajustar para UTC-3
-  var utc = d.getTime() + d.getTimezoneOffset() * 60000;
-  var br = new Date(utc - 3 * 3600000);
-  var y = br.getFullYear();
-  var m = String(br.getMonth()+1).padStart(2,'0');
-  var day = String(br.getDate()).padStart(2,'0');
-  return y + '-' + m + '-' + day;
+// ===================== INIT =====================
+async function init() {
+  await loadData();
+  if(db.categorias.length === 0) {
+    db.categorias = [
+      {id: uid(), nome: 'Bumbum'},
+      {id: uid(), nome: 'Barriga'}
+    ];
+    try { localStorage.setItem('lizafig_db', JSON.stringify(db)); } catch(e) {}
+  }
+  setToday();
+  updateHeaderDate();
+  renderAll();
+  _inicializando = false;
+  setInterval(updateHeaderDate, 1000);
+  setTimeout(function() {
+    try {
+      var _secSalva = localStorage.getItem('lizafig_secao');
+      if (_secSalva && document.getElementById('sec-' + _secSalva)) {
+        showSection(_secSalva);
+      }
+    } catch(e) {}
+  }, 100);
 }
+
+// ── DATA BRASÍLIA (UTC-3) — _hoje() definido em utils.js ──
 function _semanaAtras() {
   var d = new Date();
   var utc = d.getTime() + d.getTimezoneOffset() * 60000;
@@ -24,32 +39,7 @@ function _semanaAtras() {
   return y + '-' + m + '-' + day;
 }
 
-// ── DRAWER MOBILE ──
-function toggleDrawer() {
-  var sidebar = document.getElementById('appSidebar');
-  var overlay = document.getElementById('sidebarOverlay');
-  var btn = document.getElementById('btnHamburger');
-  if (!sidebar) return;
-  var aberto = sidebar.classList.contains('drawer-aberto');
-  if (aberto) {
-    sidebar.classList.remove('drawer-aberto');
-    if (overlay) overlay.classList.remove('ativo');
-    if (btn) btn.classList.remove('aberto');
-  } else {
-    sidebar.classList.add('drawer-aberto');
-    if (overlay) overlay.classList.add('ativo');
-    if (btn) btn.classList.add('aberto');
-  }
-}
-
-function fecharDrawer() {
-  var sidebar = document.getElementById('appSidebar');
-  var overlay = document.getElementById('sidebarOverlay');
-  var btn = document.getElementById('btnHamburger');
-  if (sidebar) sidebar.classList.remove('drawer-aberto');
-  if (overlay) overlay.classList.remove('ativo');
-  if (btn) btn.classList.remove('aberto');
-}
+// toggleDrawer e fecharDrawer definidos em utils.js
 
 
 // ── OBSERVAÇÕES HISTÓRICAS ──
