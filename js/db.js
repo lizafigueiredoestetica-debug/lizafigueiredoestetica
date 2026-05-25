@@ -115,32 +115,4 @@ function filterByPeriod(items, dateField) {
   });
 }
 
-// ── renderAll e badges ──
-function renderAll() {
-  renderDashboard();
-  renderServicos();
-  renderMateriais();
-  renderAtendimentos();
-  renderDespAdm();
-  renderDespExtra();
-  renderCategorias();
-  renderAnamnese();
-  renderAcomp();
-  renderAgenda();
-  updateBadges();
-}
-
-function updateBadges() {
-  var hoje = _hoje();
-  var ag = 0;
-  db.agenda.forEach(function(a){ a.sessoes.forEach(function(s){ if(s.status==='pendente'&&s.data>=hoje) ag++; }); });
-  var bAg = document.getElementById('badgeAgenda'); if(bAg) bAg.textContent = ag;
-  var bAt = document.getElementById('badgeAtend'); if(bAt) bAt.textContent = db.atendimentos.length;
-  var bSv = document.getElementById('badgeServ'); if(bSv) bSv.textContent = db.servicos.filter(function(s){return s.status==='ativo';}).length;
-  var bMt = document.getElementById('badgeMat'); if(bMt) bMt.textContent = db.materiais.length;
-  var bDa = document.getElementById('badgeDespAdm'); if(bDa) bDa.textContent = db.despAdm.length;
-  var bDe = document.getElementById('badgeDespExtra'); if(bDe) bDe.textContent = db.despExtra.length;
-  var bCt = document.getElementById('badgeCat'); if(bCt) bCt.textContent = db.categorias.length;
-  var bAn = document.getElementById('badgeAnamnese'); if(bAn) bAn.textContent = db.anamneses.length;
-  var bAc = document.getElementById('badgeAcomp'); if(bAc) bAc.textContent = db.agenda.length;
-}
+// renderAll e updateBadges definidos em utils.js
