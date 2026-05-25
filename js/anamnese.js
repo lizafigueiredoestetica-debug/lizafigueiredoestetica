@@ -260,7 +260,7 @@ function renderAnamnese() {
       + '<td><span class="badge-pill badge-ativo" style="font-size:11px">Completa</span>'+(a.assinatura?' <span class="badge-pill" style="font-size:11px;background:#E8F5E9;color:#2E7D32">✍️ Assinada</span>':'')+'</td>'
       + '<td style="display:flex;gap:4px">'
       + '<button class="btn btn-edit btn-sm" onclick="editarAnamnese(\''+a.id+'\')">✏️</button>'
-      + '<button class="btn btn-primary btn-sm" onclick="editarAnamnese(\''+a.id+'\');setTimeout(visualizarFicha,200)" style="font-size:11px;padding:4px 8px">👁 Ver</button>'
+      + '<button class="btn btn-primary btn-sm" onclick="visualizarFichaId(\''+a.id+'\')" style="font-size:11px;padding:4px 8px">👁 Ver</button>'
       + '<button class="btn btn-danger btn-sm" onclick="excluirAnamnese(\''+a.id+'\')">✕</button>'
       + '</td></tr>';
   }).join('');
@@ -270,12 +270,22 @@ function renderAnamnese() {
 }
 
 function visualizarFicha() {
-  var nome = document.getElementById('an-nome') ? document.getElementById('an-nome').value.trim() : '';
-  if (!nome && !_anamneseAtualId) { showToast('Salve a ficha primeiro!'); return; }
-  if (nome) salvarFichaAnamnese();
+  var nome = document.getElementById("an-nome") ? document.getElementById("an-nome").value.trim() : "";
+  if (nome && !_anamneseAtualId) {
+    salvarFichaAnamnese();
+    var ficha2 = db.anamneses.find(function(a){ return a.pessoais && a.pessoais.nome === nome; });
+    if (ficha2) { abrirModalAssinatura(ficha2, "anamnese"); }
+    return;
+  }
   var ficha = db.anamneses.find(function(a){ return a.id===_anamneseAtualId; });
+  if (!ficha) { showToast("Salve a ficha primeiro!"); return; }
+  abrirModalAssinatura(ficha, "anamnese");
+}
+
+function visualizarFichaId(id) {
+  var ficha = db.anamneses.find(function(a){ return a.id===id; });
   if (!ficha) return;
-  abrirModalAssinatura(ficha, 'anamnese');
+  abrirModalAssinatura(ficha, "anamnese");
 }
 
 // ===== ACOMPANHAMENTO =====
