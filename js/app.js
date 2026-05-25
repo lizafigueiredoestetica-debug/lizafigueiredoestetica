@@ -459,7 +459,7 @@ function gerarRelatorioPDF() {
 // ── WHATSAPP AVANÇADO ──────────────────────────────────────────────────────
 
 // URL da anamnese — configurável
-var _urlAnamnese = localStorage.getItem('lizafig_url_anamnese') || 'https://liza-figueiredo.netlify.app';
+var _urlAnamnese = localStorage.getItem('lizafig_url_anamnese') || 'https://lizafigueiredoestetica-debug.github.io/anamnese/';
 
 // 1. Link da anamnese ao criar agendamento
 function waEnviarAnamnese(cliente, tel) {
