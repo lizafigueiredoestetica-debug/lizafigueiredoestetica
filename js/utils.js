@@ -8,7 +8,9 @@ function uid() { return Date.now().toString(36) + Math.random().toString(36).sub
 
 function _hoje() {
   var d = new Date();
-  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  var utc = d.getTime() + d.getTimezoneOffset() * 60000;
+  var br = new Date(utc - 3 * 3600000);
+  return br.getFullYear() + '-' + String(br.getMonth()+1).padStart(2,'0') + '-' + String(br.getDate()).padStart(2,'0');
 }
 
 function fmtDate(s) {
@@ -145,13 +147,7 @@ function mudaPagSessao(agKey, pag) {
   renderAcomp();
 }
 
-function toggleSidebar() {
-  var sb = document.getElementById('appSidebar');
-  var ac = document.getElementById('appContent') || document.querySelector('.app-content');
-  if (!sb) return;
-  sb.classList.toggle('mini');
-  if (ac) ac.classList.toggle('mini');
-}
+// toggleSidebar definido em auth.js
 
 function toggleDrawer() {
   var sb = document.getElementById('appSidebar');
