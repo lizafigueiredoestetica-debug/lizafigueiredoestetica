@@ -1,0 +1,1169 @@
+/* =====================================================
+   LIZA FIGUEIREDO ESTÉTICA — agenda.js
+   renderAgenda, calendar, sessoes, checkin, ICS, whatsapp
+   ===================================================== */
+
+// ===================== AGENDA =====================
+let agendaFiltro = 'hoje';
+
+function setAgendaFiltro(filtro, btn) {
+  agendaFiltro = filtro;
+  document.querySelectorAll('.agenda-btn').forEach(b => b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  renderAgenda();
+}
+
+function populateAgendaServico() {
+  var container = document.getElementById('ag-servico-chips');
+  if (!container) return;
+  var ativos = db.servicos.filter(function(s){ return s.status==='ativo'; });
+  container.innerHTML = ativos.length
+    ? ativos.map(function(s){ return '<span class="service-chip" style="font-size:12px;cursor:pointer" data-id="'+s.id+'" onclick="this.classList.toggle(\'selected\')">'+s.nome+'</span>'; }).join('')
+    : '<span style="font-size:12px;color:var(--text-light)">Cadastre serviços primeiro</span>';
+}
+
+function gerarCamposDatas() {
+  const qtd = parseInt(document.getElementById('ag-qtd').value) || 0;
+  const wrap = document.getElementById('ag-datas-wrap');
+  const campos = document.getElementById('ag-datas-campos');
+  if(qtd < 1) { wrap.style.display='none'; campos.innerHTML=''; return; }
+  wrap.style.display='block';
+  // Keep existing values
+  const existing = [];
+  campos.querySelectorAll('input[type=date]').forEach(i => existing.push(i.value));
+  const existingHora = [];
+  campos.querySelectorAll('input[type=time]').forEach(t => existingHora.push(t.value));
+  // Mudar grid para layout em lista com chips
+  campos.style.gridTemplateColumns = '1fr';
+  for(let i=0; i<qtd; i++) {
+    const div = document.createElement('div');
+    div.style.cssText = 'display:flex;align-items:center;gap:0.5rem;margin-bottom:8px;flex-wrap:wrap';
+    const chipsHtml = db.servicos.filter(s=>s.status==='ativo').map(s=>`<span class="service-chip" style="font-size:11px;padding:2px 8px;cursor:pointer" id="agchip_${i}_${s.id}" onclick="this.classList.toggle('selected')">${s.nome}</span>`).join('');
+    div.innerHTML = `
+      <span style="font-size:11px;color:var(--text-light);min-width:60px">Sessão ${i+1}</span>
+      <input type="date" id="ag-data-${i}" style="padding:0.4rem 0.6rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none" value="${existing[i]||''}">
+      <input type="time" id="ag-hora-${i}" style="width:90px;padding:0.4rem 0.4rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none" value="${existingHora[i]||''}">
+      <div style="display:flex;flex-wrap:wrap;gap:4px">
+        <input type="text" placeholder="🔍 Filtrar serviços..." oninput="(function(el){var v=el.value.toLowerCase();el.parentElement.querySelectorAll('.service-chip').forEach(function(c){c.style.display=c.textContent.toLowerCase().includes(v)?'':'none';});})(this)" style="width:100%;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px;font-family:Jost,sans-serif;outline:none;margin-bottom:4px">
+        ${chipsHtml}
+      </div>`;
+    campos.appendChild(div);
+  }
+}
+
+function salvarAgendamento() {
+  const cliente = document.getElementById('ag-cliente').value.trim();
+  const qtd = parseInt(document.getElementById('ag-qtd').value);
+  const obs = document.getElementById('ag-obs').value;
+
+  if(!cliente || !qtd) {
+    showToast('Preencha cliente e quantidade de sessões!');
+    return;
+  }
+
+  const sessoes = [];
+  for(let i=0; i<qtd; i++) {
+    const dataEl = document.getElementById('ag-data-'+i);
+    if(!dataEl || !dataEl.value) {
+      showToast(`Preencha a data da sessão ${i+1}!`);
+      return;
+    }
+    const horaEl = document.getElementById('ag-hora-'+i);
+    const srvIds = db.servicos.filter(function(s){
+      const el = document.getElementById('agchip_'+i+'_'+s.id);
+      return el && el.classList.contains('selected');
+    }).map(function(s){ return s.id; });
+    sessoes.push({ data: dataEl.value, hora: horaEl ? horaEl.value : '', status: 'pendente', atendimentoId: null, servicoIds: srvIds, servico: srvIds.map(function(id){ const sv=db.servicos.find(function(x){return x.id===id;}); return sv?sv.nome:''; }).join(' + ') });
+  }
+
+  const tel = (document.getElementById('ag-tel')||{value:''}).value.trim();
+  const sinal = parseFloat((document.getElementById('ag-sinal')||{value:'0'}).value) || 0;
+  db.agenda.push({
+    id: uid(),
+    cliente,
+    tel,
+    sinal,
+    sinalPago: sinal > 0,
+    servicoId: '',
+    servicoIds: [],
+    servicoNome: '—',
+    obs,
+    sessoes
+  });
+
+  var novaAgenda = db.agenda[db.agenda.length-1];
+  saveData(); renderAll();
+  addLog('INFO', '📅 Agendamento criado — Cliente: ' + cliente + ' | Sessões: ' + sessoes.length);
+  _salvarAgenda(novaAgenda);
+
+  // Toast com botão de enviar link da anamnese
+  var _tel = _waTelefone(cliente);
+  var _btnAnam = document.createElement('button');
+  _btnAnam.textContent = '📲 Enviar Anamnese no WhatsApp';
+  _btnAnam.style.cssText = 'background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.4);color:white;border-radius:6px;padding:2px 10px;font-size:11px;cursor:pointer;margin-left:4px';
+  _btnAnam.onclick = function(){ waEnviarAnamnese(cliente, _tel||''); };
+  var t = document.getElementById('toast');
+  t.innerHTML = '📅 Agendamento salvo! ';
+  t.appendChild(_btnAnam);
+  t.classList.add('show');
+  setTimeout(function(){ t.classList.remove('show'); t.innerHTML=''; limparFormAgenda(); }, 7000);
+}
+
+function limparFormAgenda() {
+  ['ag-cliente','ag-qtd','ag-obs','ag-tel','ag-sinal'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.value = '';
+  });
+  const chips = document.getElementById('ag-servico-chips');
+  if(chips) chips.querySelectorAll('.service-chip.selected').forEach(function(el){ el.classList.remove('selected'); });
+  const wrap = document.getElementById('ag-datas-wrap');
+  if(wrap) wrap.style.display = 'none';
+  const campos = document.getElementById('ag-datas-campos');
+  if(campos) campos.innerHTML = '';
+}
+
+function _agServicos(ag) {
+  var todos = {};
+  (ag.sessoes||[]).forEach(function(s){
+    (s.servicoIds||[]).forEach(function(id){
+      var sv = db.servicos.find(function(x){ return x.id===id; });
+      var nome = sv ? sv.nome : id;
+      todos[nome] = true;
+    });
+    if(s.servico && !(s.servicoIds&&s.servicoIds.length)) todos[s.servico]=true;
+  });
+  var nomes = Object.keys(todos);
+  if(nomes.length) return nomes.join(' + ');
+  return ag.servicoNome || '—';
+}
+
+function renderAgenda() {
+  populateAgendaServico();
+  renderCalendario();
+
+  // Atualizar painel Check-ins
+  var hojeStr = _hoje();
+  var filtCiDe = (document.getElementById('filtCheckinDe')||{value:''}).value;
+  var filtCiAte = (document.getElementById('filtCheckinAte')||{value:''}).value;
+  // Se sem filtro, mostrar hoje
+  var ciDe = filtCiDe || hojeStr;
+  var ciAte = filtCiAte || hojeStr;
+  var checkins = [];
+  db.agenda.forEach(function(ag) {
+    ag.sessoes.forEach(function(s, idx) {
+      if ((s.status === 'presente' || s.status === 'realizado') && s.checkinData && s.checkinHora) {
+        var dataCheck = s.checkinData.split('/').reverse().join('-');
+        if (dataCheck >= ciDe && dataCheck <= ciAte) {
+          var srvIds = s.servicoIds||[];
+          var srvNome = srvIds.length
+            ? srvIds.map(function(id){ var sv=db.servicos.find(function(x){return x.id===id;}); return sv?sv.nome:id; }).join(' + ')
+            : (s.servico || ag.servicoNome || '—');
+          checkins.push({ data: s.checkinData, hora: s.checkinHora, nome: s.checkinNome||ag.cliente, servico: srvNome, sessao: idx+1 });
+        }
+      }
+    });
+  });
+  checkins.sort(function(a,b){ return (a.data+a.hora).localeCompare(b.data+b.hora); });
+  var painel = document.getElementById('checkinPainel');
+  var body = document.getElementById('checkinTabelaBody');
+  var count = document.getElementById('checkinCount');
+  if (painel && body && count) {
+    if (checkins.length) {
+      painel.style.display = 'block';
+      count.textContent = checkins.length + (checkins.length===1?' check-in':' check-ins');
+      body.innerHTML = checkins.map(function(c){
+        return '<tr style="border-bottom:1px solid rgba(144,202,249,0.3)">'
+          +'<td style="padding:6px 8px;font-size:12px;color:#555">'+c.data+'</td>'
+          +'<td style="padding:6px 8px;font-size:13px;font-weight:600;color:#1565C0">'+c.hora+'</td>'
+          +'<td style="padding:6px 8px;font-size:13px">'+c.nome+'</td>'
+          +'<td style="padding:6px 8px;font-size:12px;color:#555">'+c.servico+'</td>'
+          +'<td style="padding:6px 8px;font-size:12px;color:#888">Sessão '+c.sessao+'</td>'
+          +'</tr>';
+      }).join('');
+    } else {
+      painel.style.display = 'block';
+      count.textContent = '0 check-ins';
+      body.innerHTML = '<tr><td colspan="5" style="padding:12px 8px;font-size:12px;color:#888;text-align:center">Nenhum check-in no período</td></tr>';
+    }
+  }
+
+  const lista = document.getElementById('agendaLista');
+  if(!lista) return;
+
+  const hoje = _hoje();
+  const now = new Date();
+
+  // Verificar se há busca ativa por nome ou data
+  const buscaCliente = (document.getElementById('agBuscaCliente')||{value:''}).value.toLowerCase().trim();
+  const buscaData = (document.getElementById('agBuscaData')||{value:''}).value;
+  const buscaDataAte = (document.getElementById('agBuscaDataAte')||{value:''}).value;
+  const temBusca = buscaCliente || buscaData || buscaDataAte;
+
+  // Se há busca ativa, ignorar botões de período e filtrar por nome/data diretamente
+  // Se não há busca, aplicar filtro do botão selecionado
+  const agFiltrados = db.agenda.filter(ag => {
+    if (temBusca) {
+      // Modo busca: independente dos botões
+      if (buscaCliente && !ag.cliente.toLowerCase().includes(buscaCliente)) return false;
+      if (buscaData || buscaDataAte) {
+        return ag.sessoes.some(s => {
+          if (buscaData && s.data < buscaData) return false;
+          if (buscaDataAte && s.data > buscaDataAte) return false;
+          return true;
+        });
+      }
+      return true;
+    } else {
+      // Modo período: obedecer botões
+      return ag.sessoes.some(s => {
+        if(agendaFiltro === 'hoje') return s.data === hoje;
+        if(agendaFiltro === 'semana') {
+          var d7 = new Date();
+          var utc7 = d7.getTime() + d7.getTimezoneOffset()*60000;
+          var br7 = new Date(utc7 - 3*3600000 + 7*86400000);
+          var fimSemana = br7.getFullYear()+'-'+String(br7.getMonth()+1).padStart(2,'0')+'-'+String(br7.getDate()).padStart(2,'0');
+          return s.data >= hoje && s.data <= fimSemana;
+        }
+        if(agendaFiltro === 'mes') return s.data.startsWith(hoje.substring(0,7));
+        if(agendaFiltro === 'tudo') return true;
+        return true;
+      });
+    }
+  });
+
+  const agBuscados = agFiltrados;
+
+  if(!agBuscados.length) {
+    lista.innerHTML = `<div class="empty-state"><div class="empty-icon">${temBusca ? '🔍' : '📅'}</div><p>${temBusca ? 'Nenhum resultado encontrado' : 'Nenhum agendamento para este período'}</p></div>`;
+    return;
+  }
+
+  const agParaRender = agBuscados.length ? agBuscados : agFiltrados;
+
+  // Sort by nearest session date
+  agParaRender.sort((a,b) => {
+    const dA = a.sessoes.filter(s=>s.status!=='realizado').map(s=>s.data).sort()[0]||'9999';
+    const dB = b.sessoes.filter(s=>s.status!=='realizado').map(s=>s.data).sort()[0]||'9999';
+    return dA.localeCompare(dB);
+  });
+
+  lista.innerHTML = agParaRender.map(ag => {
+    const total = ag.sessoes.length;
+    const realizados = ag.sessoes.filter(s=>s.status==='realizado').length;
+    const pendentes = total - realizados;
+    const proxima = ag.sessoes.filter(s=>s.status!=='realizado').map(s=>s.data).sort()[0];
+    const temHoje = ag.sessoes.some(s=>s.data===hoje && s.status!=='realizado');
+
+    return `
+    <div class="agenda-cliente-card" id="agcard-${ag.id}">
+      <div class="agenda-cliente-header" id="agheader-${ag.id}" onclick="toggleAgendaCliente('${ag.id}')">
+        <div>
+          <div class="agenda-cliente-nome">👤 ${ag.cliente}</div>
+          <div class="agenda-cliente-info">${_agServicos(ag)}${ag.obs?' · '+ag.obs:''}</div>
+        </div>
+        <div class="agenda-cliente-badges">
+          ${temHoje ? '<span class="badge-hoje">Hoje</span>' : ''}
+          ${ag.sinal > 0 ? '<span style="background:#E7F7EE;color:#276749;border-radius:12px;padding:2px 8px;font-size:10px;font-weight:500;letter-spacing:0.5px">💰 Sinal R$'+parseFloat(ag.sinal).toFixed(2).replace('.',',')+'</span>' : ''}
+          <span class="badge-pill badge-ativo">${realizados}/${total} sessões</span>
+          ${pendentes > 0 ? `<span class="badge-pendente">${pendentes} pendente${pendentes>1?'s':''}</span>` : '<span class="badge-realizado">Concluído</span>'}
+          <button class="btn btn-edit btn-sm" onclick="event.stopPropagation();editarAgenda('${ag.id}')" style="margin-left:0.5rem;font-size:11px;padding:4px 10px">✏️ Editar</button>
+          <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();novoCiclo('${ag.id}')" style="font-size:11px" title="Adicionar novas sessões para esta cliente">🔄 Novo Ciclo</button>
+          <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();waRetorno('${ag.id}')" style="font-size:11px;background:#E7F7EE;border-color:#7DB87D;color:#276749" title="Mensagem de retorno no WhatsApp">💬</button>
+          <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();waOrcamento('${ag.id}')" style="font-size:11px;background:#FFF8E7;border-color:#F6C94E;color:#7A5C00" title="Enviar orçamento no WhatsApp">💰</button>
+          <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();excluirAgenda('${ag.id}')">✕</button>
+        </div>
+      </div>
+      <div class="agenda-sessoes-wrap" id="agsessoes-${ag.id}">
+        <div style="margin-bottom:0.75rem;font-size:11px;color:var(--text-light);letter-spacing:1px;text-transform:uppercase">Sessões do Pacote</div>
+        ${ag.sessoes.map((s,i) => {
+          const isHoje = s.data === hoje;
+          const isAtrasado = s.data < hoje && s.status !== 'realizado';
+          let cls = '';
+          if(s.status==='realizado') cls='realizado';
+          else if(isHoje) cls='hoje';
+          else if(isAtrasado) cls='atrasado';
+          let badge = '';
+          if(s.status==='realizado') badge='<span class="badge-realizado">✓ Realizado</span>';
+          else if(s.status==='presente') badge='<span class="badge-presente">✅ Presente</span>';
+          else if(isHoje) badge='<span class="badge-hoje">Hoje</span>';
+          else if(isAtrasado) badge='<span class="badge-atrasado">Não compareceu</span>';
+          else badge='<span class="badge-pendente">Pendente</span>';
+          return `
+          <div class="agenda-sessao-row ${cls}">
+            <div class="agenda-sessao-data">${fmtDate(s.data)}${s.hora?' &middot; '+s.hora:''}</div>
+            <div class="agenda-sessao-servico">${(function(s,ag){ var ids=s.servicoIds||[]; if(ids.length){ var nomes=ids.map(function(id){ var sv=db.servicos.find(function(x){return x.id===id;}); return sv?sv.nome:id; }); return nomes.join(' + '); } return s.servico||_agServicos(ag); })(s,ag)} · Sessão ${i+1}</div>
+            <div class="agenda-sessao-status" style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap">
+              ${badge}
+              ${s.status !== 'realizado' ? `<button class="btn btn-primary btn-sm" onclick="realizarSessao('${ag.id}',${i})" style="font-size:11px;padding:4px 10px">✓ Realizar</button>` : ''}
+              ${s.status !== 'realizado' ? `<button onclick="waConfirmarAgendamento('${ag.id}',${i})" style="background:#E7F7EE;border:1px solid #7DB87D;color:#276749;border-radius:8px;padding:4px 8px;font-size:11px;cursor:pointer" title="Confirmar sessão pelo WhatsApp">📲 Confirmar</button>` : ''}
+              ${s.status !== 'realizado' ? `<button onclick="waLembrete('${ag.id}',${i})" style="background:#FFF8E7;border:1px solid #F6C94E;color:#7A5C00;border-radius:8px;padding:4px 8px;font-size:11px;cursor:pointer" title="Enviar lembrete pelo WhatsApp">⏰ Lembrete</button>` : ''}
+              ${s.status !== 'realizado' ? `<button onclick="waReagendar('${ag.id}',${i})" style="background:#F3E8FF;border:1px solid #C084FC;color:#7C3AED;border-radius:8px;padding:4px 8px;font-size:11px;cursor:pointer" title="Reagendar pelo WhatsApp">🔄 Reagendar</button>` : ''}
+              ${(s.status !== 'realizado' && s.data < hoje) ? `<button onclick="event.stopPropagation();editarAgenda('${ag.id}')" style="background:#FFF0F5;border:1px solid #D4A0A8;color:#B07880;border-radius:8px;padding:4px 8px;font-size:11px;cursor:pointer" title="Editar agendamento">📅 Remarcar</button>` : ''}
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleAgendaCliente(agId) {
+  const sessoes = document.getElementById('agsessoes-'+agId);
+  const header = document.getElementById('agheader-'+agId);
+  if(!sessoes) return;
+  const isOpen = sessoes.classList.contains('open');
+  // Close all
+  document.querySelectorAll('.agenda-sessoes-wrap').forEach(el => el.classList.remove('open'));
+  document.querySelectorAll('.agenda-cliente-header').forEach(el => el.classList.remove('open'));
+  if(!isOpen) {
+    sessoes.classList.add('open');
+    if(header) header.classList.add('open');
+  }
+}
+
+function realizarSessao(agId, sessaoIdx) {
+  const ag = db.agenda.find(x=>x.id===agId);
+  if(!ag) return;
+  const sessao = ag.sessoes[sessaoIdx];
+  if(!sessao) return;
+
+  // Mark as realizado
+  sessao.status = 'realizado';
+  saveData();
+  renderAll();
+  // Salvar sessão individualmente no Supabase
+  var _agRealiz = db.agenda.find(function(x){return x.id===agId;});
+  if (_agRealiz) _salvarSessoes(agId, _agRealiz.sessoes);
+
+  // Activate atendimentos section manually
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  const secEl = document.getElementById('sec-atendimentos');
+  if(secEl) secEl.classList.add('active');
+  document.querySelectorAll('.nav-tab').forEach(t => {
+    if(t.getAttribute('onclick') && t.getAttribute('onclick').includes("'atendimentos'"))
+      t.classList.add('active');
+  });
+
+  // Pre-fill form
+  selectedServicos = [];
+  selectedMateriais = {};
+  renderServiceChips();
+
+  const clienteEl = document.getElementById('atend-cliente');
+  if(clienteEl) clienteEl.value = ag.cliente;
+
+  const dataEl = document.getElementById('atend-data');
+  if(dataEl) dataEl.value = sessao.data;
+
+  // Pré-selecionar serviços da sessão específica
+  const srvIds = sessao.servicoIds && sessao.servicoIds.length
+    ? sessao.servicoIds
+    : (ag.servicoId ? [ag.servicoId] : []);
+
+  selectedServicos = [...srvIds];
+  renderServiceChips();
+
+  // Calcular valor total dos serviços selecionados
+  const total = srvIds.reduce(function(sum, id) {
+    const sv = db.servicos.find(x => x.id === id);
+    return sum + (sv ? parseFloat(sv.preco) || 0 : 0);
+  }, 0);
+  const valorEl = document.getElementById('atend-valor');
+  // Descontar sinal pago se existir
+  var sinalPago = parseFloat(ag.sinal) || 0;
+  var valorFinal = total > 0 ? Math.max(0, total - sinalPago) : 0;
+  if(valorEl) {
+    if(total > 0) {
+      valorEl.value = valorFinal.toFixed(2);
+      if(sinalPago > 0) {
+        // Mostrar painel informativo do sinal
+        var painelSinal = document.getElementById('painel-sinal');
+        if(!painelSinal) {
+          painelSinal = document.createElement('div');
+          painelSinal.id = 'painel-sinal';
+          painelSinal.style.cssText = 'background:#E7F7EE;border:1px solid #7DB87D;border-radius:10px;padding:0.75rem 1rem;margin-bottom:1rem;font-size:13px;color:#276749';
+          var formSection = document.querySelector('#sec-atendimentos .form-section');
+          if(formSection) formSection.parentNode.insertBefore(painelSinal, formSection);
+        }
+        painelSinal.innerHTML = '💰 <strong>Sinal registrado:</strong> R$ ' + sinalPago.toFixed(2).replace('.',',')
+          + ' &nbsp;|&nbsp; <strong>Valor do serviço:</strong> R$ ' + total.toFixed(2).replace('.',',')
+          + ' &nbsp;|&nbsp; <strong>Restante a pagar:</strong> R$ ' + valorFinal.toFixed(2).replace('.',',');
+      }
+    }
+  }
+
+  // Scroll to top
+  window.scrollTo(0, 0);
+
+  // Mostrar observações anteriores da cliente
+  var obsAnt = _obsHistorico(ag.cliente, 3);
+  if (obsAnt.length) {
+    var obsHtml = obsAnt.map(function(a) {
+      var sn = (a.servicoIds||[]).map(function(id){ var sv=db.servicos.find(function(x){return x.id===id;}); return sv?sv.nome:''; }).filter(Boolean).join(' + ')||'—';
+      return '<div style="padding:6px 10px;border-left:3px solid var(--gold);background:#FFFBF8;border-radius:0 6px 6px 0;margin-bottom:5px">'
+        + '<div style="font-size:10px;color:var(--text-light);margin-bottom:2px">' + sn + ' · ' + fmtDate(a.data) + '</div>'
+        + '<div style="font-size:12px;color:var(--text-dark)">' + a.obs + '</div>'
+        + '</div>';
+    }).join('');
+    var painelObs = document.getElementById('obs-historico-painel');
+    if (!painelObs) {
+      painelObs = document.createElement('div');
+      painelObs.id = 'obs-historico-painel';
+      painelObs.style.cssText = 'background:#FFF8F0;border:1px solid #F0C87A;border-radius:10px;padding:0.85rem 1rem;margin-bottom:1rem';
+      var formSection = document.querySelector('#sec-atendimentos .form-section');
+      if (formSection) formSection.parentNode.insertBefore(painelObs, formSection);
+    }
+    painelObs.innerHTML = '<div style="font-size:10px;letter-spacing:2px;color:#7A5C00;text-transform:uppercase;margin-bottom:0.5rem">📝 Observações de ' + ag.cliente + '</div>' + obsHtml;
+  } else {
+    var p = document.getElementById('obs-historico-painel');
+    if (p) p.remove();
+  }
+
+  // Verificar se foi a última sessão do ciclo
+  var _totalSessoes = ag.sessoes.length;
+  var _realizadas = ag.sessoes.filter(function(s){ return s.status === 'realizado'; }).length;
+  if (_realizadas === _totalSessoes) {
+    var t2 = document.getElementById('toast');
+    t2.innerHTML = '🎉 Ciclo completo! &nbsp;<button onclick="waPosCirclo(\'' + agId + '\')" style="background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.4);color:white;border-radius:6px;padding:2px 10px;font-size:11px;cursor:pointer;margin-left:4px">🏆 Parabenizar no WhatsApp</button>';
+    t2.classList.add('show');
+    setTimeout(function(){ t2.classList.remove('show'); t2.innerHTML=''; }, 8000);
+  } else {
+    showToast('✓ Sessão realizada! Preencha pagamento e registre o atendimento.');
+  }
+}
+
+function excluirAgenda(agId) {
+  const ag = db.agenda.find(x=>x.id===agId);
+  if(!ag) return;
+  if(!confirm(`Excluir agendamento de "${ag.cliente}"?
+Todas as ${ag.sessoes.length} sessões serão removidas.`)) return;
+  db.agenda = db.agenda.filter(x=>x.id!==agId);
+  saveData(); renderAll();
+  showToast('Agendamento excluído.');
+  _deletarAgenda(agId);
+}
+
+// ===================== LOG =====================
+function toggleLog() {
+  var p = document.getElementById('log-panel');
+  p.style.display = p.style.display === 'none' ? 'block' : 'none';
+}
+function addLog(type, msg) {
+  var el = document.getElementById('log-entries');
+  if (!el) return;
+  var d = document.createElement('div');
+  var color = type === 'ERROR' ? '#ff6b6b' : type === 'WARN' ? '#ffd93d' : '#a8d8a8';
+  var time = new Date().toLocaleTimeString('pt-BR');
+  d.style.cssText = 'padding:2px 0;border-bottom:1px solid #1C1C1E;color:'+color;
+  d.textContent = '['+time+'] '+type+': '+msg;
+  el.appendChild(d);
+  el.scrollTop = el.scrollHeight;
+  // Auto-show panel on error
+  if (type === 'ERROR') {
+    document.getElementById('log-panel').style.display = 'block';
+  }
+}
+// Intercept global errors
+window.onerror = function(msg, src, line, col, err) {
+  addLog('ERROR', msg + ' (linha ' + line + ')');
+  return false;
+};
+// Intercept unhandled promise rejections
+window.onunhandledrejection = function(e) {
+  addLog('ERROR', 'Promise: ' + (e.reason || e));
+};
+// Wrap console
+(function() {
+  var origError = console.error.bind(console);
+  var origWarn = console.warn.bind(console);
+  var origLog = console.log.bind(console);
+  console.error = function() {
+    addLog('ERROR', Array.prototype.join.call(arguments, ' '));
+    origError.apply(console, arguments);
+  };
+  console.warn = function() {
+    addLog('WARN', Array.prototype.join.call(arguments, ' '));
+    origWarn.apply(console, arguments);
+  };
+  console.log = function() {
+    addLog('INFO', Array.prototype.join.call(arguments, ' '));
+    origLog.apply(console, arguments);
+  };
+})();
+addLog('INFO', 'Sistema iniciando...');
+
+// ===== AGENDA FILTERS =====
+function limparFiltrosAgenda() {
+  const c = document.getElementById('agBuscaCliente');
+  const d = document.getElementById('agBuscaData');
+  const dAte = document.getElementById('agBuscaDataAte');
+  if(c) c.value = '';
+  if(d) d.value = '';
+  if(dAte) dAte.value = '';
+  renderAgenda();
+}
+
+// ===== AGENDA EDIT =====
+function editarAgenda(agId) {
+  const ag = db.agenda.find(x => x.id === agId);
+  if (!ag) return;
+
+  // Build session rows with multi-service chips
+  const sessaoRows = ag.sessoes.map((s, i) => {
+    const selecionados = s.servicoIds || (s.servico ? [s.servico] : []);
+    const chipsHtml = db.servicos.filter(sv=>sv.status==='ativo').map(sv => {
+      const sel = selecionados.includes(sv.nome) || selecionados.includes(sv.id);
+      return `<span class="service-chip${sel?' selected':''}" style="font-size:11px;padding:2px 8px;cursor:pointer" onclick="this.classList.toggle('selected')">${sv.nome}</span>`;
+    }).join('');
+    return `
+    <div id="agedit-sessao-${agId}-${i}" style="display:flex;align-items:flex-start;gap:0.5rem;margin-bottom:8px;flex-wrap:wrap">
+      <span style="font-size:11px;color:var(--text-light);min-width:55px;padding-top:4px">Sessão ${i+1}</span>
+      <input type="date" id="agedit-data-${agId}-${i}" value="${s.data}"
+        style="padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:Jost,sans-serif;outline:none;${s.status==='realizado'?'opacity:0.5;pointer-events:none':''}">
+      <input type="time" id="agedit-hora-${agId}-${i}" value="${s.hora||''}"
+        style="width:90px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:Jost,sans-serif;outline:none;${s.status==='realizado'?'opacity:0.5;pointer-events:none':''}">
+      <div id="agedit-chips-${agId}-${i}" style="display:flex;flex-wrap:wrap;gap:4px">
+        <input type="text" placeholder="🔍 Filtrar serviços..." oninput="(function(el){var v=el.value.toLowerCase();el.parentElement.querySelectorAll('.service-chip').forEach(function(c){c.style.display=c.textContent.toLowerCase().includes(v)?'':'none';});})(this)" style="width:100%;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px;font-family:Jost,sans-serif;outline:none;margin-bottom:4px">
+        ${chipsHtml}
+      </div>
+      <span class="badge-pill ${s.status==='realizado'?'badge-ativo':'badge-pendente'}" style="font-size:10px;align-self:center">${s.status==='realizado'?'✓ Realizado':'Pendente'}</span>
+      ${s.status !== 'realizado' ? `<button onclick="removerSessaoEdit('${agId}',${i})" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:14px;padding:0 4px;align-self:center">✕</button>` : ''}
+    </div>`;
+  }).join('');
+
+  const modal = document.createElement('div');
+  modal.id = 'agenda-edit-modal';
+  modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(44,26,34,0.65);z-index:9997;display:flex;align-items:center;justify-content:center;padding:1rem';
+  modal.innerHTML = `
+    <div style="background:white;border-radius:16px;max-width:600px;width:100%;max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
+      <div style="padding:1.2rem 1.5rem;background:linear-gradient(135deg,#1C1C1E,#2C2C2E);border-radius:16px 16px 0 0;display:flex;justify-content:space-between;align-items:center">
+        <span style="font-family:'Cormorant Garamond',serif;font-size:18px;color:#FAF0F2;letter-spacing:2px">✏️ Editar Agendamento</span>
+        <button onclick="document.getElementById('agenda-edit-modal').remove()" style="background:none;border:none;color:#FAF0F2;font-size:20px;cursor:pointer">✕</button>
+      </div>
+      <div style="padding:1.5rem">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
+          <div>
+            <div style="font-size:10px;letter-spacing:2px;color:var(--text-light);margin-bottom:4px">CLIENTE</div>
+            <input type="text" id="agedit-cliente-${agId}" value="${ag.cliente}"
+              style="width:100%;padding:0.5rem 0.75rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none">
+          </div>
+        </div>
+        <div style="margin-bottom:1rem">
+          <div style="font-size:10px;letter-spacing:2px;color:var(--text-light);margin-bottom:4px">OBSERVAÇÃO</div>
+          <input type="text" id="agedit-obs-${agId}" value="${ag.obs||''}"
+            style="width:100%;padding:0.5rem 0.75rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none">
+        </div>
+        <div style="margin-bottom:1rem">
+          <div style="font-size:10px;letter-spacing:2px;color:var(--text-light);margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
+            <span>SESSÕES</span>
+            <button onclick="adicionarSessaoEdit('${agId}')" class="btn btn-secondary btn-sm" style="font-size:11px">+ Adicionar Sessão</button>
+          </div>
+          <div id="agedit-sessoes-${agId}" style="background:var(--off-white);border-radius:8px;padding:0.75rem">
+            ${sessaoRows}
+          </div>
+        </div>
+        <div style="display:flex;gap:0.75rem">
+          <button class="btn btn-primary" onclick="salvarEdicaoAgenda('${agId}')">✓ Salvar</button>
+          <button class="btn btn-secondary" onclick="document.getElementById('agenda-edit-modal').remove()">Cancelar</button>
+        </div>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+}
+
+function adicionarSessaoEdit(agId) {
+  const ag = db.agenda.find(x => x.id === agId);
+  if (!ag) return;
+  const container = document.getElementById('agedit-sessoes-' + agId);
+  if (!container) return;
+  const hoje = _hoje();
+  const i = container.querySelectorAll('[id^="agedit-sessao-"]').length;
+  const div = document.createElement('div');
+  div.id = `agedit-sessao-${agId}-${i}`;
+  div.style.cssText = 'display:flex;align-items:center;gap:0.5rem;margin-bottom:6px;flex-wrap:wrap';
+  const chipsNova = db.servicos.filter(s=>s.status==='ativo').map(s=>`<span class="service-chip" style="font-size:11px;padding:2px 8px;cursor:pointer" onclick="this.classList.toggle('selected')">${s.nome}</span>`).join('');
+  div.innerHTML = `
+    <span style="font-size:11px;color:var(--text-light);min-width:55px;padding-top:4px">Sessão ${i+1}</span>
+    <input type="date" id="agedit-data-${agId}-${i}" value="${hoje}"
+      style="padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:Jost,sans-serif;outline:none">
+    <input type="time" id="agedit-hora-${agId}-${i}" value=""
+      style="width:90px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:Jost,sans-serif;outline:none">
+    <div id="agedit-chips-${agId}-${i}" style="display:flex;flex-wrap:wrap;gap:4px">
+      <input type="text" placeholder="🔍 Filtrar serviços..." oninput="(function(el){var v=el.value.toLowerCase();el.parentElement.querySelectorAll('.service-chip').forEach(function(c){c.style.display=c.textContent.toLowerCase().includes(v)?'':'none';});})(this)" style="width:100%;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px;font-family:Jost,sans-serif;outline:none;margin-bottom:4px">
+      ${chipsNova}
+    </div>
+    <span class="badge-pill badge-pendente" style="font-size:10px;align-self:center">Pendente</span>
+    <button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:14px;padding:0 4px;align-self:center">✕</button>`;
+  container.appendChild(div);
+}
+
+function removerSessaoEdit(agId, idx) {
+  const el = document.getElementById(`agedit-sessao-${agId}-${idx}`);
+  if (el) el.remove();
+}
+
+function salvarEdicaoAgenda(agId) {
+  const ag = db.agenda.find(x => x.id === agId);
+  if (!ag) return;
+
+  const novoCliente = (document.getElementById('agedit-cliente-' + agId) || {value: ag.cliente}).value.trim();
+  const novaObs = (document.getElementById('agedit-obs-' + agId) || {value: ''}).value;
+
+  ag.cliente = novoCliente || ag.cliente;
+  ag.obs = novaObs;
+
+  // Rebuild sessions from edit form
+  const container = document.getElementById('agedit-sessoes-' + agId);
+  if (container) {
+    const novasSessoes = [];
+    const rows = container.querySelectorAll('[id^="agedit-sessao-"]');
+    rows.forEach((row, i) => {
+      const dateInput = row.querySelector('input[type=date]');
+      if (!dateInput || !dateInput.value) return;
+      // Check if session was already realizado
+      const oldSessao = ag.sessoes[i];
+      const status = (oldSessao && oldSessao.status === 'realizado') ? 'realizado' : 'pendente';
+      const chipsContainer = document.getElementById(`agedit-chips-${agId}-${i}`);
+      const srvSelecionados = [];
+      if (chipsContainer) {
+        chipsContainer.querySelectorAll('.service-chip.selected').forEach(function(el){ srvSelecionados.push(el.textContent.trim()); });
+      }
+      const sess = { data: dateInput.value, hora: (document.getElementById(`agedit-hora-${agId}-${i}`)||{value:''}).value, status: status, atendimentoId: null };
+      if (srvSelecionados.length) { sess.servicoIds = srvSelecionados; sess.servico = srvSelecionados.join(' + '); }
+      else if (oldSessao && oldSessao.servico) { sess.servico = oldSessao.servico; sess.servicoIds = oldSessao.servicoIds||[]; }
+      if (oldSessao && oldSessao.checkinData) { sess.checkinData = oldSessao.checkinData; sess.checkinHora = oldSessao.checkinHora; sess.checkinNome = oldSessao.checkinNome; }
+      novasSessoes.push(sess);
+    });
+    if (novasSessoes.length) {
+      novasSessoes.sort((a, b) => a.data.localeCompare(b.data));
+      ag.sessoes = novasSessoes;
+    }
+  }
+
+  document.getElementById('agenda-edit-modal').remove();
+  saveData(); renderAll();
+  showToast('Agendamento atualizado!');
+  _salvarAgenda(ag);
+}
+
+// ===== ICS =====
+function importarICS(e) {
+  var file = e.target.files[0];
+  if (!file) return;
+  e.target.value = '';
+  var reader = new FileReader();
+  reader.onload = function(ev) {
+    try {
+      var eventos = parseICS(ev.target.result);
+      if (!eventos.length) { showToast('Nenhum evento futuro encontrado.'); return; }
+      window._icsEv = eventos;
+      abrirModalICS(eventos);
+    } catch(err) {
+      console.error('ICS parse error: ' + err.message);
+      showToast('Erro ao ler o arquivo.');
+    }
+  };
+  reader.readAsText(file);
+}
+
+function parseICS(text) {
+  var hoje = _hoje();
+  var raw = text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n');
+  var lines = [];
+  for (var i = 0; i < raw.length; i++) {
+    if ((raw[i][0] === ' ' || raw[i][0] === '\t') && lines.length) {
+      lines[lines.length-1] += raw[i].slice(1);
+    } else {
+      lines.push(raw[i]);
+    }
+  }
+
+  var rawEvents = [];
+  var cur = null;
+  for (var j = 0; j < lines.length; j++) {
+    var ln = lines[j];
+    if (ln === 'BEGIN:VEVENT') { cur = {}; continue; }
+    if (ln === 'END:VEVENT') {
+      if (cur && cur.dataInicio && cur.titulo) rawEvents.push(cur);
+      cur = null; continue;
+    }
+    if (!cur) continue;
+    if (ln.indexOf('SUMMARY') === 0) cur.titulo = ln.split(':').slice(1).join(':').trim();
+    if (ln.indexOf('DTSTART') === 0) {
+      var dtRaw = ln.split(':').slice(1).join(':');
+      var vDate = dtRaw.replace(/T[\s\S]*/,'').replace(/[^0-9]/g,'');
+      if (vDate.length >= 8) cur.dataInicio = vDate.slice(0,4)+'-'+vDate.slice(4,6)+'-'+vDate.slice(6,8);
+      var tMatch = dtRaw.match(/T(\d{2})(\d{2})/);
+      if (tMatch) cur.hora = tMatch[1]+':'+tMatch[2];
+    }
+    if (ln.indexOf('RRULE') === 0) cur.rrule = ln.split(':').slice(1).join(':').trim();
+    if (ln.indexOf('RECURRENCE-ID') === 0) cur.isException = true;
+    if (ln.indexOf('DESCRIPTION') === 0) cur.desc = ln.split(':').slice(1).join(':').trim().replace(/\\n/g,' ').replace(/\\,/g,',');
+  }
+
+  // FIX 1: Skip RECURRENCE-ID exceptions
+  var baseEvents = [];
+  for (var k = 0; k < rawEvents.length; k++) {
+    if (!rawEvents[k].isException) baseEvents.push(rawEvents[k]);
+  }
+
+  // Group by client name
+  var grupos = {};
+  for (var b = 0; b < baseEvents.length; b++) {
+    var ev = baseEvents[b];
+    var key = ev.titulo.toLowerCase().trim();
+    if (!grupos[key]) grupos[key] = { titulo: ev.titulo, desc: ev.desc || '', sessoes: [] };
+    // Update desc if newer
+    if (ev.desc) grupos[key].desc = ev.desc;
+
+    var datas = [];
+    if (ev.rrule && ev.rrule.indexOf('FREQ=DAILY') >= 0) {
+      datas = expandirDiario(ev.dataInicio, ev.rrule);
+    } else if (ev.rrule && ev.rrule.indexOf('FREQ=WEEKLY') >= 0) {
+      // FIX 2: Handle weekly recurrence
+      datas = expandirSemanal(ev.dataInicio, ev.rrule);
+    } else {
+      datas = [ev.dataInicio];
+    }
+
+    for (var s = 0; s < datas.length; s++) {
+      if (datas[s] >= hoje) {
+        grupos[key].sessoes.push({ data: datas[s], hora: ev.hora||'', status: 'pendente', atendimentoId: null });
+      }
+    }
+  }
+
+  // Sort, deduplicate, skip empty
+  var eventos = [];
+  for (var g in grupos) {
+    var grp = grupos[g];
+    if (!grp.sessoes.length) continue;
+    grp.sessoes.sort(function(a,b){ return a.data.localeCompare(b.data); });
+    var seen = {};
+    var unique = [];
+    for (var u = 0; u < grp.sessoes.length; u++) {
+      if (!seen[grp.sessoes[u].data]) {
+        seen[grp.sessoes[u].data] = true;
+        unique.push(grp.sessoes[u]);
+      }
+    }
+    grp.sessoes = unique;
+    eventos.push(grp);
+  }
+
+  console.log('ICS parsed: ' + eventos.length + ' cliente(s)');
+  return eventos;
+}
+
+function expandirDiario(dataInicio, rrule) {
+  var datas = [];
+  var parts = rrule.split(';');
+  var until = null;
+  var count = 0;
+  for (var i = 0; i < parts.length; i++) {
+    if (parts[i].indexOf('UNTIL=') === 0) {
+      var u = parts[i].replace('UNTIL=','').replace(/T[\s\S]*/,'').replace(/[^0-9]/g,'');
+      if (u.length >= 8) until = u.slice(0,4)+'-'+u.slice(4,6)+'-'+u.slice(6,8);
+    }
+    if (parts[i].indexOf('COUNT=') === 0) count = parseInt(parts[i].replace('COUNT=','')) || 0;
+  }
+  var current = new Date(dataInicio + 'T12:00:00');
+  var maxLoop = count > 0 ? count : 365;
+  var n = 0;
+  while (n < maxLoop) {
+    var y = current.getFullYear();
+    var m = String(current.getMonth()+1).padStart(2,'0');
+    var d = String(current.getDate()).padStart(2,'0');
+    var dateStr = y+'-'+m+'-'+d;
+    if (until && dateStr >= until) break;
+    datas.push(dateStr);
+    n++;
+    current.setDate(current.getDate() + 1);
+  }
+  return datas;
+}
+
+function expandirSemanal(dataInicio, rrule) {
+  var datas = [];
+  var parts = rrule.split(';');
+  var until = null;
+  var count = 0;
+  var byDay = [];
+  // Day name to JS day index (0=Sun)
+  var dayMap = { SU:0, MO:1, TU:2, WE:3, TH:4, FR:5, SA:6 };
+
+  for (var i = 0; i < parts.length; i++) {
+    if (parts[i].indexOf('UNTIL=') === 0) {
+      var u = parts[i].replace('UNTIL=','').replace(/T[\s\S]*/,'').replace(/[^0-9]/g,'');
+      if (u.length >= 8) until = u.slice(0,4)+'-'+u.slice(4,6)+'-'+u.slice(6,8);
+    }
+    if (parts[i].indexOf('COUNT=') === 0) count = parseInt(parts[i].replace('COUNT=','')) || 0;
+    if (parts[i].indexOf('BYDAY=') === 0) {
+      var days = parts[i].replace('BYDAY=','').split(',');
+      for (var d = 0; d < days.length; d++) {
+        var dayCode = days[d].replace(/[^A-Z]/g,'');
+        if (dayMap[dayCode] !== undefined) byDay.push(dayMap[dayCode]);
+      }
+    }
+  }
+
+  // If no BYDAY, use day of week from dataInicio
+  if (!byDay.length) {
+    var startDate = new Date(dataInicio + 'T12:00:00');
+    byDay.push(startDate.getDay());
+  }
+
+  // Limit: 6 months ahead if no UNTIL/COUNT
+  var hoje = new Date();
+  var limitDate = new Date(hoje);
+  if (!until && !count) {
+    limitDate.setMonth(limitDate.getMonth() + 6);
+    until = limitDate.getFullYear()+'-'+String(limitDate.getMonth()+1).padStart(2,'0')+'-'+String(limitDate.getDate()).padStart(2,'0');
+  }
+
+  var maxLoop = count > 0 ? count * 7 : 365;
+  var current = new Date(dataInicio + 'T12:00:00');
+  var found = 0;
+  var maxCount = count > 0 ? count : 999;
+  var n = 0;
+
+  while (n < maxLoop && found < maxCount) {
+    var y = current.getFullYear();
+    var mo = String(current.getMonth()+1).padStart(2,'0');
+    var dy = String(current.getDate()).padStart(2,'0');
+    var dateStr = y+'-'+mo+'-'+dy;
+    if (until && dateStr > until) break;
+    if (byDay.indexOf(current.getDay()) >= 0) {
+      datas.push(dateStr);
+      found++;
+    }
+    n++;
+    current.setDate(current.getDate() + 1);
+  }
+  return datas;
+}
+
+function _getStatusSessao(clienteNome, data, servicoId) {
+  var nomeNorm = clienteNome.toLowerCase().trim();
+  for (var i = 0; i < db.agenda.length; i++) {
+    var ag = db.agenda[i];
+    if (ag.cliente.toLowerCase().trim() !== nomeNorm) continue;
+    for (var s = 0; s < ag.sessoes.length; s++) {
+      if (ag.sessoes[s].data === data) {
+        if (servicoId && ag.servicoId === servicoId) return 'duplicado';
+        return 'atualizacao';
+      }
+    }
+  }
+  return 'novo';
+}
+
+function abrirModalICS(eventos) {
+  var old = document.getElementById('ics-modal');
+  if (old) old.remove();
+  var opts = '';
+  for (var k = 0; k < db.servicos.length; k++) {
+    if (db.servicos[k].status === 'ativo') {
+      opts += '<option value="' + db.servicos[k].id + '">' + db.servicos[k].nome + '</option>';
+    }
+  }
+  var rows = '';
+  for (var i = 0; i < eventos.length; i++) {
+    var ev = eventos[i];
+    var qtd = ev.sessoes.length;
+    var datasHtml = '';
+    for (var s = 0; s < ev.sessoes.length; s++) {
+      var st = _getStatusSessao(ev.titulo, ev.sessoes[s].data, '');
+      var badge = '';
+      if (st === 'duplicado') badge = '<span style="font-size:10px;background:#F0F0F0;color:#999;padding:2px 7px;border-radius:10px;margin-left:6px">Ja existe</span>';
+      else if (st === 'atualizacao') badge = '<span style="font-size:10px;background:#F5F8E8;color:#F57F17;padding:2px 7px;border-radius:10px;margin-left:6px">Atualizacao</span>';
+      else badge = '<span style="font-size:10px;background:#E8F5E9;color:#388E3C;padding:2px 7px;border-radius:10px;margin-left:6px">Novo</span>';
+      var chipsICS = db.servicos.filter(function(sv){return sv.status==='ativo';}).map(function(sv){
+        return '<span class="service-chip" style="font-size:10px;padding:2px 6px;cursor:pointer" id="icchip_'+i+'_'+s+'_'+sv.id+'" onclick="this.classList.toggle(\'selected\')">'+sv.nome+'</span>';
+      }).join('');
+      datasHtml += '<div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:6px;flex-wrap:wrap">'
+        + '<span style="font-size:11px;color:#98989D;min-width:60px">Sessao '+(s+1)+'</span>'
+        + '<input type="date" id="icdate_'+i+'_'+s+'" value="'+ev.sessoes[s].data+'" '
+        + 'style="padding:3px 6px;border:1px solid #E5E5EA;border-radius:6px;font-size:12px;font-family:Jost,sans-serif;outline:none">'
+        + '<input type="time" id="ichora_'+i+'_'+s+'" value="'+(ev.sessoes[s].hora||'')+'" '
+        + 'style="width:80px;padding:3px 4px;border:1px solid #E5E5EA;border-radius:6px;font-size:12px;font-family:Jost,sans-serif;outline:none">'
+        + '<div style="display:flex;flex-wrap:wrap;gap:3px">'+chipsICS+'</div>'
+        + badge + '</div>';
+    }
+    rows += '<div style="border:1px solid #E5E5EA;border-radius:8px;padding:0.8rem;margin-bottom:0.75rem;background:#FAFAFA">'
+      + '<div style="display:flex;gap:0.75rem;align-items:flex-start">'
+      + '<input type="checkbox" id="ic'+i+'" checked style="margin-top:3px;accent-color:#D4A0A8">'
+      + '<div style="flex:1">'
+      + '<div style="font-weight:600;font-size:13px;margin-bottom:8px">'+ev.titulo
+      + ' <span style="font-weight:400;color:#98989D;font-size:12px">('+qtd+' sessao(oes))</span></div>'
+      + '<div style="display:grid;grid-template-columns:1fr 80px;gap:0.5rem;margin-bottom:8px">'
+      + '<div><div style="font-size:10px;color:#98989D;margin-bottom:2px;letter-spacing:1px">CLIENTE</div>'
+      + '<input type="text" id="icl'+i+'" value="'+ev.titulo+'" style="width:100%;padding:0.4rem 0.6rem;border:1px solid #E5E5EA;border-radius:6px;font-size:12px;font-family:Jost,sans-serif;outline:none"></div>'
+      + '<div><div style="font-size:10px;color:#98989D;margin-bottom:2px;letter-spacing:1px">SESSOES</div>'
+      + '<input type="number" id="icqtd'+i+'" value="'+qtd+'" min="1" max="200" '
+      + 'style="width:100%;padding:0.4rem 0.6rem;border:1px solid #E5E5EA;border-radius:6px;font-size:12px;font-family:Jost,sans-serif;outline:none" '
+      + 'onchange="atualizarDatasICS('+i+',this.value)"></div>'
+      + '</div>'
+      + '<div id="icdatas'+i+'" style="background:#F5F5F7;border-radius:6px;padding:0.5rem;max-height:200px;overflow-y:auto">'
+      + datasHtml + '</div>'
+      + '</div></div></div>';
+  }
+  var d = document.createElement('div');
+  d.id = 'ics-modal';
+  d.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(44,26,34,0.65);z-index:9998;display:flex;align-items:center;justify-content:center;padding:1rem';
+  d.innerHTML = '<div style="background:white;border-radius:16px;max-width:680px;width:100%;max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3)">'
+    + '<div style="padding:1.2rem 1.5rem;background:linear-gradient(135deg,#1C1C1E,#2C2C2E);border-radius:16px 16px 0 0;display:flex;justify-content:space-between;align-items:center">'
+    + '<span style="font-family:Cormorant Garamond,serif;font-size:18px;color:#FAF0F2;letter-spacing:2px">Importar Google Agenda</span>'
+    + '<button onclick="document.getElementById(\'ics-modal\').remove()" style="background:none;border:none;color:#FAF0F2;font-size:20px;cursor:pointer">x</button>'
+    + '</div>'
+    + '<div style="padding:0.75rem 1.5rem;background:#FAFAFA;border-bottom:1px solid #E5E5EA;display:flex;gap:1rem;font-size:11px;flex-wrap:wrap">'
+    + '<span><span style="background:#E8F5E9;color:#388E3C;padding:2px 7px;border-radius:10px">Novo</span> sera adicionado</span>'
+    + '<span><span style="background:#F5F8E8;color:#F57F17;padding:2px 7px;border-radius:10px">Atualizacao</span> atualizara existente</span>'
+    + '<span><span style="background:#F0F0F0;color:#999;padding:2px 7px;border-radius:10px">Ja existe</span> sera ignorado</span>'
+    + '</div>'
+    + '<div style="padding:1.5rem">'
+    + '<p style="font-size:12px;color:#98989D;margin-bottom:1rem">'+eventos.length+' cliente(s) com sessoes de hoje em diante.</p>'
+    + rows
+    + '<div style="display:flex;gap:0.75rem;margin-top:1rem">'
+    + '<button class="btn btn-primary" onclick="confirmarICS('+eventos.length+')">Importar Selecionados</button>'
+    + '<button class="btn btn-secondary" onclick="document.getElementById(\'ics-modal\').remove()">Cancelar</button>'
+    + '</div></div></div>';
+  document.body.appendChild(d);
+}
+
+function atualizarBadgesICS(evIdx) {
+  var ev = window._icsEv[evIdx];
+  var servicoId = (document.getElementById('icv'+evIdx)||{value:''}).value;
+  var cliente = (document.getElementById('icl'+evIdx)||{value:ev.titulo}).value;
+  var container = document.getElementById('icdatas'+evIdx);
+  if (!container) return;
+  var rows = container.querySelectorAll('div');
+  var inputs = container.querySelectorAll('input[type=date]');
+  for (var s = 0; s < inputs.length; s++) {
+    var data = inputs[s].value;
+    var st = _getStatusSessao(cliente, data, servicoId);
+    var span = inputs[s].nextSibling;
+    if (span && span.style) {
+      if (st === 'duplicado') { span.style.background='#F0F0F0'; span.style.color='#999'; span.textContent='Ja existe'; }
+      else if (st === 'atualizacao') { span.style.background='#F5F8E8'; span.style.color='#F57F17'; span.textContent='Atualizacao'; }
+      else { span.style.background='#E8F5E9'; span.style.color='#388E3C'; span.textContent='Novo'; }
+    }
+  }
+}
+
+function atualizarDatasICS(evIdx, novaQtd) {
+  var qtd = parseInt(novaQtd) || 1;
+  var ev = window._icsEv[evIdx];
+  var container = document.getElementById('icdatas'+evIdx);
+  if (!container) return;
+  var inputs = container.querySelectorAll('input[type=date]');
+  var existing = [];
+  for (var i = 0; i < inputs.length; i++) existing.push(inputs[i].value);
+  var html = '';
+  for (var s = 0; s < qtd; s++) {
+    var val = existing[s] || (ev.sessoes[s] ? ev.sessoes[s].data : ev.sessoes[0].data);
+    var st = _getStatusSessao(ev.titulo, val, '');
+    var badge = '';
+    if (st === 'duplicado') badge = '<span style="font-size:10px;background:#F0F0F0;color:#999;padding:2px 7px;border-radius:10px;margin-left:6px">Ja existe</span>';
+    else if (st === 'atualizacao') badge = '<span style="font-size:10px;background:#F5F8E8;color:#F57F17;padding:2px 7px;border-radius:10px;margin-left:6px">Atualizacao</span>';
+    else badge = '<span style="font-size:10px;background:#E8F5E9;color:#388E3C;padding:2px 7px;border-radius:10px;margin-left:6px">Novo</span>';
+    html += '<div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:4px">'
+      + '<span style="font-size:11px;color:#98989D;min-width:60px">Sessao '+(s+1)+'</span>'
+      + '<input type="date" id="icdate_'+evIdx+'_'+s+'" value="'+val+'" '
+      + 'style="padding:3px 6px;border:1px solid #E5E5EA;border-radius:6px;font-size:12px;font-family:Jost,sans-serif;outline:none">'
+      + badge + '</div>';
+  }
+  container.innerHTML = html;
+}
+
+function confirmarICS(total) {
+  var count = 0;
+  for (var i = 0; i < total; i++) {
+    var chk = document.getElementById('ic'+i);
+    if (!chk || !chk.checked) continue;
+    var cliente = (document.getElementById('icl'+i)||{value:''}).value.trim();
+    var servicoIds = [];
+    var servicoId = '';
+    var servicoNomes = [];
+    var qtd = parseInt((document.getElementById('icqtd'+i)||{value:'1'}).value) || 1;
+    var ev = window._icsEv[i];
+    // Build sessions - skip exact duplicates
+    var sessoes = [];
+    for (var s = 0; s < qtd; s++) {
+      var dateEl = document.getElementById('icdate_'+i+'_'+s);
+      var data = dateEl ? dateEl.value : (ev.sessoes[s] ? ev.sessoes[s].data : '');
+      if (!data) continue;
+      var st = _getStatusSessao(cliente, data, servicoId);
+      if (st === 'duplicado') continue;
+      var horaICSEl = document.getElementById('ichora_'+i+'_'+s);
+      var horaICS = horaICSEl ? horaICSEl.value : (ev.sessoes[s] ? ev.sessoes[s].hora||'' : '');
+      var srvIds = db.servicos.filter(function(sv){
+        var el = document.getElementById('icchip_'+i+'_'+s+'_'+sv.id);
+        return el && el.classList.contains('selected');
+      }).map(function(sv){ return sv.id; });
+      sessoes.push({ data: data, hora: horaICS, status: 'pendente', atendimentoId: null,
+        servicoIds: srvIds, servico: srvIds.map(function(id){ var sv=db.servicos.find(function(x){return x.id===id;}); return sv?sv.nome:''; }).join(' + ') });
+    }
+
+    var nomeNorm = cliente.toLowerCase().trim();
+    var existingIdx = -1;
+    for (var a = 0; a < db.agenda.length; a++) {
+      if (db.agenda[a].cliente.toLowerCase().trim() === nomeNorm) { existingIdx = a; break; }
+    }
+
+    if (existingIdx >= 0) {
+      // FIX 3: Update existing - update name, obs, service AND merge sessions
+      db.agenda[existingIdx].cliente = cliente;
+      if (ev.desc) db.agenda[existingIdx].obs = ev.desc;
+      if (servicoId) { db.agenda[existingIdx].servicoId = servicoId; db.agenda[existingIdx].servicoIds = servicoIds; }
+      if (servicoNomes.length) db.agenda[existingIdx].servicoNome = servicoNomes.join(' + ');
+      // Remove sessions that will be replaced, add new ones
+      if (sessoes.length) {
+        var replaceDates = {};
+        for (var ns = 0; ns < sessoes.length; ns++) replaceDates[sessoes[ns].data] = true;
+        db.agenda[existingIdx].sessoes = db.agenda[existingIdx].sessoes.filter(function(s2) {
+          return !replaceDates[s2.data];
+        });
+        for (var ns2 = 0; ns2 < sessoes.length; ns2++) db.agenda[existingIdx].sessoes.push(sessoes[ns2]);
+        db.agenda[existingIdx].sessoes.sort(function(a2,b2){ return a2.data.localeCompare(b2.data); });
+      }
+      count++;
+    } else if (sessoes.length) {
+      // New client
+      db.agenda.push({
+        id: uid(),
+        cliente: cliente || ev.titulo,
+        servicoId: servicoId,
+        servicoIds: servicoIds,
+        servicoNome: servicoNomes.length ? servicoNomes.join(' + ') : '(sem servico)',
+        obs: ev.desc || 'Importado do Google Agenda',
+        sessoes: sessoes
+      });
+      count++;
+    }
+  }
+  document.getElementById('ics-modal').remove();
+  saveData(); renderAll();
+  showToast(count + ' agendamento(s) processado(s)!');
+  console.log('ICS importado: ' + count);
+}
+
+// ===== ANAMNESE HELPERS =====
+function toggleColarTexto() {
+  var wrap = document.getElementById('colarTextoWrap');
+  if(!wrap) return;
+  wrap.style.display = wrap.style.display === 'none' ? 'block' : 'none';
+  if(wrap.style.display === 'block') {
+    var ta = document.getElementById('textoFichaCliente');
+    if(ta) { ta.value=''; ta.focus(); }
+  }
+}
+
+function importarTextoFicha() {
+  var ta = document.getElementById('textoFichaCliente');
+  if(!ta || !ta.value.trim()) { showToast('Cole o texto da ficha primeiro!'); return; }
+  var txt = ta.value;
+
+  function extrai(label, txt) {
+    var re = new RegExp(label + '[:\\s]+([^\\n]+)', 'i');
+    var m = txt.match(re);
+    return m ? m[1].trim().replace(/^[\*_]+|[\*_]+$/g,'').trim() : '';
+  }
+  function extraiSimNao(label, txt) {
+    var val = extrai(label, txt);
+    if(!val) return '';
+    if(/^sim/i.test(val)) return 'sim';
+    if(/^n/i.test(val)) return 'não';
+    return val;
+  }
+  function extraiDetalhe(label, txt) {
+    var val = extrai(label, txt);
+    if(!val) return {resp:'', detalhe:''};
+    var parts = val.split(/[-·]/);
+    return {
+      resp: parts[0].trim().toLowerCase(),
+      detalhe: parts.slice(1).join('-').trim()
+    };
+  }
+
+  // Parse fields
+  var nome = extrai('Nome', txt);
+  if(!nome) { showToast('Não consegui ler o nome. Verifique o texto!'); return; }
+
+  var doencaD = extraiDetalhe('Doen[cç]a[^:]*', txt);
+  var medD = extraiDetalhe('Medica[cç][aã]o[^:]*', txt);
+  var injD = extraiDetalhe('Produto injetado', txt);
+  var cirD = extraiDetalhe('Cirurgia', txt);
+  var aleD = extraiDetalhe('Alergia', txt);
+  var antiD = extraiDetalhe('Anticoncepcional', txt);
+
+  // Build dados object matching existing format
+  var dados = {
+    tipo: 'anamnese_cliente',
+    versao: '1.0',
+    dataPreenchimento: extrai('Data', txt),
+    informacoesPessoais: {
+      nome: nome,
+      idade: extrai('Idade', txt).split(/[|·]/)[0].trim(),
+      genero: extrai('G[eê]nero', txt),
+
+      dataNascimento: (function(){ var n=extrai('Nascimento', txt); if(!n) return ''; var p=n.split('/'); return p.length===3?p[2]+'-'+p[1]+'-'+p[0]:''; })(),
+      telefone: extrai('Telefone', txt),
+      cpf: extrai('CPF', txt),
+      temFilhos: extraiSimNao('Filhos', txt),
+      dataFilhos: ''
+    },
+    historicoSaude: {
+      doencaDiagnosticada: doencaD.resp,
+      doencaQual: doencaD.detalhe,
+      medicacaoContinua: medD.resp,
+      medicacaoQual: medD.detalhe,
+      produtoInjetado: injD.resp,
+      produtoQual: injD.detalhe,
+      cirurgia: cirD.resp,
+      cirurgiaQual: cirD.detalhe,
+      alergia: aleD.resp,
+      alergiaQual: aleD.detalhe,
+      marcapasso: extraiSimNao('Marcapasso[^:]*', txt),
+      problemasCirculatorios: extraiSimNao('(?:Prob[^:]*circulat|circulat)[^:]*', txt),
+      hipertensao: extraiSimNao('Hipertens[aã]o', txt),
+      diabetes: extraiSimNao('Diabetes', txt)
+    },
+    hormonal: {
+      cicloMenstrual: extrai('Ciclo menstrual', txt),
+      gravidaAmamentando: extraiSimNao('Gr[aá]vida[^:]*', txt),
+      anticoncepcional: antiD.resp,
+      antiQual: antiD.detalhe
+    }
+  };
+
+  // Use existing importarAnamnese logic - call with parsed dados
+  var setVal = function(id, v) { var el=document.getElementById(id); if(el&&v) el.value=v; };
+  var setSel = function(id, v) { var el=document.getElementById(id); if(!el||!v) return;
+    for(var i=0;i<el.options.length;i++){ if(el.options[i].value.toLowerCase()===v.toLowerCase()){ el.selectedIndex=i; return; } }
+  };
+
+  novaAnamnese();
+  var p = dados.informacoesPessoais;
+  setVal('an-nome', p.nome); setVal('an-idade', p.idade);
+  setSel('an-genero', p.genero); setVal('an-dataNasc', p.dataNascimento);
+  setVal('an-telefone', p.telefone); setVal('an-cpf', p.cpf||''); setSel('an-filhos', p.temFilhos);
+
+  var s = dados.historicoSaude;
+  setSel('an-doenca', s.doencaDiagnosticada); setVal('an-doencaQual', s.doencaQual);
+  setSel('an-medicacao', s.medicacaoContinua); setVal('an-medicacaoQual', s.medicacaoQual);
+  setSel('an-injetado', s.produtoInjetado); setVal('an-injetadoQual', s.produtoQual);
+  setSel('an-cirurgia', s.cirurgia); setVal('an-cirurgiaQual', s.cirurgiaQual);
+  setSel('an-alergia', s.alergia); setVal('an-alergiaQual', s.alergiaQual);
+  setSel('an-marcapasso', s.marcapasso); setSel('an-circulatorio', s.problemasCirculatorios);
+  setSel('an-hipertensao', s.hipertensao); setSel('an-diabetes', s.diabetes);
+
+  var h = dados.hormonal;
+  setSel('an-ciclo', h.cicloMenstrual); setSel('an-gravida', h.gravidaAmamentando);
+  setSel('an-anti', h.anticoncepcional); setVal('an-antiQual', h.antiQual);
+
+  document.getElementById('colarTextoWrap').style.display = 'none';
+  showToast('✓ Ficha importada! Complete a avaliação e salve.');
+}
+
