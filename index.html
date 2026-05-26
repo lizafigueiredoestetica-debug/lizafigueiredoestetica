@@ -49,8 +49,8 @@
     <button class="nav-tab admin-only" data-perm="categorias" data-label="Categorias" onclick="fecharDrawer();showSection('categorias')">🏷️ <span>Categorias</span> <span class="badge" id="badgeCat">0</span></button>
   </nav>
 
-        <button class="nav-tab" onclick="showSection('mensagens')" data-label="Mensagens WhatsApp">
-          <span>💬</span><span>Mensagens WhatsApp</span>
+        <button class="nav-tab" onclick="showSection('mensagens')" data-label="WhatsApp">
+          <span>💬</span><span>WhatsApp</span>
         </button>
   <div class="sidebar-footer">
     <div class="sidebar-user">
@@ -696,6 +696,50 @@
             <label>Observação</label>
             <input type="text" id="ag-obs" placeholder="Ex: Pacote criolipólise barriga">
           </div>
+          <div class="form-group">
+            <label>Cor na Agenda</label>
+            <div id="ag-cor-wrap" style="display:flex;gap:6px;flex-wrap:wrap;padding:6px 0">
+              <div class="cor-opcao selected" data-cor="#D4A0A8" onclick="selecionarCor(this)" style="width:28px;height:28px;border-radius:50%;background:#D4A0A8;cursor:pointer;border:3px solid #B07880;title='Rosa'" title="Rosa"></div>
+              <div class="cor-opcao" data-cor="#5B9BD5" onclick="selecionarCor(this)" style="width:28px;height:28px;border-radius:50%;background:#5B9BD5;cursor:pointer;border:3px solid transparent" title="Azul"></div>
+              <div class="cor-opcao" data-cor="#70AD47" onclick="selecionarCor(this)" style="width:28px;height:28px;border-radius:50%;background:#70AD47;cursor:pointer;border:3px solid transparent" title="Verde"></div>
+              <div class="cor-opcao" data-cor="#FF4444" onclick="selecionarCor(this)" style="width:28px;height:28px;border-radius:50%;background:#FF4444;cursor:pointer;border:3px solid transparent" title="Vermelho"></div>
+              <div class="cor-opcao" data-cor="#FFC000" onclick="selecionarCor(this)" style="width:28px;height:28px;border-radius:50%;background:#FFC000;cursor:pointer;border:3px solid transparent" title="Amarelo"></div>
+              <div class="cor-opcao" data-cor="#9B59B6" onclick="selecionarCor(this)" style="width:28px;height:28px;border-radius:50%;background:#9B59B6;cursor:pointer;border:3px solid transparent" title="Lilás"></div>
+              <div class="cor-opcao" data-cor="#8B4513" onclick="selecionarCor(this)" style="width:28px;height:28px;border-radius:50%;background:#8B4513;cursor:pointer;border:3px solid transparent" title="Marrom"></div>
+              <div class="cor-opcao" data-cor="#FF8C00" onclick="selecionarCor(this)" style="width:28px;height:28px;border-radius:50%;background:#FF8C00;cursor:pointer;border:3px solid transparent" title="Laranja"></div>
+            </div>
+            <input type="hidden" id="ag-cor" value="#D4A0A8">
+          </div>
+          <div class="form-group full-width">
+            <label>Recorrência</label>
+            <select id="ag-recorrencia" onchange="toggleRecorrencia()">
+              <option value="">Sem recorrência (sessões únicas)</option>
+              <option value="semanal">Semanal (toda semana no mesmo dia)</option>
+              <option value="quinzenal">Quinzenal (a cada 2 semanas)</option>
+              <option value="mensal">Mensal (todo mês na mesma data)</option>
+              <option value="personalizado">Dias específicos da semana</option>
+            </select>
+          </div>
+          <div class="form-group full-width" id="ag-recorr-config" style="display:none">
+            <div id="ag-recorr-dias" style="display:none">
+              <label style="margin-bottom:6px;display:block">Dias da semana</label>
+              <div style="display:flex;gap:6px;flex-wrap:wrap">
+                <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" value="1" class="ag-dia-check"> Seg</label>
+                <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" value="2" class="ag-dia-check"> Ter</label>
+                <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" value="3" class="ag-dia-check"> Qua</label>
+                <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" value="4" class="ag-dia-check"> Qui</label>
+                <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" value="5" class="ag-dia-check"> Sex</label>
+                <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" value="6" class="ag-dia-check"> Sáb</label>
+                <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" value="0" class="ag-dia-check"> Dom</label>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-top:0.5rem">
+              <div><label style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text-light);margin-bottom:4px;display:block">Horário fixo</label>
+              <input type="time" id="ag-recorr-hora" style="width:100%;padding:0.5rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none"></div>
+              <div><label style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text-light);margin-bottom:4px;display:block">Até quando</label>
+              <input type="date" id="ag-recorr-ate" style="width:100%;padding:0.5rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none"></div>
+            </div>
+          </div>
         </div>
         <!-- Campos de datas dinâmicos -->
         <div id="ag-datas-wrap" style="display:none;margin-bottom:1rem">
@@ -930,7 +974,7 @@
   <!-- ===== MENSAGENS WHATSAPP ===== -->
   <section class="section" id="sec-mensagens">
     <div class="main">
-      <div class="section-title">Mensagens WhatsApp</div>
+      <div class="section-title">WhatsApp</div>
       <div class="section-sub">Personalize as mensagens enviadas pelo sistema</div>
       <div class="divider"></div>
       <div id="mensagensLista">
