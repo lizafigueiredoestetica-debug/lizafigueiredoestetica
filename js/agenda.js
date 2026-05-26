@@ -78,6 +78,15 @@ function salvarAgendamento() {
 
   const tel = (document.getElementById('ag-tel')||{value:''}).value.trim();
   const sinal = parseFloat((document.getElementById('ag-sinal')||{value:'0'}).value) || 0;
+  const cor = (document.getElementById('ag-cor')||{value:'#D4A0A8'}).value || '#D4A0A8';
+  const recorrencia = (document.getElementById('ag-recorrencia')||{value:''}).value || '';
+
+  // Gerar sessões recorrentes se necessário
+  var sessoesFinais = sessoes;
+  if (recorrencia && recorrencia !== '') {
+    sessoesFinais = _gerarSessoesRecorrentes(sessoes, recorrencia);
+  }
+
   db.agenda.push({
     id: uid(),
     cliente,
@@ -88,7 +97,9 @@ function salvarAgendamento() {
     servicoIds: [],
     servicoNome: '—',
     obs,
-    sessoes
+    cor,
+    recorrencia,
+    sessoes: sessoesFinais
   });
 
   var novaAgenda = db.agenda[db.agenda.length-1];
@@ -110,6 +121,9 @@ function salvarAgendamento() {
 }
 
 function limparFormAgenda() {
+  const corPadrao = document.querySelector('.cor-opcao[data-cor="#D4A0A8"]'); if(corPadrao){ document.querySelectorAll('.cor-opcao').forEach(function(el){el.style.border='3px solid transparent';}); corPadrao.style.border='3px solid #B07880'; const ci=document.getElementById('ag-cor'); if(ci) ci.value='#D4A0A8'; }
+  const recEl=document.getElementById('ag-recorrencia'); if(recEl) recEl.value='';
+  const rcEl=document.getElementById('ag-recorr-config'); if(rcEl) rcEl.style.display='none';
   ['ag-cliente','ag-qtd','ag-obs','ag-tel','ag-sinal'].forEach(id => {
     const el = document.getElementById(id);
     if(el) el.value = '';
@@ -1354,4 +1368,97 @@ function waMensagemFalta(cliente, tel, servico) {
   }
   var telFmt = tel ? '55' + tel.replace(/\D/g,'') : '';
   window.open('https://wa.me/' + telFmt + '?text=' + encodeURIComponent(msg), '_blank');
+}
+
+// ===================== CORES E RECORRÊNCIA =====================
+
+function selecionarCor(el) {
+  document.querySelectorAll('.cor-opcao').forEach(function(c) {
+    c.style.border = '3px solid transparent';
+  });
+  var cor = el.dataset.cor;
+  // Borda mais escura da cor selecionada
+  var bordas = {
+    '#D4A0A8': '#B07880', '#5B9BD5': '#2E75B6', '#70AD47': '#4E8A2E',
+    '#FF4444': '#CC0000', '#FFC000': '#CC9900', '#9B59B6': '#7D3C98',
+    '#8B4513': '#5C2D09', '#FF8C00': '#CC6600'
+  };
+  el.style.border = '3px solid ' + (bordas[cor] || '#333');
+  var input = document.getElementById('ag-cor');
+  if (input) input.value = cor;
+}
+
+function toggleRecorrencia() {
+  var sel = document.getElementById('ag-recorrencia');
+  var cfg = document.getElementById('ag-recorr-config');
+  var dias = document.getElementById('ag-recorr-dias');
+  if (!sel || !cfg) return;
+  if (sel.value === '') {
+    cfg.style.display = 'none';
+  } else {
+    cfg.style.display = 'block';
+    if (dias) dias.style.display = sel.value === 'personalizado' ? 'block' : 'none';
+  }
+}
+
+function _gerarSessoesRecorrentes(sessoesBase, recorrencia) {
+  if (!sessoesBase || !sessoesBase.length) return sessoesBase;
+  
+  var ate = (document.getElementById('ag-recorr-ate') || {value:''}).value;
+  var horaFixa = (document.getElementById('ag-recorr-hora') || {value:''}).value;
+  
+  if (!ate) return sessoesBase;
+  
+  var primeira = sessoesBase[0];
+  var dataInicio = new Date(primeira.data + 'T12:00:00');
+  var dataFim = new Date(ate + 'T12:00:00');
+  var hora = horaFixa || primeira.hora || '';
+  var sessoes = [];
+  var atual = new Date(dataInicio);
+  
+  if (recorrencia === 'semanal') {
+    while (atual <= dataFim) {
+      sessoes.push({
+        data: atual.toISOString().split('T')[0],
+        hora: hora, status: 'pendente', atendimentoId: null,
+        servicoIds: primeira.servicoIds || [], servico: primeira.servico || ''
+      });
+      atual.setDate(atual.getDate() + 7);
+    }
+  } else if (recorrencia === 'quinzenal') {
+    while (atual <= dataFim) {
+      sessoes.push({
+        data: atual.toISOString().split('T')[0],
+        hora: hora, status: 'pendente', atendimentoId: null,
+        servicoIds: primeira.servicoIds || [], servico: primeira.servico || ''
+      });
+      atual.setDate(atual.getDate() + 14);
+    }
+  } else if (recorrencia === 'mensal') {
+    while (atual <= dataFim) {
+      sessoes.push({
+        data: atual.toISOString().split('T')[0],
+        hora: hora, status: 'pendente', atendimentoId: null,
+        servicoIds: primeira.servicoIds || [], servico: primeira.servico || ''
+      });
+      atual.setMonth(atual.getMonth() + 1);
+    }
+  } else if (recorrencia === 'personalizado') {
+    var diasCheck = document.querySelectorAll('.ag-dia-check:checked');
+    var diasSemana = Array.from(diasCheck).map(function(c){ return parseInt(c.value); });
+    if (!diasSemana.length) return sessoesBase;
+    var d = new Date(dataInicio);
+    while (d <= dataFim) {
+      if (diasSemana.indexOf(d.getDay()) >= 0) {
+        sessoes.push({
+          data: d.toISOString().split('T')[0],
+          hora: hora, status: 'pendente', atendimentoId: null,
+          servicoIds: primeira.servicoIds || [], servico: primeira.servico || ''
+        });
+      }
+      d.setDate(d.getDate() + 1);
+    }
+  }
+  
+  return sessoes.length > 0 ? sessoes : sessoesBase;
 }
