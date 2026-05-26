@@ -5,6 +5,7 @@
 
 // ===================== INIT =====================
 async function init() {
+  if (typeof _inicializarMensagens === 'function') _inicializarMensagens();
   await loadData();
   if(db.categorias.length === 0) {
     db.categorias = [
@@ -147,7 +148,7 @@ function renderAniversariantes() {
   var meses = ['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
   var cards = lista.map(function(a) {
     var label = a.isHoje ? '🎂 Hoje!' : 'em ' + a.diff + (a.diff===1?' dia':' dias');
-    var msg = 'Olá ' + a.nome.split(' ')[0] + '! 🎉\n\nDesejamos a você um feliz aniversário! Que este novo ciclo seja repleto de saúde, beleza e muitas realizações. 🌸\n\nCom carinho, equipe Liza Figueiredo Estética';
+    var msg = _getMensagem('aniversario').replace(/{nome}/g, a.nome.split(' ')[0]);
     var waUrl = 'https://wa.me/' + (a.tel ? '55' + a.tel : '') + '?text=' + encodeURIComponent(msg);
     return '<div class="aniv-card' + (a.isHoje ? ' aniv-hoje' : '') + '">'
       + '<div><div class="aniv-nome">' + (a.isHoje ? '🎂 ' : '🎁 ') + a.nome + '</div>'
@@ -464,12 +465,7 @@ var _urlAnamnese = localStorage.getItem('lizafig_url_anamnese') || 'https://liza
 // 1. Link da anamnese ao criar agendamento
 function waEnviarAnamnese(cliente, tel) {
   var primeiroNome = (cliente||'').split(' ')[0];
-  var msg = 'Olá ' + primeiroNome + '! 🌸\n\n'
-    + 'Seu agendamento foi confirmado na Liza Figueiredo Estética & Beleza!\n\n'
-    + 'Antes de sua chegada, pedimos que preencha nossa ficha de anamnese:\n'
-    + '👉 ' + _urlAnamnese + '\n\n'
-    + 'Leva apenas 2 minutinhos e nos ajuda a preparar o melhor atendimento para você. 💆‍♀️\n\n'
-    + 'Qualquer dúvida, estamos à disposição! ✨';
+  var msg = _getMensagem('anamnese').replace(/{nome}/g, primeiroNome);
   var telFmt = tel ? '55' + tel.replace(/\D/g,'') : '';
   window.open('https://wa.me/' + telFmt + '?text=' + encodeURIComponent(msg), '_blank');
 }
@@ -503,16 +499,7 @@ function waOrcamento(agId) {
   srvIds.forEach(function(id){ var sv=db.servicos.find(function(x){return x.id===id;}); if(sv) valor += parseFloat(sv.preco)||0; });
   var valorTotal = valor * total;
 
-  var msg = '✨ *PROPOSTA DE TRATAMENTO* ✨\n'
-    + 'Liza Figueiredo Estética & Beleza\n\n'
-    + '👤 Cliente: ' + ag.cliente + '\n'
-    + '💆 Tratamento: *' + servico + '*\n'
-    + '📅 Sessões: *' + total + ' sessões*\n'
-    + (valorTotal > 0 ? '💰 Investimento: *R$ ' + valorTotal.toFixed(2).replace('.',',') + '*\n' : '')
-    + (valorTotal > 0 && total > 1 ? '📊 Por sessão: R$ ' + valor.toFixed(2).replace('.',',') + '\n' : '')
-    + '\n'
-    + 'Este tratamento foi personalizado especialmente para você! 🌸\n\n'
-    + 'Para agendar ou tirar dúvidas, é só responder esta mensagem. 😊';
+  var msg = _getMensagem('proposta').replace(/{nome}/g, ag.cliente.split(' ')[0]).replace(/{servicos}/g, servico).replace(/{sessoes}/g, total + ' sessões').replace(/{valor}/g, valorTotal > 0 ? 'R$ ' + valorTotal.toFixed(2).replace('.',',') : 'a combinar');
   var tel = _waTelefone(ag.cliente);
   window.open('https://wa.me/' + (tel ? '55' + tel : '') + '?text=' + encodeURIComponent(msg), '_blank');
 }
