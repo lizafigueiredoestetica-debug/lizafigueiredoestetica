@@ -148,6 +148,9 @@ function renderDashboard() {
       _cp.innerHTML = '<table style="width:100%"><thead><tr><th>Hora</th><th>Cliente</th><th>Serviço</th><th>Sessão</th></tr></thead><tbody>'+_crows+'</tbody></table>';
     }
   }
+
+  // SOLICITAÇÕES DE AGENDAMENTO
+  if (typeof renderSolicitacoes === 'function') renderSolicitacoes();
 }
 function renderServiceChips() {
   const filtServicos = (document.getElementById('filtServicos')||{value:''}).value.toLowerCase().trim();
