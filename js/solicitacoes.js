@@ -205,12 +205,7 @@ function wsMensagemAprovacao(nome, tel, data, hora, servico) {
   var dataFmt = data ? _fmtDataSolic(data) : 'data a combinar';
   var horaFmt = hora ? ' às ' + hora : '';
   var servicoFmt = servico ? '\n💆 Serviço: *' + servico + '*' : '';
-  var msg = 'Olá ' + primeiroNome + '! 🌸\n\n'
-    + '✅ Seu agendamento foi *confirmado*!\n\n'
-    + '📅 Data: *' + dataFmt + horaFmt + '*'
-    + servicoFmt + '\n\n'
-    + 'Te esperamos com muito carinho! 💆‍♀️✨\n\n'
-    + 'Qualquer dúvida, estou à disposição! 😊';
+  var msg = _getMensagem('aprovacao_agendamento').replace(/{nome}/g, primeiroNome).replace(/{data}/g, dataFmt).replace(/{hora}/g, horaFmt ? ' às ' + horaFmt : '').replace(/{servico}/g, servico||'');
   var telFmt = tel ? '55' + tel.replace(/\D/g,'') : '';
   window.open('https://wa.me/' + telFmt + '?text=' + encodeURIComponent(msg), '_blank');
 }
@@ -259,11 +254,7 @@ async function confirmarRecusa(solId, nome, tel) {
 function wsMensagemRecusa(nome, tel) {
   var motivo = (document.getElementById('recusar-motivo')||{value:''}).value.trim();
   var primeiroNome = (nome||'').split(' ')[0];
-  var msg = 'Olá ' + primeiroNome + '! 🌸\n\n'
-    + 'Infelizmente não conseguimos confirmar seu agendamento para a data solicitada. 😔\n\n'
-    + (motivo ? '📌 ' + motivo + '\n\n' : '')
-    + 'Por favor, entre em contato para verificarmos outra data disponível. Adoraríamos te atender! ✨\n\n'
-    + 'Qualquer dúvida, estou à disposição! 💆‍♀️';
+  var msg = _getMensagem('recusa_agendamento').replace(/{nome}/g, primeiroNome).replace(/{motivo}/g, motivo ? '📌 ' + motivo : '');
   var telFmt = tel ? '55' + tel.replace(/\D/g,'') : '';
   window.open('https://wa.me/' + telFmt + '?text=' + encodeURIComponent(msg), '_blank');
 }
