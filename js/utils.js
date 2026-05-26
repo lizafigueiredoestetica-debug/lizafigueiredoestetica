@@ -188,6 +188,7 @@ function showSection(id) {
   if (id === 'anamnese') renderAnamnese();
   if (id === 'acomp') renderAcomp();
   if (id === 'financeiro') renderFinanceiro && renderFinanceiro();
+  if (id === 'mensagens') renderMensagens();
 }
 
 function renderAll() {
