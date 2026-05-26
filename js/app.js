@@ -616,6 +616,16 @@ setTimeout(_migrarFotosIDB, 3000);
 // ── Polling a cada 30s — busca só registros novos desde o último sync ──
 setInterval(function() { _pollingNovos(); }, 30000);
 
+// ── Polling solicitações a cada 60s ──
+setInterval(function() {
+  if (typeof _verificarNovasSolicitacoes === 'function') _verificarNovasSolicitacoes();
+}, 60000);
+
+// ── Pedir permissão de notificação ao iniciar ──
+setTimeout(function() {
+  if (typeof _pedirPermissaoNotificacao === 'function') _pedirPermissaoNotificacao();
+}, 3000);
+
 // ===== LISTENER GLOBAL — botões de sessão no Acompanhamento =====
 document.addEventListener('click', function(e) {
   var b1 = e.target.closest('._btn-serv-sessao');
