@@ -74,27 +74,19 @@ var _MENSAGENS_PADRAO = {
   }
 };
 
-// ── Cache local das mensagens ──
+// ── Cache e localStorage ──
 var _mensagensCache = null;
+var _LS_KEY = 'lizafig_mensagens';
 
-// ── Carregar mensagens do Supabase ──
+// ── Carregar mensagens do localStorage ──
 async function _carregarMensagens() {
   try {
-    var resp = await fetch(SUPA_URL + '/rest/v1/configuracoes?select=chave,valor&chave=like.msg_%', {
-      headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY }
-    });
-    if (!resp.ok) return {};
-    var rows = await resp.json();
-    var resultado = {};
-    rows.forEach(function(r) {
-      var chave = r.chave.replace('msg_', '');
-      resultado[chave] = r.valor;
-    });
-    _mensagensCache = resultado;
-    return resultado;
+    var raw = localStorage.getItem(_LS_KEY);
+    _mensagensCache = raw ? JSON.parse(raw) : {};
   } catch(e) {
-    return {};
+    _mensagensCache = {};
   }
+  return _mensagensCache;
 }
 
 // ── Obter texto de uma mensagem (customizada ou padrão) ──
@@ -103,41 +95,24 @@ function _getMensagem(chave) {
   return _MENSAGENS_PADRAO[chave] ? _MENSAGENS_PADRAO[chave].texto : '';
 }
 
-// ── Salvar mensagem no Supabase ──
+// ── Salvar mensagem no localStorage ──
 async function _salvarMensagem(chave, texto) {
-  var id = 'msg_' + chave;
   try {
-    var resp = await fetch(SUPA_URL + '/rest/v1/configuracoes', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': SUPA_KEY,
-        'Authorization': 'Bearer ' + SUPA_KEY,
-        'Prefer': 'resolution=merge-duplicates,return=minimal'
-      },
-      body: JSON.stringify({ id: id, chave: id, valor: texto, atualizado_em: new Date().toISOString() })
-    });
-    if (resp.ok) {
-      if (!_mensagensCache) _mensagensCache = {};
-      _mensagensCache[chave] = texto;
-      return true;
-    }
-    return false;
+    if (!_mensagensCache) _mensagensCache = {};
+    _mensagensCache[chave] = texto;
+    localStorage.setItem(_LS_KEY, JSON.stringify(_mensagensCache));
+    return true;
   } catch(e) { return false; }
 }
 
 // ── Restaurar padrão de uma mensagem ──
 async function restaurarMensagemPadrao(chave) {
   if (!confirm('Restaurar a mensagem padrão do sistema? A sua versão personalizada será perdida.')) return;
-  try {
-    await fetch(SUPA_URL + '/rest/v1/configuracoes?id=eq.msg_' + chave, {
-      method: 'DELETE',
-      headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY }
-    });
-    if (_mensagensCache) delete _mensagensCache[chave];
-    showToast('✅ Mensagem restaurada para o padrão!');
-    renderMensagens();
-  } catch(e) { showToast('Erro ao restaurar.'); }
+  if (!_mensagensCache) _mensagensCache = {};
+  delete _mensagensCache[chave];
+  localStorage.setItem(_LS_KEY, JSON.stringify(_mensagensCache));
+  showToast('✅ Mensagem restaurada para o padrão!');
+  renderMensagens();
 }
 
 // ── Renderizar seção de mensagens ──
