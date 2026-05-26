@@ -298,6 +298,8 @@ function renderAgenda() {
               ${s.status !== 'realizado' ? `<button onclick="waConfirmarAgendamento('${ag.id}',${i})" style="background:#E7F7EE;border:1px solid #7DB87D;color:#276749;border-radius:8px;padding:4px 8px;font-size:11px;cursor:pointer" title="Confirmar sessão pelo WhatsApp">📲 Confirmar</button>` : ''}
               ${s.status !== 'realizado' ? `<button onclick="waLembrete('${ag.id}',${i})" style="background:#FFF8E7;border:1px solid #F6C94E;color:#7A5C00;border-radius:8px;padding:4px 8px;font-size:11px;cursor:pointer" title="Enviar lembrete pelo WhatsApp">⏰ Lembrete</button>` : ''}
               ${s.status !== 'realizado' ? `<button onclick="waReagendar('${ag.id}',${i})" style="background:#F3E8FF;border:1px solid #C084FC;color:#7C3AED;border-radius:8px;padding:4px 8px;font-size:11px;cursor:pointer" title="Reagendar pelo WhatsApp">🔄 Reagendar</button>` : ''}
+              ${(s.status !== 'realizado' && s.status !== 'falta') ? `<button onclick="abrirModalFalta('${ag.id}',${i})" style="background:#FFF0F0;border:1px solid #FFCDD2;color:#C62828;border-radius:8px;padding:4px 8px;font-size:11px;cursor:pointer" title="Marcar falta">❌ Falta</button>` : ''}
+              ${s.status === 'falta' ? `<span style="background:#FFEBEE;color:#C62828;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600">❌ Faltou</span><button onclick="abrirModalReagendar('${ag.id}',${i})" style="background:#FFF3E0;border:1px solid #FFB74D;color:#E65100;border-radius:8px;padding:4px 8px;font-size:11px;cursor:pointer;margin-left:4px">📅 Reagendar</button>` : ''}
               ${(s.status !== 'realizado' && s.data < hoje) ? `<button onclick="event.stopPropagation();editarAgenda('${ag.id}')" style="background:#FFF0F5;border:1px solid #D4A0A8;color:#B07880;border-radius:8px;padding:4px 8px;font-size:11px;cursor:pointer" title="Editar agendamento">📅 Remarcar</button>` : ''}
             </div>
           </div>`;
@@ -1167,3 +1169,189 @@ function importarTextoFicha() {
   showToast('✓ Ficha importada! Complete a avaliação e salve.');
 }
 
+
+// ===================== FALTA E REAGENDAMENTO =====================
+
+function abrirModalFalta(agId, sessaoIdx) {
+  var ag = db.agenda.find(function(x){ return x.id === agId; });
+  if (!ag) return;
+  var s = ag.sessoes[sessaoIdx];
+  if (!s) return;
+  var servico = (function(){
+    var ids = s.servicoIds || [];
+    if (ids.length) return ids.map(function(id){ var sv = db.servicos.find(function(x){ return x.id === id; }); return sv ? sv.nome : id; }).join(' + ');
+    return s.servico || _agServicos(ag);
+  })();
+
+  var old = document.getElementById('modal-falta');
+  if (old) old.remove();
+
+  var modal = document.createElement('div');
+  modal.id = 'modal-falta';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(28,28,30,0.6);z-index:9998;display:flex;align-items:center;justify-content:center;padding:1rem';
+
+  modal.innerHTML = '<div style="background:white;border-radius:16px;max-width:480px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);overflow:hidden">'
+    + '<div style="padding:1.2rem 1.5rem;background:linear-gradient(135deg,#1C1C1E,#2C2C2E);display:flex;justify-content:space-between;align-items:center">'
+    + '<div><div style="font-family:Cormorant Garamond,serif;font-size:18px;color:#FAF0F2;letter-spacing:2px">❌ Marcar Falta</div>'
+    + '<div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:2px">' + ag.cliente + ' · Sessão ' + (sessaoIdx + 1) + ' · ' + fmtDate(s.data) + (s.hora ? ' às ' + s.hora : '') + '</div></div>'
+    + '<button onclick="document.getElementById(\'modal-falta\').remove()" style="background:none;border:none;color:#FAF0F2;font-size:20px;cursor:pointer">✕</button>'
+    + '</div>'
+    + '<div style="padding:1.5rem">'
+    + '<div style="background:#FFF0F0;border:1px solid #FFCDD2;border-radius:10px;padding:1rem;margin-bottom:1.25rem;font-size:13px;color:#C62828">'
+    + '⚠️ A sessão de <strong>' + servico + '</strong> será marcada como falta. O horário será liberado automaticamente.'
+    + '</div>'
+
+    // Opção de já reagendar
+    + '<div style="margin-bottom:1.25rem">'
+    + '<label style="display:flex;align-items:center;gap:0.75rem;cursor:pointer;font-size:14px;color:var(--text-dark)">'
+    + '<input type="checkbox" id="falta-reagendar-agora" onchange="toggleReagendarAgora()" style="width:18px;height:18px;accent-color:#C4708A;cursor:pointer">'
+    + 'Já sei a nova data — reagendar agora'
+    + '</label>'
+    + '</div>'
+
+    // Form de nova data (oculto por padrão)
+    + '<div id="falta-nova-data" style="display:none;background:var(--cream);border-radius:10px;padding:1rem;margin-bottom:1.25rem">'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem">'
+    + '<div><div style="font-size:10px;letter-spacing:1.5px;color:var(--text-light);text-transform:uppercase;margin-bottom:4px">Nova data</div>'
+    + '<input type="date" id="falta-data" style="width:100%;padding:0.6rem 0.75rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none"></div>'
+    + '<div><div style="font-size:10px;letter-spacing:1.5px;color:var(--text-light);text-transform:uppercase;margin-bottom:4px">Novo horário</div>'
+    + '<input type="time" id="falta-hora" style="width:100%;padding:0.6rem 0.75rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none"></div>'
+    + '</div></div>'
+
+    // Botões
+    + '<div style="display:flex;gap:0.75rem;flex-wrap:wrap">'
+    + '<button class="btn btn-danger" onclick="confirmarFalta(\'' + agId + '\',' + sessaoIdx + ')" style="background:#C62828;color:white;border:none">❌ Confirmar Falta</button>'
+    + '<button onclick="waMensagemFalta(\'' + ag.cliente + '\',\'' + _waTelefone(ag.cliente) + '\',\'' + servico.replace(/'/g, "\\'") + '\')" style="background:#E7F7EE;border:1px solid #7DB87D;color:#276749;border-radius:8px;padding:0.5rem 1rem;font-size:12px;cursor:pointer">💬 Avisar no WhatsApp</button>'
+    + '<button class="btn btn-secondary" onclick="document.getElementById(\'modal-falta\').remove()">Cancelar</button>'
+    + '</div>'
+    + '</div></div>';
+
+  document.body.appendChild(modal);
+  modal.addEventListener('click', function(e){ if(e.target===modal) modal.remove(); });
+}
+
+function toggleReagendarAgora() {
+  var cb = document.getElementById('falta-reagendar-agora');
+  var div = document.getElementById('falta-nova-data');
+  if (div) div.style.display = cb && cb.checked ? 'block' : 'none';
+}
+
+async function confirmarFalta(agId, sessaoIdx) {
+  var ag = db.agenda.find(function(x){ return x.id === agId; });
+  if (!ag) return;
+  var s = ag.sessoes[sessaoIdx];
+  if (!s) return;
+
+  // Marcar como falta — libera o horário
+  s.status = 'falta';
+  s._dataOriginal = s.data;
+  s._horaOriginal = s.hora;
+
+  // Se vai reagendar agora, adiciona nova sessão
+  var reagendarAgora = document.getElementById('falta-reagendar-agora');
+  if (reagendarAgora && reagendarAgora.checked) {
+    var novaData = (document.getElementById('falta-data') || {value:''}).value;
+    var novaHora = (document.getElementById('falta-hora') || {value:''}).value;
+    if (!novaData) { showToast('Selecione a nova data!'); return; }
+
+    // Adiciona nova sessão no final do pacote
+    var novaServico = (function(){
+      var ids = s.servicoIds || [];
+      if (ids.length) return ids.map(function(id){ var sv = db.servicos.find(function(x){ return x.id === id; }); return sv ? sv.nome : id; }).join(' + ');
+      return s.servico || _agServicos(ag);
+    })();
+    ag.sessoes.push({
+      data: novaData,
+      hora: novaHora,
+      status: 'pendente',
+      servicoIds: s.servicoIds || [],
+      servico: s.servico || '',
+      checkinData: null, checkinHora: null, checkinNome: null, atendimentoId: null
+    });
+    showToast('✅ Falta registrada e nova sessão agendada para ' + fmtDate(novaData) + '!');
+  } else {
+    showToast('✅ Falta registrada. Horário liberado!');
+  }
+
+  saveData();
+  await _salvarAgenda(ag);
+  renderAll();
+  document.getElementById('modal-falta').remove();
+}
+
+// Modal reagendar (quando já está como falta)
+function abrirModalReagendar(agId, sessaoIdx) {
+  var ag = db.agenda.find(function(x){ return x.id === agId; });
+  if (!ag) return;
+  var s = ag.sessoes[sessaoIdx];
+  if (!s) return;
+
+  var old = document.getElementById('modal-reagendar');
+  if (old) old.remove();
+
+  var modal = document.createElement('div');
+  modal.id = 'modal-reagendar';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(28,28,30,0.6);z-index:9998;display:flex;align-items:center;justify-content:center;padding:1rem';
+
+  modal.innerHTML = '<div style="background:white;border-radius:16px;max-width:440px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);overflow:hidden">'
+    + '<div style="padding:1.2rem 1.5rem;background:linear-gradient(135deg,#1C1C1E,#2C2C2E);display:flex;justify-content:space-between;align-items:center">'
+    + '<div style="font-family:Cormorant Garamond,serif;font-size:18px;color:#FAF0F2;letter-spacing:2px">📅 Reagendar Sessão</div>'
+    + '<button onclick="document.getElementById(\'modal-reagendar\').remove()" style="background:none;border:none;color:#FAF0F2;font-size:20px;cursor:pointer">✕</button>'
+    + '</div>'
+    + '<div style="padding:1.5rem">'
+    + '<div style="background:var(--cream);border-radius:10px;padding:0.75rem 1rem;margin-bottom:1.25rem;font-size:13px;color:var(--text-mid)">'
+    + '👤 <strong>' + ag.cliente + '</strong> · Sessão ' + (sessaoIdx + 1)
+    + (s._dataOriginal ? ' · Faltou em ' + fmtDate(s._dataOriginal) : '') + '</div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:1.25rem">'
+    + '<div><div style="font-size:10px;letter-spacing:1.5px;color:var(--text-light);text-transform:uppercase;margin-bottom:4px">Nova data</div>'
+    + '<input type="date" id="reagend-data" style="width:100%;padding:0.6rem 0.75rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none"></div>'
+    + '<div><div style="font-size:10px;letter-spacing:1.5px;color:var(--text-light);text-transform:uppercase;margin-bottom:4px">Novo horário</div>'
+    + '<input type="time" id="reagend-hora" style="width:100%;padding:0.6rem 0.75rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none"></div>'
+    + '</div>'
+    + '<div style="display:flex;gap:0.75rem;flex-wrap:wrap">'
+    + '<button class="btn btn-primary" onclick="confirmarReagendamento(\'' + agId + '\',' + sessaoIdx + ')">📅 Confirmar Reagendamento</button>'
+    + '<button class="btn btn-secondary" onclick="document.getElementById(\'modal-reagendar\').remove()">Cancelar</button>'
+    + '</div>'
+    + '</div></div>';
+
+  document.body.appendChild(modal);
+  modal.addEventListener('click', function(e){ if(e.target===modal) modal.remove(); });
+}
+
+async function confirmarReagendamento(agId, sessaoIdx) {
+  var ag = db.agenda.find(function(x){ return x.id === agId; });
+  if (!ag) return;
+  var s = ag.sessoes[sessaoIdx];
+  if (!s) return;
+
+  var novaData = (document.getElementById('reagend-data') || {value:''}).value;
+  var novaHora = (document.getElementById('reagend-hora') || {value:''}).value;
+  if (!novaData) { showToast('Selecione a nova data!'); return; }
+
+  // Adiciona nova sessão mantendo a falta no histórico
+  ag.sessoes.push({
+    data: novaData,
+    hora: novaHora,
+    status: 'pendente',
+    servicoIds: s.servicoIds || [],
+    servico: s.servico || '',
+    checkinData: null, checkinHora: null, checkinNome: null, atendimentoId: null
+  });
+
+  saveData();
+  await _salvarAgenda(ag);
+  renderAll();
+  document.getElementById('modal-reagendar').remove();
+  showToast('✅ Nova sessão agendada para ' + fmtDate(novaData) + '!');
+}
+
+function waMensagemFalta(cliente, tel, servico) {
+  var msg = _getMensagem ? _getMensagem('reagendar') || '' : '';
+  if (!msg) {
+    msg = 'Olá ' + cliente.split(' ')[0] + '! 🌸\n\n'
+      + 'Notamos que você não compareceu à sua sessão de *' + servico + '* hoje. Tudo bem? 😊\n\n'
+      + 'Quando quiser reagendar é só me avisar, tenho horários disponíveis! ✨';
+  }
+  var telFmt = tel ? '55' + tel.replace(/\D/g,'') : '';
+  window.open('https://wa.me/' + telFmt + '?text=' + encodeURIComponent(msg), '_blank');
+}
