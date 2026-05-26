@@ -179,7 +179,7 @@ function showSection(id) {
   // Render específico por seção
   if (id === 'agenda') renderAgenda();
   if (id === 'dashboard') renderDashboard();
-  if (id === 'atendimentos') renderAtendimentos();
+  if (id === 'atendimentos') { renderAtendimentos(); renderServiceChips(); }
   if (id === 'servicos') renderServicos();
   if (id === 'materiais') renderMateriais();
   if (id === 'despAdm') renderDespAdm();
@@ -195,6 +195,7 @@ function renderAll() {
   renderServicos();
   renderMateriais();
   renderAtendimentos();
+  if (typeof renderServiceChips === 'function') renderServiceChips();
   renderAgenda();
   renderCategorias();
   renderAnamnese();
