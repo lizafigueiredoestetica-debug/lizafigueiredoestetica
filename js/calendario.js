@@ -33,7 +33,7 @@ function _calEventos() {
   db.agenda.forEach(function(ag) {
     ag.sessoes.forEach(function(s, idx) {
       if (!s.data) return;
-      eventos.push({ data: s.data, hora: s.hora || '', cliente: ag.cliente, servico: (function(){ var ids=s.servicoIds||[]; if(ids.length) return ids.map(function(id){ var sv=db.servicos.find(function(x){return x.id===id;}); return sv?sv.nome:id; }).join(' + '); return s.servico||_agServicos(ag); })(), status: s.status, agId: ag.id, sessaoIdx: idx });
+      eventos.push({ data: s.data, hora: s.hora || '', cliente: ag.cliente, servico: (function(){ var ids=s.servicoIds||[]; if(ids.length) return ids.map(function(id){ var sv=db.servicos.find(function(x){return x.id===id;}); return sv?sv.nome:id; }).join(' + '); return s.servico||_agServicos(ag); })(), status: s.status, agId: ag.id, sessaoIdx: idx, cor: ag.cor || '' });
     });
   });
   return eventos;
@@ -89,7 +89,8 @@ function _renderCalMes(grid, titulo) {
     var max = 3;
     evs.slice(0, max).forEach(function(e) {
       var cls = _calClasse(e.status, e.data);
-      html += '<div class="cal-event ' + cls + '" onclick="calAbrirDetalhe(\'' + e.agId + '\',' + e.sessaoIdx + ')" title="' + e.cliente + '">' + (e.hora ? e.hora + ' ' : '') + e.cliente + '</div>';
+      var evStyle = e.cor ? 'style="background:' + e.cor + ';color:white;border:none;opacity:' + (e.status==='falta'?'0.5':'1') + '"' : '';
+      html += '<div class="cal-event ' + cls + '" ' + evStyle + ' onclick="calAbrirDetalhe(\'' + e.agId + '\',' + e.sessaoIdx + ')" title="' + e.cliente + '">' + (e.hora ? e.hora + ' ' : '') + e.cliente + '</div>';
     });
     if (evs.length > max) html += '<div class="cal-more" onclick="calVerDia(\'' + dStr + '\')">+' + (evs.length - max) + ' mais</div>';
     html += '</div>';
@@ -142,7 +143,7 @@ function _renderCalSemana(grid, titulo) {
       html += '<div class="cal-week-cell' + (isHoje ? ' hoje-col' : '') + '">';
       evs.forEach(function(e) {
         var cls = _calClasse(e.status, e.data);
-        html += '<div class="cal-week-event ' + cls + '" onclick="calAbrirDetalhe(\'' + e.agId + '\',' + e.sessaoIdx + ')">' + e.cliente + '</div>';
+        var wStyle = e.cor ? 'style="background:' + e.cor + ';color:white;border:none;"' : ''; html += '<div class="cal-week-event ' + cls + '" ' + wStyle + ' onclick="calAbrirDetalhe(\'' + e.agId + '\',' + e.sessaoIdx + ')">' + e.cliente + '</div>';
       });
       html += '</div>';
     });
