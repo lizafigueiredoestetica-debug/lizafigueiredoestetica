@@ -56,8 +56,8 @@ function salvarAgendamento() {
   const qtd = parseInt(document.getElementById('ag-qtd').value);
   const obs = document.getElementById('ag-obs').value;
 
-  if(!cliente || !qtd) {
-    showToast('Preencha cliente e quantidade de sessões!');
+  if(!cliente) {
+    showToast('Preencha o nome do cliente!');
     return;
   }
 
@@ -65,7 +65,7 @@ function salvarAgendamento() {
   for(let i=0; i<qtd; i++) {
     const dataEl = document.getElementById('ag-data-'+i);
     if(!dataEl || !dataEl.value) {
-      showToast(`Preencha a data da sessão ${i+1}!`);
+      showToast('Preencha a data da sessão ' + (i+1) + '!');
       return;
     }
     const horaEl = document.getElementById('ag-hora-'+i);
@@ -452,8 +452,9 @@ function realizarSessao(agId, sessaoIdx) {
 function excluirAgenda(agId) {
   const ag = db.agenda.find(x=>x.id===agId);
   if(!ag) return;
-  if(!confirm(`Excluir agendamento de "${ag.cliente}"?
-Todas as ${ag.sessoes.length} sessões serão removidas.`)) return;
+  var temRecorrencia = ag.recorrencia && ag.recorrencia !== '';
+  var msgConfirm = temRecorrencia ? 'Este agendamento tem recorrência.\n\nOK = Excluir APENAS este\nCancelar = Não excluir' : `Excluir agendamento de "${ag.cliente}"?\nTodas as ${ag.sessoes.length} sessões serão removidas.`;
+  if (!confirm(msgConfirm)) return;
   db.agenda = db.agenda.filter(x=>x.id!==agId);
   saveData(); renderAll();
   showToast('Agendamento excluído.');
@@ -571,6 +572,19 @@ function editarAgenda(agId) {
             style="width:100%;padding:0.5rem 0.75rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none">
         </div>
         <div style="margin-bottom:1rem">
+          <div style="font-size:10px;letter-spacing:2px;color:var(--text-light);margin-bottom:4px">COR NA AGENDA</div>
+          <select id="agedit-cor-${agId}" style="width:100%;padding:0.5rem 0.75rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none">
+            <option value="#D4A0A8" ${ag.cor==="#D4A0A8"||!ag.cor?"selected":""}>🌸 Rosa</option>
+            <option value="#5B9BD5" ${ag.cor==="#5B9BD5"?"selected":""}>🔵 Azul</option>
+            <option value="#70AD47" ${ag.cor==="#70AD47"?"selected":""}>🟢 Verde</option>
+            <option value="#FF4444" ${ag.cor==="#FF4444"?"selected":""}>🔴 Vermelho</option>
+            <option value="#FFC000" ${ag.cor==="#FFC000"?"selected":""}>🟡 Amarelo</option>
+            <option value="#9B59B6" ${ag.cor==="#9B59B6"?"selected":""}>🟣 Lilás</option>
+            <option value="#8B4513" ${ag.cor==="#8B4513"?"selected":""}>🟤 Marrom</option>
+            <option value="#FF8C00" ${ag.cor==="#FF8C00"?"selected":""}>🟠 Laranja</option>
+          </select>
+        </div>
+        <div style="margin-bottom:1rem">
           <div style="font-size:10px;letter-spacing:2px;color:var(--text-light);margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
             <span>SESSÕES</span>
             <button onclick="adicionarSessaoEdit('${agId}')" class="btn btn-secondary btn-sm" style="font-size:11px">+ Adicionar Sessão</button>
@@ -628,6 +642,8 @@ function salvarEdicaoAgenda(agId) {
 
   ag.cliente = novoCliente || ag.cliente;
   ag.obs = novaObs;
+  var corEditEl = document.getElementById('agedit-cor-' + agId);
+  if (corEditEl) ag.cor = corEditEl.value;
 
   // Rebuild sessions from edit form
   const container = document.getElementById('agedit-sessoes-' + agId);
@@ -1372,21 +1388,7 @@ function waMensagemFalta(cliente, tel, servico) {
 
 // ===================== CORES E RECORRÊNCIA =====================
 
-function selecionarCor(el) {
-  document.querySelectorAll('.cor-opcao').forEach(function(c) {
-    c.style.border = '3px solid transparent';
-  });
-  var cor = el.dataset.cor;
-  // Borda mais escura da cor selecionada
-  var bordas = {
-    '#D4A0A8': '#B07880', '#5B9BD5': '#2E75B6', '#70AD47': '#4E8A2E',
-    '#FF4444': '#CC0000', '#FFC000': '#CC9900', '#9B59B6': '#7D3C98',
-    '#8B4513': '#5C2D09', '#FF8C00': '#CC6600'
-  };
-  el.style.border = '3px solid ' + (bordas[cor] || '#333');
-  var input = document.getElementById('ag-cor');
-  if (input) input.value = cor;
-}
+// selecionarCor removido — cor agora é um select
 
 function toggleRecorrencia() {
   var sel = document.getElementById('ag-recorrencia');
