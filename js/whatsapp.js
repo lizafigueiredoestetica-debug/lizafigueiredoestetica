@@ -33,7 +33,7 @@ function waConfirmarAgendamento(agId, sessaoIdx) {
     return s.servico || _agServicos(ag);
   })();
   var hora = s.hora ? ' às ' + s.hora : '';
-  var msg = 'Olá ' + ag.cliente + '! 🌸\n\nPassando para confirmar sua sessão de *' + servico + '* no dia *' + fmtDate(s.data) + hora + '*.\n\nQualquer dúvida estou à disposição! ✨';
+  var msg = _getMensagem('confirmar_sessao').replace(/{nome}/g, ag.cliente.split(' ')[0]).replace(/{servico}/g, servico).replace(/{data}/g, fmtDate(s.data)).replace(/{hora}/g, hora);
   var tel = _waTelefone(ag.cliente);
   window.open('https://wa.me/' + (tel ? '55' + tel : '') + '?text=' + encodeURIComponent(msg), '_blank');
 }
@@ -49,13 +49,13 @@ function waLembrete(agId, sessaoIdx) {
     return s.servico || _agServicos(ag);
   })();
   var hora = s.hora ? ' às ' + s.hora : '';
-  var msg = 'Olá ' + ag.cliente + '! 😊\n\nLembrando que *amanhã* você tem sua sessão de *' + servico + '*' + hora + '.\n\nTe esperamos! 🌸';
+  var msg = _getMensagem('lembrete_amanha').replace(/{nome}/g, ag.cliente.split(' ')[0]).replace(/{servico}/g, servico).replace(/{hora}/g, hora);
   var tel = _waTelefone(ag.cliente);
   window.open('https://wa.me/' + (tel ? '55' + tel : '') + '?text=' + encodeURIComponent(msg), '_blank');
 }
 
 function waPosAtendimento(cliente, servico) {
-  var msg = 'Olá ' + cliente + '! 🌟\n\nFoi um prazer te atender hoje! Espero que tenha gostado da sessão de *' + servico + '*. 💆‍♀️\n\nQualquer dúvida ou para agendar sua próxima sessão, é só me chamar! 😊';
+  var msg = _getMensagem('pos_atendimento').replace(/{nome}/g, cliente.split(' ')[0]).replace(/{servico}/g, servico);
   var tel = _waTelefone(cliente);
   window.open('https://wa.me/' + (tel ? '55' + tel : '') + '?text=' + encodeURIComponent(msg), '_blank');
 }
@@ -63,7 +63,7 @@ function waPosAtendimento(cliente, servico) {
 function waRetorno(agId) {
   var ag = db.agenda.find(function(x){ return x.id === agId; });
   if (!ag) return;
-  var msg = 'Olá ' + ag.cliente + '! 🌸\n\nSentimos sua falta! Que tal agendar sua próxima sessão de *' + _agServicos(ag) + '*?\n\nEstamos com horários disponíveis e adoraríamos te receber novamente! ✨';
+  var msg = _getMensagem('retorno').replace(/{nome}/g, ag.cliente.split(' ')[0]).replace(/{servico}/g, _agServicos(ag));
   var tel = _waTelefone(ag.cliente);
   window.open('https://wa.me/' + (tel ? '55' + tel : '') + '?text=' + encodeURIComponent(msg), '_blank');
 }
