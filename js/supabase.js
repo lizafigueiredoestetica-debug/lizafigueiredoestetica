@@ -120,7 +120,7 @@ async function _salvarAtendimento(a) {
   return _supaUpsert('atendimentos', { id: a.id, data: a.data, cliente: a.cliente, valor: a.valor, pagto: a.pagto, servico_ids: a.servicoIds || [], materiais: a.materiais || [], obs: a.obs, atualizado_em: new Date().toISOString() });
 }
 async function _salvarAgenda(ag) {
-  await _supaUpsert('agenda', { id: ag.id, cliente: ag.cliente, tel: ag.tel, obs: ag.obs, sinal: ag.sinal, sinal_pago: ag.sinalPago, atualizado_em: new Date().toISOString() });
+  await _supaUpsert('agenda', { id: ag.id, cliente: ag.cliente, tel: ag.tel, obs: ag.obs, sinal: ag.sinal, sinal_pago: ag.sinalPago, cor: ag.cor || '#D4A0A8', recorrencia: ag.recorrencia || '', atualizado_em: new Date().toISOString() });
   await _salvarSessoes(ag.id, ag.sessoes || []);
 }
 async function _salvarDespAdm(d) {
@@ -206,7 +206,7 @@ async function _carregarDaNuvem() {
       var sess = (sessoesMap[ag.id] || []).sort(function(a,b){ return a.indice - b.indice; });
       return {
         id: ag.id, cliente: ag.cliente, tel: ag.tel, obs: ag.obs,
-        sinal: ag.sinal, sinalPago: ag.sinal_pago, servicoIds: [], servicoNome: '—',
+        sinal: ag.sinal, sinalPago: ag.sinal_pago, cor: ag.cor || '#D4A0A8', recorrencia: ag.recorrencia || '', servicoIds: [], servicoNome: '—',
         sessoes: sess.map(function(s) {
           return {
             data: s.data, hora: s.hora || '', status: s.status,
@@ -300,7 +300,7 @@ async function _migrarParaNovaArquitetura() {
     }
     for (var i = 0; i < db.agenda.length; i++) {
       var ag = db.agenda[i];
-      await _supaUpsert('agenda', { id: ag.id, cliente: ag.cliente, tel: ag.tel, obs: ag.obs, sinal: ag.sinal, sinal_pago: ag.sinalPago, atualizado_em: new Date().toISOString() });
+      await _supaUpsert('agenda', { id: ag.id, cliente: ag.cliente, tel: ag.tel, obs: ag.obs, sinal: ag.sinal, sinal_pago: ag.sinalPago, cor: ag.cor || '#D4A0A8', recorrencia: ag.recorrencia || '', atualizado_em: new Date().toISOString() });
       await _salvarSessoes(ag.id, ag.sessoes || []);
     }
     localStorage.setItem('lizafig_migrado', '1');
