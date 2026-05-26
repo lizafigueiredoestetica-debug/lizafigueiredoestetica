@@ -682,7 +682,7 @@
           </div>
           <div class="form-group">
             <label>Qtd de Sessões</label>
-            <input type="number" id="ag-qtd" placeholder="Ex: 5" min="1" max="30" oninput="gerarCamposDatas()">
+            <input type="number" id="ag-qtd" placeholder="Ex: 5 (opcional)" min="0" max="30" oninput="gerarCamposDatas()">
           </div>
           <div class="form-group">
             <label>Telefone (WhatsApp)</label>
@@ -698,17 +698,16 @@
           </div>
           <div class="form-group">
             <label>Cor na Agenda</label>
-            <div id="ag-cor-wrap" style="display:flex;gap:6px;flex-wrap:wrap;padding:6px 0">
-              <div class="cor-opcao selected" data-cor="#D4A0A8" onclick="selecionarCor(this)" style="width:28px;height:28px;border-radius:50%;background:#D4A0A8;cursor:pointer;border:3px solid #B07880;title='Rosa'" title="Rosa"></div>
-              <div class="cor-opcao" data-cor="#5B9BD5" onclick="selecionarCor(this)" style="width:28px;height:28px;border-radius:50%;background:#5B9BD5;cursor:pointer;border:3px solid transparent" title="Azul"></div>
-              <div class="cor-opcao" data-cor="#70AD47" onclick="selecionarCor(this)" style="width:28px;height:28px;border-radius:50%;background:#70AD47;cursor:pointer;border:3px solid transparent" title="Verde"></div>
-              <div class="cor-opcao" data-cor="#FF4444" onclick="selecionarCor(this)" style="width:28px;height:28px;border-radius:50%;background:#FF4444;cursor:pointer;border:3px solid transparent" title="Vermelho"></div>
-              <div class="cor-opcao" data-cor="#FFC000" onclick="selecionarCor(this)" style="width:28px;height:28px;border-radius:50%;background:#FFC000;cursor:pointer;border:3px solid transparent" title="Amarelo"></div>
-              <div class="cor-opcao" data-cor="#9B59B6" onclick="selecionarCor(this)" style="width:28px;height:28px;border-radius:50%;background:#9B59B6;cursor:pointer;border:3px solid transparent" title="Lilás"></div>
-              <div class="cor-opcao" data-cor="#8B4513" onclick="selecionarCor(this)" style="width:28px;height:28px;border-radius:50%;background:#8B4513;cursor:pointer;border:3px solid transparent" title="Marrom"></div>
-              <div class="cor-opcao" data-cor="#FF8C00" onclick="selecionarCor(this)" style="width:28px;height:28px;border-radius:50%;background:#FF8C00;cursor:pointer;border:3px solid transparent" title="Laranja"></div>
-            </div>
-            <input type="hidden" id="ag-cor" value="#D4A0A8">
+            <select id="ag-cor" style="width:100%;padding:0.65rem 0.9rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none;background:white">
+              <option value="#D4A0A8">🌸 Rosa</option>
+              <option value="#5B9BD5">🔵 Azul</option>
+              <option value="#70AD47">🟢 Verde</option>
+              <option value="#FF4444">🔴 Vermelho</option>
+              <option value="#FFC000">🟡 Amarelo</option>
+              <option value="#9B59B6">🟣 Lilás</option>
+              <option value="#8B4513">🟤 Marrom</option>
+              <option value="#FF8C00">🟠 Laranja</option>
+            </select>
           </div>
           <div class="form-group full-width">
             <label>Recorrência</label>
