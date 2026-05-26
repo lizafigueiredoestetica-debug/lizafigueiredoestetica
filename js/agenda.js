@@ -83,7 +83,7 @@ function salvarAgendamento() {
 
   // Gerar sessões recorrentes se necessário
   var sessoesFinais = sessoes;
-  if (recorrencia && recorrencia !== '') {
+  if (recorrencia && recorrencia !== '' && sessoes.length > 0) {
     sessoesFinais = _gerarSessoesRecorrentes(sessoes, recorrencia);
   }
 
