@@ -49,6 +49,9 @@
     <button class="nav-tab admin-only" data-perm="categorias" data-label="Categorias" onclick="fecharDrawer();showSection('categorias')">🏷️ <span>Categorias</span> <span class="badge" id="badgeCat">0</span></button>
   </nav>
 
+        <button class="nav-tab" onclick="showSection('mensagens')" data-label="Mensagens WhatsApp">
+          <span>💬</span><span>Mensagens WhatsApp</span>
+        </button>
   <div class="sidebar-footer">
     <div class="sidebar-user">
       <div class="sidebar-avatar" id="sidebarAvatarLetter">L</div>
@@ -923,6 +926,19 @@
   </div>
   <div id="log-entries"></div>
 </div>
+
+  <!-- ===== MENSAGENS WHATSAPP ===== -->
+  <section class="section" id="sec-mensagens">
+    <div class="main">
+      <div class="section-title">Mensagens WhatsApp</div>
+      <div class="section-sub">Personalize as mensagens enviadas pelo sistema</div>
+      <div class="divider"></div>
+      <div id="mensagensLista">
+        <div class="empty-state"><div class="empty-icon">⏳</div><p>Carregando...</p></div>
+      </div>
+    </div>
+  </section>
+
 <!-- MODAL ASSINATURA DIGITAL -->
 <div id="modalAssinatura" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.7);overflow-y:auto">
   <div style="background:white;max-width:860px;margin:1rem auto;border-radius:12px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.3)">
@@ -989,6 +1005,8 @@
 <script src="js/calendario.js"></script>
 <!-- 14. IndexedDB + Fotos (Supabase Storage) -->
 <script src="js/idb.js"></script>
+<!-- 14b. Mensagens WhatsApp customizáveis -->
+<script src="js/mensagens.js"></script>
 <!-- 15. Solicitações de agendamento público -->
 <script src="js/solicitacoes.js"></script>
 <!-- 16. App — inicialização, boot, polling (último) -->
