@@ -319,17 +319,16 @@ async function _pollingNovos() {
   try {
     var desde = _ultimoSync;
     var agora = new Date().toISOString();
-    var [novosAtend, novasSessoes, novosServ, novasMat, novasAnam, novosAdm, novosExtra, novaCat, novaAgenda] = await Promise.all([
+    // Apenas tabelas com coluna atualizado_em
+    var [novosAtend, novasSessoes, novosServ, novasMat, novasAnam, novaAgenda] = await Promise.all([
       _supaGetNovos('atendimentos', desde),
       _supaGetNovos('sessoes', desde),
       _supaGetNovos('servicos', desde),
       _supaGetNovos('materiais', desde),
       _supaGetNovos('anamneses', desde),
-      _supaGetNovos('desp_adm', desde),
-      _supaGetNovos('desp_extra', desde),
-      _supaGetNovos('categorias', desde),
       _supaGetNovos('agenda', desde)
     ]);
+    var novosAdm = null, novosExtra = null, novaCat = null;
 
     var houveMudanca = false;
 
