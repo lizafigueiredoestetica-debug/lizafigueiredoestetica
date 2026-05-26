@@ -60,6 +60,12 @@ var _MENSAGENS_PADRAO = {
     variaveis: ['{nome}', '{motivo}'],
     texto: 'Olá {nome}! 🌸\n\nInfelizmente não conseguimos confirmar seu agendamento para a data solicitada. 😔\n\n{motivo}\n\nPor favor, entre em contato para verificarmos outra data disponível. Adoraríamos te atender! ✨\n\nQualquer dúvida, estou à disposição! 💆‍♀️'
   },
+  reagendar: {
+    nome: '📅 Falta / Reagendamento',
+    descricao: 'Enviada quando a cliente não comparece à sessão',
+    variaveis: ['{nome}', '{servico}'],
+    texto: 'Olá {nome}! 🌸\n\nNotamos que você não compareceu à sua sessão de *{servico}* hoje. Tudo bem? 😊\n\nQuando quiser reagendar é só me avisar, tenho horários disponíveis! ✨'
+  },
   orcamento: {
     nome: '💬 Solicitação de Orçamento',
     descricao: 'Enviada pela cliente ao solicitar orçamento na página de agendamento',
