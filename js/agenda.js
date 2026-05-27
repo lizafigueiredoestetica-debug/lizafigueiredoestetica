@@ -557,33 +557,64 @@ function excluirAgenda(agId) {
     return;
   }
 
-  // Com recorrência — modal com 3 opções
-  var old = document.getElementById('modal-excluir-ag');
-  if (old) old.remove();
+  // Com recorrência — modal com 3 opções (usando createElement para evitar problema de aspas)
+  var oldM = document.getElementById('modal-excluir-ag');
+  if (oldM) oldM.remove();
 
   var modal = document.createElement('div');
   modal.id = 'modal-excluir-ag';
   modal.style.cssText = 'position:fixed;inset:0;background:rgba(28,28,30,0.65);z-index:9998;display:flex;align-items:center;justify-content:center;padding:1rem';
-  modal.innerHTML = '<div style="background:white;border-radius:16px;max-width:440px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);overflow:hidden">'
-    + '<div style="padding:1.2rem 1.5rem;background:linear-gradient(135deg,#1C1C1E,#2C2C2E);display:flex;justify-content:space-between;align-items:center">'
-    + '<div style="font-family:Cormorant Garamond,serif;font-size:18px;color:#FAF0F2;letter-spacing:2px">🗑️ Excluir Agendamento</div>'
-    + '<button onclick="document.getElementById('modal-excluir-ag').remove()" style="background:none;border:none;color:#FAF0F2;font-size:20px;cursor:pointer">✕</button>'
-    + '</div>'
-    + '<div style="padding:1.5rem">'
-    + '<div style="background:#FFF0F0;border:1px solid #FFCDD2;border-radius:10px;padding:1rem;margin-bottom:1.25rem;font-size:13px;color:#C62828">'
-    + '⚠️ <strong>' + ag.cliente + '</strong> tem recorrência ativa com <strong>' + ag.sessoes.length + ' sessões</strong>. O que deseja excluir?'
-    + '</div>'
-    + '<div style="display:flex;flex-direction:column;gap:0.75rem">'
-    + '<button onclick="document.getElementById('modal-excluir-ag').remove();_excluirTodasSessoes('' + agId + '')" '
-    + 'style="background:#FFEBEE;border:1px solid #EF9A9A;color:#C62828;border-radius:10px;padding:0.85rem 1rem;font-size:13px;font-weight:500;cursor:pointer;text-align:left;font-family:Jost,sans-serif">'
-    + '🗑️ <strong>Excluir TUDO</strong> — remove o agendamento e todas as ' + ag.sessoes.length + ' sessões</button>'
-    + '<button onclick="document.getElementById('modal-excluir-ag').remove();_excluirSessoesPendentes('' + agId + '')" '
-    + 'style="background:#FFF3E0;border:1px solid #FFCC80;color:#E65100;border-radius:10px;padding:0.85rem 1rem;font-size:13px;font-weight:500;cursor:pointer;text-align:left;font-family:Jost,sans-serif">'
-    + '✂️ <strong>Excluir só as pendentes</strong> — mantém as sessões já realizadas</button>'
-    + '<button onclick="document.getElementById('modal-excluir-ag').remove()" '
-    + 'style="background:var(--cream);border:1px solid var(--border);color:var(--text-mid);border-radius:10px;padding:0.75rem 1rem;font-size:13px;cursor:pointer;font-family:Jost,sans-serif">'
-    + 'Cancelar</button>'
-    + '</div></div></div>';
+
+  var box = document.createElement('div');
+  box.style.cssText = 'background:white;border-radius:16px;max-width:440px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);overflow:hidden';
+
+  // Header
+  var header = document.createElement('div');
+  header.style.cssText = 'padding:1.2rem 1.5rem;background:linear-gradient(135deg,#1C1C1E,#2C2C2E);display:flex;justify-content:space-between;align-items:center';
+  var titulo = document.createElement('div');
+  titulo.style.cssText = 'font-family:Cormorant Garamond,serif;font-size:18px;color:#FAF0F2;letter-spacing:2px';
+  titulo.textContent = '🗑️ Excluir Agendamento';
+  var btnFechar = document.createElement('button');
+  btnFechar.style.cssText = 'background:none;border:none;color:#FAF0F2;font-size:20px;cursor:pointer';
+  btnFechar.textContent = '✕';
+  btnFechar.onclick = function(){ modal.remove(); };
+  header.appendChild(titulo);
+  header.appendChild(btnFechar);
+
+  // Body
+  var body = document.createElement('div');
+  body.style.cssText = 'padding:1.5rem';
+
+  var aviso = document.createElement('div');
+  aviso.style.cssText = 'background:#FFF0F0;border:1px solid #FFCDD2;border-radius:10px;padding:1rem;margin-bottom:1.25rem;font-size:13px;color:#C62828';
+  aviso.innerHTML = '⚠️ <strong>' + ag.cliente + '</strong> tem recorrência ativa com <strong>' + ag.sessoes.length + ' sessões</strong>. O que deseja excluir?';
+
+  var btns = document.createElement('div');
+  btns.style.cssText = 'display:flex;flex-direction:column;gap:0.75rem';
+
+  var btnTudo = document.createElement('button');
+  btnTudo.style.cssText = 'background:#FFEBEE;border:1px solid #EF9A9A;color:#C62828;border-radius:10px;padding:0.85rem 1rem;font-size:13px;font-weight:500;cursor:pointer;text-align:left;font-family:Jost,sans-serif';
+  btnTudo.innerHTML = '🗑️ <strong>Excluir TUDO</strong> — remove o agendamento e todas as ' + ag.sessoes.length + ' sessões';
+  btnTudo.onclick = function(){ modal.remove(); _excluirTodasSessoes(agId); };
+
+  var btnPendentes = document.createElement('button');
+  btnPendentes.style.cssText = 'background:#FFF3E0;border:1px solid #FFCC80;color:#E65100;border-radius:10px;padding:0.85rem 1rem;font-size:13px;font-weight:500;cursor:pointer;text-align:left;font-family:Jost,sans-serif';
+  btnPendentes.innerHTML = '✂️ <strong>Excluir só as pendentes</strong> — mantém as sessões já realizadas';
+  btnPendentes.onclick = function(){ modal.remove(); _excluirSessoesPendentes(agId); };
+
+  var btnCancelar = document.createElement('button');
+  btnCancelar.style.cssText = 'background:var(--cream);border:1px solid var(--border);color:var(--text-mid);border-radius:10px;padding:0.75rem 1rem;font-size:13px;cursor:pointer;font-family:Jost,sans-serif';
+  btnCancelar.textContent = 'Cancelar';
+  btnCancelar.onclick = function(){ modal.remove(); };
+
+  btns.appendChild(btnTudo);
+  btns.appendChild(btnPendentes);
+  btns.appendChild(btnCancelar);
+  body.appendChild(aviso);
+  body.appendChild(btns);
+  box.appendChild(header);
+  box.appendChild(body);
+  modal.appendChild(box);
   document.body.appendChild(modal);
   modal.addEventListener('click', function(e){ if(e.target===modal) modal.remove(); });
 }
