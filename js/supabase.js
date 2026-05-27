@@ -385,7 +385,7 @@ async function _pollingNovos() {
     if (novaAgenda && novaAgenda.length) {
       novaAgenda.forEach(function(ag) {
         var idx = db.agenda.findIndex(function(x){ return x.id === ag.id; });
-        var obj = { id: ag.id, cliente: ag.cliente, tel: ag.tel, obs: ag.obs, sinal: ag.sinal, sinalPago: ag.sinal_pago, servicoIds: [], servicoNome: '—', sessoes: idx >= 0 ? db.agenda[idx].sessoes : [] };
+        var obj = { id: ag.id, cliente: ag.cliente, tel: ag.tel, obs: ag.obs, sinal: ag.sinal, sinalPago: ag.sinal_pago, cor: ag.cor || '#D4A0A8', recorrencia: ag.recorrencia || '', servicoIds: [], servicoNome: '—', sessoes: idx >= 0 ? db.agenda[idx].sessoes : [] };
         if (idx >= 0) db.agenda[idx] = obj; else db.agenda.push(obj);
       });
       houveMudanca = true;
