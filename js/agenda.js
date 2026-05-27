@@ -40,16 +40,50 @@ function gerarCamposDatas() {
       campos.innerHTML = '';
       campos.style.gridTemplateColumns = '1fr';
       var hoje = _hoje();
-      var chipsHtml = db.servicos.filter(function(s){ return s.status==='ativo'; })
-        .map(function(s){ return '<span class="service-chip" style="font-size:11px;padding:2px 8px;cursor:pointer" id="agchip_0_'+s.id+'" onclick="this.classList.toggle('selected')">'+s.nome+'</span>'; }).join('');
+      // Criar elementos via DOM para evitar problema de aspas
       var div = document.createElement('div');
-      div.style.cssText = 'display:flex;align-items:center;gap:0.5rem;margin-bottom:8px;flex-wrap:wrap';
-      div.innerHTML = '<span style="font-size:11px;color:var(--text-light);min-width:60px">Sessão 1</span>'
-        + '<input type="date" id="ag-data-0" value="'+hoje+'" style="padding:0.4rem 0.6rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none">'
-        + '<input type="time" id="ag-hora-0" style="width:90px;padding:0.4rem 0.4rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none">'
-        + '<div style="display:flex;flex-wrap:wrap;gap:4px">'
-        + '<input type="text" placeholder="🔍 Filtrar serviços..." oninput="(function(el){var v=el.value.toLowerCase();el.parentElement.querySelectorAll('.service-chip').forEach(function(c){c.style.display=c.textContent.toLowerCase().includes(v)?'':'none';});})(this)" style="width:100%;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px;font-family:Jost,sans-serif;outline:none;margin-bottom:4px">'
-        + chipsHtml + '</div>';
+      div.style.cssText = 'display:flex;align-items:flex-start;gap:0.5rem;margin-bottom:8px;flex-wrap:wrap';
+
+      var lbl = document.createElement('span');
+      lbl.style.cssText = 'font-size:11px;color:var(--text-light);min-width:60px;padding-top:6px';
+      lbl.textContent = 'Sessão 1';
+
+      var inpData = document.createElement('input');
+      inpData.type = 'date'; inpData.id = 'ag-data-0'; inpData.value = hoje;
+      inpData.style.cssText = 'padding:0.4rem 0.6rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none';
+
+      var inpHora = document.createElement('input');
+      inpHora.type = 'time'; inpHora.id = 'ag-hora-0';
+      inpHora.style.cssText = 'width:90px;padding:0.4rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none';
+
+      var chipsWrap = document.createElement('div');
+      chipsWrap.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px;flex:1';
+
+      var filtro = document.createElement('input');
+      filtro.type = 'text'; filtro.placeholder = '🔍 Filtrar serviços...';
+      filtro.style.cssText = 'width:100%;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px;font-family:Jost,sans-serif;outline:none;margin-bottom:4px';
+      filtro.oninput = function() {
+        var v = this.value.toLowerCase();
+        chipsWrap.querySelectorAll('.service-chip').forEach(function(c){
+          c.style.display = c.textContent.toLowerCase().includes(v) ? '' : 'none';
+        });
+      };
+      chipsWrap.appendChild(filtro);
+
+      db.servicos.filter(function(s){ return s.status==='ativo'; }).forEach(function(s) {
+        var chip = document.createElement('span');
+        chip.className = 'service-chip';
+        chip.id = 'agchip_0_' + s.id;
+        chip.textContent = s.nome;
+        chip.style.cssText = 'font-size:11px;padding:2px 8px;cursor:pointer';
+        chip.onclick = function(){ this.classList.toggle('selected'); };
+        chipsWrap.appendChild(chip);
+      });
+
+      div.appendChild(lbl);
+      div.appendChild(inpData);
+      div.appendChild(inpHora);
+      div.appendChild(chipsWrap);
       campos.appendChild(div);
     }
     return;
