@@ -20,12 +20,41 @@ function populateAgendaServico() {
   container.innerHTML = ativos.length
     ? ativos.map(function(s){ return '<span class="service-chip" style="font-size:12px;cursor:pointer" data-id="'+s.id+'" onclick="this.classList.toggle(\'selected\')">'+s.nome+'</span>'; }).join('')
     : '<span style="font-size:12px;color:var(--text-light)">Cadastre serviços primeiro</span>';
+  // Garantir campo de data padrão visível ao abrir a seção
+  var qtd = parseInt((document.getElementById('ag-qtd')||{value:'0'}).value) || 0;
+  var recorrencia = (document.getElementById('ag-recorrencia')||{value:''}).value;
+  if (qtd < 1 && !recorrencia) gerarCamposDatas();
 }
 
 function gerarCamposDatas() {
   const qtd = parseInt(document.getElementById('ag-qtd').value) || 0;
   const wrap = document.getElementById('ag-datas-wrap');
   const campos = document.getElementById('ag-datas-campos');
+  const recorrencia = (document.getElementById('ag-recorrencia')||{value:''}).value;
+
+  // Se qtd=0 e sem recorrência: mostra 1 campo padrão com data de hoje
+  if(qtd < 1 && !recorrencia) {
+    wrap.style.display = 'block';
+    // Só insere se ainda não tem nenhum campo
+    if (!document.getElementById('ag-data-0')) {
+      campos.innerHTML = '';
+      campos.style.gridTemplateColumns = '1fr';
+      var hoje = _hoje();
+      var chipsHtml = db.servicos.filter(function(s){ return s.status==='ativo'; })
+        .map(function(s){ return '<span class="service-chip" style="font-size:11px;padding:2px 8px;cursor:pointer" id="agchip_0_'+s.id+'" onclick="this.classList.toggle('selected')">'+s.nome+'</span>'; }).join('');
+      var div = document.createElement('div');
+      div.style.cssText = 'display:flex;align-items:center;gap:0.5rem;margin-bottom:8px;flex-wrap:wrap';
+      div.innerHTML = '<span style="font-size:11px;color:var(--text-light);min-width:60px">Sessão 1</span>'
+        + '<input type="date" id="ag-data-0" value="'+hoje+'" style="padding:0.4rem 0.6rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none">'
+        + '<input type="time" id="ag-hora-0" style="width:90px;padding:0.4rem 0.4rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none">'
+        + '<div style="display:flex;flex-wrap:wrap;gap:4px">'
+        + '<input type="text" placeholder="🔍 Filtrar serviços..." oninput="(function(el){var v=el.value.toLowerCase();el.parentElement.querySelectorAll('.service-chip').forEach(function(c){c.style.display=c.textContent.toLowerCase().includes(v)?'':'none';});})(this)" style="width:100%;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px;font-family:Jost,sans-serif;outline:none;margin-bottom:4px">'
+        + chipsHtml + '</div>';
+      campos.appendChild(div);
+    }
+    return;
+  }
+
   if(qtd < 1) { wrap.style.display='none'; campos.innerHTML=''; return; }
   wrap.style.display='block';
   // Keep existing values
@@ -481,13 +510,71 @@ function realizarSessao(agId, sessaoIdx) {
 function excluirAgenda(agId) {
   const ag = db.agenda.find(x=>x.id===agId);
   if(!ag) return;
+
   var temRecorrencia = ag.recorrencia && ag.recorrencia !== '';
-  var msgConfirm = temRecorrencia ? 'Este agendamento tem recorrência.\n\nOK = Excluir APENAS este\nCancelar = Não excluir' : `Excluir agendamento de "${ag.cliente}"?\nTodas as ${ag.sessoes.length} sessões serão removidas.`;
-  if (!confirm(msgConfirm)) return;
+
+  if (!temRecorrencia) {
+    // Sem recorrência — confirmação simples
+    if (!confirm('Excluir agendamento de "' + ag.cliente + '"?\nTodas as ' + ag.sessoes.length + ' sessões serão removidas.')) return;
+    db.agenda = db.agenda.filter(x=>x.id!==agId);
+    saveData(); renderAll();
+    showToast('Agendamento excluído.');
+    _deletarAgenda(agId);
+    return;
+  }
+
+  // Com recorrência — modal com 3 opções
+  var old = document.getElementById('modal-excluir-ag');
+  if (old) old.remove();
+
+  var modal = document.createElement('div');
+  modal.id = 'modal-excluir-ag';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(28,28,30,0.65);z-index:9998;display:flex;align-items:center;justify-content:center;padding:1rem';
+  modal.innerHTML = '<div style="background:white;border-radius:16px;max-width:440px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);overflow:hidden">'
+    + '<div style="padding:1.2rem 1.5rem;background:linear-gradient(135deg,#1C1C1E,#2C2C2E);display:flex;justify-content:space-between;align-items:center">'
+    + '<div style="font-family:Cormorant Garamond,serif;font-size:18px;color:#FAF0F2;letter-spacing:2px">🗑️ Excluir Agendamento</div>'
+    + '<button onclick="document.getElementById('modal-excluir-ag').remove()" style="background:none;border:none;color:#FAF0F2;font-size:20px;cursor:pointer">✕</button>'
+    + '</div>'
+    + '<div style="padding:1.5rem">'
+    + '<div style="background:#FFF0F0;border:1px solid #FFCDD2;border-radius:10px;padding:1rem;margin-bottom:1.25rem;font-size:13px;color:#C62828">'
+    + '⚠️ <strong>' + ag.cliente + '</strong> tem recorrência ativa com <strong>' + ag.sessoes.length + ' sessões</strong>. O que deseja excluir?'
+    + '</div>'
+    + '<div style="display:flex;flex-direction:column;gap:0.75rem">'
+    + '<button onclick="document.getElementById('modal-excluir-ag').remove();_excluirTodasSessoes('' + agId + '')" '
+    + 'style="background:#FFEBEE;border:1px solid #EF9A9A;color:#C62828;border-radius:10px;padding:0.85rem 1rem;font-size:13px;font-weight:500;cursor:pointer;text-align:left;font-family:Jost,sans-serif">'
+    + '🗑️ <strong>Excluir TUDO</strong> — remove o agendamento e todas as ' + ag.sessoes.length + ' sessões</button>'
+    + '<button onclick="document.getElementById('modal-excluir-ag').remove();_excluirSessoesPendentes('' + agId + '')" '
+    + 'style="background:#FFF3E0;border:1px solid #FFCC80;color:#E65100;border-radius:10px;padding:0.85rem 1rem;font-size:13px;font-weight:500;cursor:pointer;text-align:left;font-family:Jost,sans-serif">'
+    + '✂️ <strong>Excluir só as pendentes</strong> — mantém as sessões já realizadas</button>'
+    + '<button onclick="document.getElementById('modal-excluir-ag').remove()" '
+    + 'style="background:var(--cream);border:1px solid var(--border);color:var(--text-mid);border-radius:10px;padding:0.75rem 1rem;font-size:13px;cursor:pointer;font-family:Jost,sans-serif">'
+    + 'Cancelar</button>'
+    + '</div></div></div>';
+  document.body.appendChild(modal);
+  modal.addEventListener('click', function(e){ if(e.target===modal) modal.remove(); });
+}
+
+function _excluirTodasSessoes(agId) {
   db.agenda = db.agenda.filter(x=>x.id!==agId);
   saveData(); renderAll();
-  showToast('Agendamento excluído.');
+  showToast('Agendamento excluído completamente.');
   _deletarAgenda(agId);
+}
+
+function _excluirSessoesPendentes(agId) {
+  var ag = db.agenda.find(x=>x.id===agId);
+  if (!ag) return;
+  var realizadas = ag.sessoes.filter(function(s){ return s.status === 'realizado'; });
+  if (!realizadas.length) {
+    // Sem nenhuma realizada — excluir tudo
+    _excluirTodasSessoes(agId);
+    return;
+  }
+  ag.sessoes = realizadas;
+  ag.recorrencia = ''; // remove recorrência
+  saveData(); renderAll();
+  showToast('Sessões pendentes removidas. ' + realizadas.length + ' sessão(ões) realizada(s) mantida(s).');
+  _salvarAgenda(ag);
 }
 
 // ===================== LOG =====================
@@ -1487,9 +1574,24 @@ function toggleRecorrencia() {
   if (!sel || !cfg) return;
   if (sel.value === '') {
     cfg.style.display = 'none';
+    // Sem recorrência: garantir que o campo de data padrão aparece
+    var qtd = parseInt((document.getElementById('ag-qtd')||{value:'0'}).value) || 0;
+    if (qtd < 1) {
+      var campos = document.getElementById('ag-datas-campos');
+      if (campos) campos.innerHTML = ''; // limpa para recriar
+    }
+    gerarCamposDatas();
   } else {
     cfg.style.display = 'block';
     if (dias) dias.style.display = sel.value === 'personalizado' ? 'block' : 'none';
+    // Com recorrência: esconder campo padrão se qtd=0
+    var qtdRec = parseInt((document.getElementById('ag-qtd')||{value:'0'}).value) || 0;
+    if (qtdRec < 1) {
+      var wrap = document.getElementById('ag-datas-wrap');
+      var campos2 = document.getElementById('ag-datas-campos');
+      if (wrap) wrap.style.display = 'none';
+      if (campos2) campos2.innerHTML = '';
+    }
   }
 }
 
