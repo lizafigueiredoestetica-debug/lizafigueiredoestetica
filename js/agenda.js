@@ -1404,15 +1404,17 @@ function toggleRecorrencia() {
 }
 
 function _gerarSessoesRecorrentes(sessoesBase, recorrencia) {
-  if (!sessoesBase || !sessoesBase.length) return sessoesBase;
-  
   var ate = (document.getElementById('ag-recorr-ate') || {value:''}).value;
   var horaFixa = (document.getElementById('ag-recorr-hora') || {value:''}).value;
+  var dataInicioStr = (document.getElementById('ag-recorr-inicio') || {value:''}).value;
   
-  if (!ate) return sessoesBase;
+  if (!ate) return sessoesBase || [];
   
-  var primeira = sessoesBase[0];
-  var dataInicio = new Date(primeira.data + 'T12:00:00');
+  // Se não tem sessões, usa a data de início do campo específico
+  var primeira = (sessoesBase && sessoesBase.length) ? sessoesBase[0] : { data: dataInicioStr, hora: horaFixa, servicoIds: [], servico: '' };
+  if (!primeira.data && !dataInicioStr) return sessoesBase || [];
+  
+  var dataInicio = new Date((primeira.data || dataInicioStr) + 'T12:00:00');
   var dataFim = new Date(ate + 'T12:00:00');
   var hora = horaFixa || primeira.hora || '';
   var sessoes = [];
