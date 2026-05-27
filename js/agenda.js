@@ -1456,7 +1456,7 @@ function _renderCorBolinhas(containerId, corAtual) {
     var borderStyle = ativo ? ('3px solid ' + darken) : '3px solid transparent';
     var shadowStyle = ativo ? ('0 0 0 2px white, 0 0 0 4px ' + darken) : 'none';
     return '<span class="cor-bolinha-edit" data-cor="' + c.hex + '" title="' + c.label + '" '
-      + 'onclick="selecionarCorEdit(this,'' + containerId + '')" '
+      + 'onclick="selecionarCorEdit(this,\'' + containerId + '\')" '
       + 'style="display:inline-block;background:' + c.hex + ';width:26px;height:26px;border-radius:50%;'
       + 'cursor:pointer;border:' + borderStyle + ';box-shadow:' + shadowStyle + ';transition:all 0.15s">'
       + '</span>';
