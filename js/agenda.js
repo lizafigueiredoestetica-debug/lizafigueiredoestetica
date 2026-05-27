@@ -56,34 +56,10 @@ function gerarCamposDatas() {
       inpHora.type = 'time'; inpHora.id = 'ag-hora-0';
       inpHora.style.cssText = 'width:90px;padding:0.4rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none';
 
-      var chipsWrap = document.createElement('div');
-      chipsWrap.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px;flex:1';
-
-      var filtro = document.createElement('input');
-      filtro.type = 'text'; filtro.placeholder = '🔍 Filtrar serviços...';
-      filtro.style.cssText = 'width:100%;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px;font-family:Jost,sans-serif;outline:none;margin-bottom:4px';
-      filtro.oninput = function() {
-        var v = this.value.toLowerCase();
-        chipsWrap.querySelectorAll('.service-chip').forEach(function(c){
-          c.style.display = c.textContent.toLowerCase().includes(v) ? '' : 'none';
-        });
-      };
-      chipsWrap.appendChild(filtro);
-
-      db.servicos.filter(function(s){ return s.status==='ativo'; }).forEach(function(s) {
-        var chip = document.createElement('span');
-        chip.className = 'service-chip';
-        chip.id = 'agchip_0_' + s.id;
-        chip.textContent = s.nome;
-        chip.style.cssText = 'font-size:11px;padding:2px 8px;cursor:pointer';
-        chip.onclick = function(){ this.classList.toggle('selected'); };
-        chipsWrap.appendChild(chip);
-      });
-
+      // Sessão única: só data e hora, sem chips de serviço
       div.appendChild(lbl);
       div.appendChild(inpData);
       div.appendChild(inpHora);
-      div.appendChild(chipsWrap);
       campos.appendChild(div);
     }
     return;
@@ -127,22 +103,39 @@ function salvarAgendamento() {
   const recorrencia = (document.getElementById('ag-recorrencia')||{value:''}).value || '';
 
   const sessoes = [];
-  for(let i=0; i<qtd; i++) {
-    const dataEl = document.getElementById('ag-data-'+i);
-    if(!dataEl || !dataEl.value) {
-      // Se tem recorrência ativa, não exige datas manuais
-      if (!recorrencia) {
-        showToast('Preencha a data da sessão ' + (i+1) + '!');
-        return;
-      }
-      continue;
+
+  // Modo padrão (qtd=0, sem recorrência): ler apenas ag-data-0
+  if ((!qtd || qtd < 1) && !recorrencia) {
+    const dataEl0 = document.getElementById('ag-data-0');
+    if (!dataEl0 || !dataEl0.value) {
+      showToast('Preencha a data da sessão!');
+      return;
     }
-    const horaEl = document.getElementById('ag-hora-'+i);
-    const srvIds = db.servicos.filter(function(s){
-      const el = document.getElementById('agchip_'+i+'_'+s.id);
-      return el && el.classList.contains('selected');
-    }).map(function(s){ return s.id; });
-    sessoes.push({ data: dataEl.value, hora: horaEl ? horaEl.value : '', status: 'pendente', atendimentoId: null, servicoIds: srvIds, servico: srvIds.map(function(id){ const sv=db.servicos.find(function(x){return x.id===id;}); return sv?sv.nome:''; }).join(' + ') });
+    const horaEl0 = document.getElementById('ag-hora-0');
+    sessoes.push({
+      data: dataEl0.value,
+      hora: horaEl0 ? horaEl0.value : '',
+      status: 'pendente', atendimentoId: null,
+      servicoIds: [], servico: ''
+    });
+  } else {
+    // Modo com qtd definida: iterar pelos campos
+    for(let i=0; i<qtd; i++) {
+      const dataEl = document.getElementById('ag-data-'+i);
+      if(!dataEl || !dataEl.value) {
+        if (!recorrencia) {
+          showToast('Preencha a data da sessão ' + (i+1) + '!');
+          return;
+        }
+        continue;
+      }
+      const horaEl = document.getElementById('ag-hora-'+i);
+      const srvIds = db.servicos.filter(function(s){
+        const el = document.getElementById('agchip_'+i+'_'+s.id);
+        return el && el.classList.contains('selected');
+      }).map(function(s){ return s.id; });
+      sessoes.push({ data: dataEl.value, hora: horaEl ? horaEl.value : '', status: 'pendente', atendimentoId: null, servicoIds: srvIds, servico: srvIds.map(function(id){ const sv=db.servicos.find(function(x){return x.id===id;}); return sv?sv.nome:''; }).join(' + ') });
+    }
   }
 
   // Validar: sem recorrência exige pelo menos 1 sessão
