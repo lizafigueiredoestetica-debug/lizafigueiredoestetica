@@ -61,12 +61,18 @@ function salvarAgendamento() {
     return;
   }
 
+  const recorrencia = (document.getElementById('ag-recorrencia')||{value:''}).value || '';
+
   const sessoes = [];
   for(let i=0; i<qtd; i++) {
     const dataEl = document.getElementById('ag-data-'+i);
     if(!dataEl || !dataEl.value) {
-      showToast('Preencha a data da sessão ' + (i+1) + '!');
-      return;
+      // Se tem recorrência ativa, não exige datas manuais
+      if (!recorrencia) {
+        showToast('Preencha a data da sessão ' + (i+1) + '!');
+        return;
+      }
+      continue;
     }
     const horaEl = document.getElementById('ag-hora-'+i);
     const srvIds = db.servicos.filter(function(s){
@@ -76,15 +82,34 @@ function salvarAgendamento() {
     sessoes.push({ data: dataEl.value, hora: horaEl ? horaEl.value : '', status: 'pendente', atendimentoId: null, servicoIds: srvIds, servico: srvIds.map(function(id){ const sv=db.servicos.find(function(x){return x.id===id;}); return sv?sv.nome:''; }).join(' + ') });
   }
 
+  // Validar: sem recorrência exige pelo menos 1 sessão
+  if (!recorrencia && sessoes.length === 0) {
+    showToast('Preencha pelo menos uma data de sessão!');
+    return;
+  }
+
+  // Com recorrência, exige data de início e data até
+  if (recorrencia) {
+    var inicioRec = (document.getElementById('ag-recorr-inicio')||{value:''}).value;
+    var ateRec = (document.getElementById('ag-recorr-ate')||{value:''}).value;
+    if (!inicioRec || !ateRec) {
+      showToast('Preencha a data de início e "até quando" da recorrência!');
+      return;
+    }
+  }
+
   const tel = (document.getElementById('ag-tel')||{value:''}).value.trim();
   const sinal = parseFloat((document.getElementById('ag-sinal')||{value:'0'}).value) || 0;
   const cor = (document.getElementById('ag-cor')||{value:'#D4A0A8'}).value || '#D4A0A8';
-  const recorrencia = (document.getElementById('ag-recorrencia')||{value:''}).value || '';
 
   // Gerar sessões recorrentes se necessário
   var sessoesFinais = sessoes;
-  if (recorrencia && recorrencia !== '' && sessoes.length > 0) {
+  if (recorrencia && recorrencia !== '') {
     sessoesFinais = _gerarSessoesRecorrentes(sessoes, recorrencia);
+    if (!sessoesFinais || sessoesFinais.length === 0) {
+      showToast('Recorrência não gerou sessões. Verifique as datas!');
+      return;
+    }
   }
 
   db.agenda.push({
@@ -1407,41 +1432,57 @@ function _gerarSessoesRecorrentes(sessoesBase, recorrencia) {
   var ate = (document.getElementById('ag-recorr-ate') || {value:''}).value;
   var horaFixa = (document.getElementById('ag-recorr-hora') || {value:''}).value;
   var dataInicioStr = (document.getElementById('ag-recorr-inicio') || {value:''}).value;
-  
+
   if (!ate) return sessoesBase || [];
-  
-  // Se não tem sessões, usa a data de início do campo específico
-  var primeira = (sessoesBase && sessoesBase.length) ? sessoesBase[0] : { data: dataInicioStr, hora: horaFixa, servicoIds: [], servico: '' };
-  if (!primeira.data && !dataInicioStr) return sessoesBase || [];
-  
-  var dataInicio = new Date((primeira.data || dataInicioStr) + 'T12:00:00');
+
+  // Se não tem sessões manuais, usa data de início do campo de recorrência
+  var primeira = (sessoesBase && sessoesBase.length && sessoesBase[0].data)
+    ? sessoesBase[0]
+    : { data: dataInicioStr, hora: horaFixa, servicoIds: [], servico: '' };
+
+  var inicioStr = primeira.data || dataInicioStr;
+  if (!inicioStr) return sessoesBase || [];
+
+  // ─── Função segura para formatar data sem bug de fuso horário ───
+  function _fmtDataLocal(d) {
+    var y = d.getFullYear();
+    var m = String(d.getMonth() + 1).padStart(2, '0');
+    var dd = String(d.getDate()).padStart(2, '0');
+    return y + '-' + m + '-' + dd;
+  }
+
+  // Usar T12:00:00 para evitar problema de meia-noite com fuso
+  var dataInicio = new Date(inicioStr + 'T12:00:00');
   var dataFim = new Date(ate + 'T12:00:00');
   var hora = horaFixa || primeira.hora || '';
   var sessoes = [];
   var atual = new Date(dataInicio);
-  
+
+  // Limite de segurança: máx 500 sessões
+  var limite = 500;
+
   if (recorrencia === 'semanal') {
-    while (atual <= dataFim) {
+    while (atual <= dataFim && sessoes.length < limite) {
       sessoes.push({
-        data: atual.toISOString().split('T')[0],
+        data: _fmtDataLocal(atual),
         hora: hora, status: 'pendente', atendimentoId: null,
         servicoIds: primeira.servicoIds || [], servico: primeira.servico || ''
       });
       atual.setDate(atual.getDate() + 7);
     }
   } else if (recorrencia === 'quinzenal') {
-    while (atual <= dataFim) {
+    while (atual <= dataFim && sessoes.length < limite) {
       sessoes.push({
-        data: atual.toISOString().split('T')[0],
+        data: _fmtDataLocal(atual),
         hora: hora, status: 'pendente', atendimentoId: null,
         servicoIds: primeira.servicoIds || [], servico: primeira.servico || ''
       });
       atual.setDate(atual.getDate() + 14);
     }
   } else if (recorrencia === 'mensal') {
-    while (atual <= dataFim) {
+    while (atual <= dataFim && sessoes.length < limite) {
       sessoes.push({
-        data: atual.toISOString().split('T')[0],
+        data: _fmtDataLocal(atual),
         hora: hora, status: 'pendente', atendimentoId: null,
         servicoIds: primeira.servicoIds || [], servico: primeira.servico || ''
       });
@@ -1450,12 +1491,12 @@ function _gerarSessoesRecorrentes(sessoesBase, recorrencia) {
   } else if (recorrencia === 'personalizado') {
     var diasCheck = document.querySelectorAll('.ag-dia-check:checked');
     var diasSemana = Array.from(diasCheck).map(function(c){ return parseInt(c.value); });
-    if (!diasSemana.length) return sessoesBase;
+    if (!diasSemana.length) return sessoesBase && sessoesBase.length ? sessoesBase : [];
     var d = new Date(dataInicio);
-    while (d <= dataFim) {
+    while (d <= dataFim && sessoes.length < limite) {
       if (diasSemana.indexOf(d.getDay()) >= 0) {
         sessoes.push({
-          data: d.toISOString().split('T')[0],
+          data: _fmtDataLocal(d),
           hora: hora, status: 'pendente', atendimentoId: null,
           servicoIds: primeira.servicoIds || [], servico: primeira.servico || ''
         });
@@ -1463,6 +1504,6 @@ function _gerarSessoesRecorrentes(sessoesBase, recorrencia) {
       d.setDate(d.getDate() + 1);
     }
   }
-  
-  return sessoes.length > 0 ? sessoes : sessoesBase;
+
+  return sessoes.length > 0 ? sessoes : (sessoesBase && sessoesBase.length ? sessoesBase : []);
 }
