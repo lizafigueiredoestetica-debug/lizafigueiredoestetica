@@ -146,7 +146,11 @@ function salvarAgendamento() {
 }
 
 function limparFormAgenda() {
-  const corPadrao = document.querySelector('.cor-opcao[data-cor="#D4A0A8"]'); if(corPadrao){ document.querySelectorAll('.cor-opcao').forEach(function(el){el.style.border='3px solid transparent';}); corPadrao.style.border='3px solid #B07880'; const ci=document.getElementById('ag-cor'); if(ci) ci.value='#D4A0A8'; }
+  // Reset bolinhas de cor
+  var ciReset = document.getElementById('ag-cor'); if(ciReset) ciReset.value='#D4A0A8';
+  document.querySelectorAll('#ag-cor-bolinhas .cor-bolinha').forEach(function(b){ b.style.border='3px solid transparent'; b.style.boxShadow='none'; });
+  var corPadrao = document.querySelector('#ag-cor-bolinhas .cor-bolinha[data-cor="#D4A0A8"]');
+  if(corPadrao){ corPadrao.style.border='3px solid #B07880'; corPadrao.style.boxShadow='0 0 0 2px white, 0 0 0 4px #B07880'; }
   const recEl=document.getElementById('ag-recorrencia'); if(recEl) recEl.value='';
   const rcEl=document.getElementById('ag-recorr-config'); if(rcEl) rcEl.style.display='none';
   ['ag-cliente','ag-qtd','ag-obs','ag-tel','ag-sinal'].forEach(id => {
@@ -294,13 +298,13 @@ function renderAgenda() {
     const temHoje = ag.sessoes.some(s=>s.data===hoje && s.status!=='realizado');
 
     return `
-    <div class="agenda-cliente-card" id="agcard-${ag.id}">
+    <div class="agenda-cliente-card" id="agcard-${ag.id}" style="border-left:4px solid ${ag.cor||'#D4A0A8'}">
       <div class="agenda-cliente-header" id="agheader-${ag.id}" onclick="toggleAgendaCliente('${ag.id}')">
         <div>
           <div class="agenda-cliente-nome">👤 ${ag.cliente}</div>
           <div class="agenda-cliente-info">${_agServicos(ag)}${ag.obs?' · '+ag.obs:''}</div>
         </div>
-        <div class="agenda-cliente-badges">
+        <div class="agenda-cliente-badges"><span title="${ag.cor||'#D4A0A8'}" style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${ag.cor||'#D4A0A8'};flex-shrink:0"></span>
           ${temHoje ? '<span class="badge-hoje">Hoje</span>' : ''}
           ${ag.sinal > 0 ? '<span style="background:#E7F7EE;color:#276749;border-radius:12px;padding:2px 8px;font-size:10px;font-weight:500;letter-spacing:0.5px">💰 Sinal R$'+parseFloat(ag.sinal).toFixed(2).replace('.',',')+'</span>' : ''}
           <span class="badge-pill badge-ativo">${realizados}/${total} sessões</span>
@@ -597,17 +601,11 @@ function editarAgenda(agId) {
             style="width:100%;padding:0.5rem 0.75rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none">
         </div>
         <div style="margin-bottom:1rem">
-          <div style="font-size:10px;letter-spacing:2px;color:var(--text-light);margin-bottom:4px">COR NA AGENDA</div>
-          <select id="agedit-cor-${agId}" style="width:100%;padding:0.5rem 0.75rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none">
-            <option value="#D4A0A8" ${ag.cor==="#D4A0A8"||!ag.cor?"selected":""}>🌸 Rosa</option>
-            <option value="#5B9BD5" ${ag.cor==="#5B9BD5"?"selected":""}>🔵 Azul</option>
-            <option value="#70AD47" ${ag.cor==="#70AD47"?"selected":""}>🟢 Verde</option>
-            <option value="#FF4444" ${ag.cor==="#FF4444"?"selected":""}>🔴 Vermelho</option>
-            <option value="#FFC000" ${ag.cor==="#FFC000"?"selected":""}>🟡 Amarelo</option>
-            <option value="#9B59B6" ${ag.cor==="#9B59B6"?"selected":""}>🟣 Lilás</option>
-            <option value="#8B4513" ${ag.cor==="#8B4513"?"selected":""}>🟤 Marrom</option>
-            <option value="#FF8C00" ${ag.cor==="#FF8C00"?"selected":""}>🟠 Laranja</option>
-          </select>
+          <div style="font-size:10px;letter-spacing:2px;color:var(--text-light);margin-bottom:8px">COR NA AGENDA</div>
+          <input type="hidden" id="agedit-cor-hidden-${agId}" value="${ag.cor||'#D4A0A8'}">
+          <div id="agedit-cor-wrap-${agId}" style="display:flex;flex-wrap:wrap;gap:8px">
+            ${_renderCorBolinhas(agId, ag.cor||'#D4A0A8')}
+          </div>
         </div>
         <div style="margin-bottom:1rem">
           <div style="font-size:10px;letter-spacing:2px;color:var(--text-light);margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
@@ -667,8 +665,8 @@ function salvarEdicaoAgenda(agId) {
 
   ag.cliente = novoCliente || ag.cliente;
   ag.obs = novaObs;
-  var corEditEl = document.getElementById('agedit-cor-' + agId);
-  if (corEditEl) ag.cor = corEditEl.value;
+  var corEditEl = document.getElementById('agedit-cor-hidden-' + agId);
+  if (corEditEl && corEditEl.value) ag.cor = corEditEl.value;
 
   // Rebuild sessions from edit form
   const container = document.getElementById('agedit-sessoes-' + agId);
@@ -1413,7 +1411,74 @@ function waMensagemFalta(cliente, tel, servico) {
 
 // ===================== CORES E RECORRÊNCIA =====================
 
-// selecionarCor removido — cor agora é um select
+// ── Seletor de cor via bolinhas ──
+function selecionarCorAg(el) {
+  var cor = el.getAttribute('data-cor');
+  if (!cor) return;
+  // Atualiza input hidden
+  var input = document.getElementById('ag-cor');
+  if (input) input.value = cor;
+  // Visual: remove seleção de todas e marca a clicada
+  document.querySelectorAll('#ag-cor-bolinhas .cor-bolinha').forEach(function(b) {
+    b.style.border = '3px solid transparent';
+    b.style.boxShadow = 'none';
+  });
+  var darken = _darkenCor(cor);
+  el.style.border = '3px solid ' + darken;
+  el.style.boxShadow = '0 0 0 2px white, 0 0 0 4px ' + darken;
+}
+
+// ── Escurecer cor hex para borda de seleção ──
+function _darkenCor(hex) {
+  var r = parseInt(hex.slice(1,3),16);
+  var g = parseInt(hex.slice(3,5),16);
+  var b = parseInt(hex.slice(5,7),16);
+  r = Math.max(0, r-50); g = Math.max(0, g-50); b = Math.max(0, b-50);
+  return '#' + [r,g,b].map(function(v){ return v.toString(16).padStart(2,'0'); }).join('');
+}
+
+// ── Bolinhas no modal de edição ──
+function _renderCorBolinhas(containerId, corAtual) {
+  var cores = [
+    {hex:'#D4A0A8', label:'Rosa'},
+    {hex:'#5B9BD5', label:'Azul'},
+    {hex:'#70AD47', label:'Verde'},
+    {hex:'#FF4444', label:'Vermelho'},
+    {hex:'#FFC000', label:'Amarelo'},
+    {hex:'#9B59B6', label:'Lilás'},
+    {hex:'#8B4513', label:'Marrom'},
+    {hex:'#FF8C00', label:'Laranja'}
+  ];
+  var sel = corAtual || '#D4A0A8';
+  return cores.map(function(c) {
+    var darken = _darkenCor(c.hex);
+    var ativo = (c.hex === sel);
+    var borderStyle = ativo ? ('3px solid ' + darken) : '3px solid transparent';
+    var shadowStyle = ativo ? ('0 0 0 2px white, 0 0 0 4px ' + darken) : 'none';
+    return '<span class="cor-bolinha-edit" data-cor="' + c.hex + '" title="' + c.label + '" '
+      + 'onclick="selecionarCorEdit(this,'' + containerId + '')" '
+      + 'style="display:inline-block;background:' + c.hex + ';width:26px;height:26px;border-radius:50%;'
+      + 'cursor:pointer;border:' + borderStyle + ';box-shadow:' + shadowStyle + ';transition:all 0.15s">'
+      + '</span>';
+  }).join('');
+}
+
+function selecionarCorEdit(el, containerId) {
+  var cor = el.getAttribute('data-cor');
+  if (!cor) return;
+  var input = document.getElementById('agedit-cor-hidden-' + containerId);
+  if (input) input.value = cor;
+  var container = document.getElementById('agedit-cor-wrap-' + containerId);
+  if (container) {
+    container.querySelectorAll('.cor-bolinha-edit').forEach(function(b) {
+      b.style.border = '3px solid transparent';
+      b.style.boxShadow = 'none';
+    });
+  }
+  var darken = _darkenCor(cor);
+  el.style.border = '3px solid ' + darken;
+  el.style.boxShadow = '0 0 0 2px white, 0 0 0 4px ' + darken;
+}
 
 function toggleRecorrencia() {
   var sel = document.getElementById('ag-recorrencia');
