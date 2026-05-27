@@ -698,16 +698,17 @@
           </div>
           <div class="form-group">
             <label>Cor na Agenda</label>
-            <select id="ag-cor" style="width:100%;padding:0.65rem 0.9rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none;background:white">
-              <option value="#D4A0A8">🌸 Rosa</option>
-              <option value="#5B9BD5">🔵 Azul</option>
-              <option value="#70AD47">🟢 Verde</option>
-              <option value="#FF4444">🔴 Vermelho</option>
-              <option value="#FFC000">🟡 Amarelo</option>
-              <option value="#9B59B6">🟣 Lilás</option>
-              <option value="#8B4513">🟤 Marrom</option>
-              <option value="#FF8C00">🟠 Laranja</option>
-            </select>
+            <input type="hidden" id="ag-cor" value="#D4A0A8">
+            <div id="ag-cor-bolinhas" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px">
+              <span class="cor-bolinha" data-cor="#D4A0A8" title="🌸 Rosa"     onclick="selecionarCorAg(this)" style="background:#D4A0A8;width:28px;height:28px;border-radius:50%;cursor:pointer;border:3px solid #B07880;box-shadow:0 0 0 2px white,0 0 0 4px #B07880;transition:all 0.15s"></span>
+              <span class="cor-bolinha" data-cor="#5B9BD5" title="🔵 Azul"     onclick="selecionarCorAg(this)" style="background:#5B9BD5;width:28px;height:28px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:all 0.15s"></span>
+              <span class="cor-bolinha" data-cor="#70AD47" title="🟢 Verde"    onclick="selecionarCorAg(this)" style="background:#70AD47;width:28px;height:28px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:all 0.15s"></span>
+              <span class="cor-bolinha" data-cor="#FF4444" title="🔴 Vermelho" onclick="selecionarCorAg(this)" style="background:#FF4444;width:28px;height:28px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:all 0.15s"></span>
+              <span class="cor-bolinha" data-cor="#FFC000" title="🟡 Amarelo"  onclick="selecionarCorAg(this)" style="background:#FFC000;width:28px;height:28px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:all 0.15s"></span>
+              <span class="cor-bolinha" data-cor="#9B59B6" title="🟣 Lilás"    onclick="selecionarCorAg(this)" style="background:#9B59B6;width:28px;height:28px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:all 0.15s"></span>
+              <span class="cor-bolinha" data-cor="#8B4513" title="🟤 Marrom"   onclick="selecionarCorAg(this)" style="background:#8B4513;width:28px;height:28px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:all 0.15s"></span>
+              <span class="cor-bolinha" data-cor="#FF8C00" title="🟠 Laranja"  onclick="selecionarCorAg(this)" style="background:#FF8C00;width:28px;height:28px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:all 0.15s"></span>
+            </div>
           </div>
           <div class="form-group full-width">
             <label>Recorrência</label>
