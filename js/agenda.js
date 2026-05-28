@@ -262,6 +262,31 @@ function salvarAgendamento() {
     }
   }
 
+  // Validação de conflito de horário
+  var conflitos = [];
+  sessoesFinais.forEach(function(nova) {
+    if (!nova.data || !nova.hora) return;
+    var hIniNova = parseInt(nova.hora.split(':')[0])*60 + parseInt(nova.hora.split(':')[1]||0);
+    var hFimNova = nova.horaFim ? parseInt(nova.horaFim.split(':')[0])*60 + parseInt(nova.horaFim.split(':')[1]||0) : hIniNova + 1;
+    db.agenda.forEach(function(ag) {
+      ag.sessoes.forEach(function(s) {
+        if (s.data !== nova.data || !s.hora) return;
+        if (s.status === 'realizado' || s.status === 'falta') return;
+        var hIniEx = parseInt(s.hora.split(':')[0])*60 + parseInt(s.hora.split(':')[1]||0);
+        var hFimEx = s.horaFim ? parseInt(s.horaFim.split(':')[0])*60 + parseInt(s.horaFim.split(':')[1]||0) : hIniEx + 1;
+        if (hIniNova < hFimEx && hFimNova > hIniEx) {
+          conflitos.push(ag.cliente + ' — ' + fmtDate(s.data) + ' ' + s.hora + (s.horaFim ? '–' + s.horaFim : ''));
+        }
+      });
+    });
+  });
+  if (conflitos.length > 0) {
+    var msg = '⚠️ Conflito de horário!\n\nJá existe agendamento:\n' + conflitos.slice(0,3).join('\n');
+    if (conflitos.length > 3) msg += '\n... e mais ' + (conflitos.length-3) + ' conflito(s).';
+    msg += '\n\nAgendar mesmo assim?';
+    if (!confirm(msg)) return;
+  }
+
   db.agenda.push({
     id: uid(),
     cliente,
@@ -483,7 +508,7 @@ function renderAgenda() {
           else badge='<span class="badge-pendente">Pendente</span>';
           return `
           <div class="agenda-sessao-row ${cls}">
-            <div class="agenda-sessao-data">${fmtDate(s.data)}${s.hora?' &middot; '+s.hora:''}</div>
+            <div class="agenda-sessao-data">${fmtDate(s.data)}${s.hora?' &middot; '+s.hora+(s.horaFim?' – '+s.horaFim:''):''}</div>
             <div class="agenda-sessao-servico">${(function(s,ag){ var ids=s.servicoIds||[]; if(ids.length){ var nomes=ids.map(function(id){ var sv=db.servicos.find(function(x){return x.id===id;}); return sv?sv.nome:id; }); return nomes.join(' + '); } return s.servico||_agServicos(ag); })(s,ag)} · Sessão ${i+1}</div>
             <div class="agenda-sessao-status" style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap">
               ${badge}
@@ -806,8 +831,16 @@ function editarAgenda(agId) {
       <span style="font-size:11px;color:var(--text-light);min-width:55px;padding-top:4px">Sessão ${i+1}</span>
       <input type="date" id="agedit-data-${agId}-${i}" value="${s.data}"
         style="padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:Jost,sans-serif;outline:none;${s.status==='realizado'?'opacity:0.5;pointer-events:none':''}">
-      <input type="time" id="agedit-hora-${agId}-${i}" value="${s.hora||''}"
-        style="width:90px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:Jost,sans-serif;outline:none;${s.status==='realizado'?'opacity:0.5;pointer-events:none':''}">
+      <div style="display:flex;flex-direction:column;gap:2px">
+        <label style="font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--text-light)">Hora início</label>
+        <input type="time" id="agedit-hora-${agId}-${i}" value="${s.hora||''}"
+          style="width:100px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:Jost,sans-serif;outline:none;${s.status==='realizado'?'opacity:0.5;pointer-events:none':''}">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:2px">
+        <label style="font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--text-light)">Hora fim</label>
+        <input type="time" id="agedit-horafim-${agId}-${i}" value="${s.horaFim||''}"
+          style="width:100px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:Jost,sans-serif;outline:none;${s.status==='realizado'?'opacity:0.5;pointer-events:none':''}">
+      </div>
       <div id="agedit-chips-${agId}-${i}" style="display:flex;flex-wrap:wrap;gap:4px">
         <input type="text" placeholder="🔍 Filtrar serviços..." oninput="(function(el){var v=el.value.toLowerCase();el.parentElement.querySelectorAll('.service-chip').forEach(function(c){c.style.display=c.textContent.toLowerCase().includes(v)?'':'none';});})(this)" style="width:100%;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px;font-family:Jost,sans-serif;outline:none;margin-bottom:4px">
         ${chipsHtml}
@@ -879,8 +912,16 @@ function adicionarSessaoEdit(agId) {
     <span style="font-size:11px;color:var(--text-light);min-width:55px;padding-top:4px">Sessão ${i+1}</span>
     <input type="date" id="agedit-data-${agId}-${i}" value="${hoje}"
       style="padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:Jost,sans-serif;outline:none">
-    <input type="time" id="agedit-hora-${agId}-${i}" value=""
-      style="width:90px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:Jost,sans-serif;outline:none">
+    <div style="display:flex;flex-direction:column;gap:2px">
+      <label style="font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--text-light)">Hora início</label>
+      <input type="time" id="agedit-hora-${agId}-${i}" value=""
+        style="width:100px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:Jost,sans-serif;outline:none">
+    </div>
+    <div style="display:flex;flex-direction:column;gap:2px">
+      <label style="font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--text-light)">Hora fim</label>
+      <input type="time" id="agedit-horafim-${agId}-${i}" value=""
+        style="width:100px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:Jost,sans-serif;outline:none">
+    </div>
     <div id="agedit-chips-${agId}-${i}" style="display:flex;flex-wrap:wrap;gap:4px">
       <input type="text" placeholder="🔍 Filtrar serviços..." oninput="(function(el){var v=el.value.toLowerCase();el.parentElement.querySelectorAll('.service-chip').forEach(function(c){c.style.display=c.textContent.toLowerCase().includes(v)?'':'none';});})(this)" style="width:100%;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px;font-family:Jost,sans-serif;outline:none;margin-bottom:4px">
       ${chipsNova}
@@ -923,7 +964,7 @@ function salvarEdicaoAgenda(agId) {
       if (chipsContainer) {
         chipsContainer.querySelectorAll('.service-chip.selected').forEach(function(el){ srvSelecionados.push(el.textContent.trim()); });
       }
-      const sess = { data: dateInput.value, hora: (document.getElementById(`agedit-hora-${agId}-${i}`)||{value:''}).value, status: status, atendimentoId: null };
+      const sess = { data: dateInput.value, hora: (document.getElementById(`agedit-hora-${agId}-${i}`)||{value:''}).value, horaFim: (document.getElementById(`agedit-horafim-${agId}-${i}`)||{value:''}).value, status: status, atendimentoId: null };
       if (srvSelecionados.length) { sess.servicoIds = srvSelecionados; sess.servico = srvSelecionados.join(' + '); }
       else if (oldSessao && oldSessao.servico) { sess.servico = oldSessao.servico; sess.servicoIds = oldSessao.servicoIds||[]; }
       if (oldSessao && oldSessao.checkinData) { sess.checkinData = oldSessao.checkinData; sess.checkinHora = oldSessao.checkinHora; sess.checkinNome = oldSessao.checkinNome; }
