@@ -806,8 +806,16 @@ function editarAgenda(agId) {
       <span style="font-size:11px;color:var(--text-light);min-width:55px;padding-top:4px">Sessão ${i+1}</span>
       <input type="date" id="agedit-data-${agId}-${i}" value="${s.data}"
         style="padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:Jost,sans-serif;outline:none;${s.status==='realizado'?'opacity:0.5;pointer-events:none':''}">
-      <input type="time" id="agedit-hora-${agId}-${i}" value="${s.hora||''}"
-        style="width:90px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:Jost,sans-serif;outline:none;${s.status==='realizado'?'opacity:0.5;pointer-events:none':''}">
+      <div style="display:flex;flex-direction:column;gap:2px">
+        <label style="font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--text-light)">Hora início</label>
+        <input type="time" id="agedit-hora-${agId}-${i}" value="${s.hora||''}"
+          style="width:100px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:Jost,sans-serif;outline:none;${s.status==='realizado'?'opacity:0.5;pointer-events:none':''}">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:2px">
+        <label style="font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--text-light)">Hora fim</label>
+        <input type="time" id="agedit-horafim-${agId}-${i}" value="${s.horaFim||''}"
+          style="width:100px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:Jost,sans-serif;outline:none;${s.status==='realizado'?'opacity:0.5;pointer-events:none':''}">
+      </div>
       <div id="agedit-chips-${agId}-${i}" style="display:flex;flex-wrap:wrap;gap:4px">
         <input type="text" placeholder="🔍 Filtrar serviços..." oninput="(function(el){var v=el.value.toLowerCase();el.parentElement.querySelectorAll('.service-chip').forEach(function(c){c.style.display=c.textContent.toLowerCase().includes(v)?'':'none';});})(this)" style="width:100%;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px;font-family:Jost,sans-serif;outline:none;margin-bottom:4px">
         ${chipsHtml}
@@ -879,8 +887,16 @@ function adicionarSessaoEdit(agId) {
     <span style="font-size:11px;color:var(--text-light);min-width:55px;padding-top:4px">Sessão ${i+1}</span>
     <input type="date" id="agedit-data-${agId}-${i}" value="${hoje}"
       style="padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:Jost,sans-serif;outline:none">
-    <input type="time" id="agedit-hora-${agId}-${i}" value=""
-      style="width:90px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:Jost,sans-serif;outline:none">
+    <div style="display:flex;flex-direction:column;gap:2px">
+      <label style="font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--text-light)">Hora início</label>
+      <input type="time" id="agedit-hora-${agId}-${i}" value=""
+        style="width:100px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:Jost,sans-serif;outline:none">
+    </div>
+    <div style="display:flex;flex-direction:column;gap:2px">
+      <label style="font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--text-light)">Hora fim</label>
+      <input type="time" id="agedit-horafim-${agId}-${i}" value=""
+        style="width:100px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:Jost,sans-serif;outline:none">
+    </div>
     <div id="agedit-chips-${agId}-${i}" style="display:flex;flex-wrap:wrap;gap:4px">
       <input type="text" placeholder="🔍 Filtrar serviços..." oninput="(function(el){var v=el.value.toLowerCase();el.parentElement.querySelectorAll('.service-chip').forEach(function(c){c.style.display=c.textContent.toLowerCase().includes(v)?'':'none';});})(this)" style="width:100%;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px;font-family:Jost,sans-serif;outline:none;margin-bottom:4px">
       ${chipsNova}
@@ -923,7 +939,7 @@ function salvarEdicaoAgenda(agId) {
       if (chipsContainer) {
         chipsContainer.querySelectorAll('.service-chip.selected').forEach(function(el){ srvSelecionados.push(el.textContent.trim()); });
       }
-      const sess = { data: dateInput.value, hora: (document.getElementById(`agedit-hora-${agId}-${i}`)||{value:''}).value, status: status, atendimentoId: null };
+      const sess = { data: dateInput.value, hora: (document.getElementById(`agedit-hora-${agId}-${i}`)||{value:''}).value, horaFim: (document.getElementById(`agedit-horafim-${agId}-${i}`)||{value:''}).value, status: status, atendimentoId: null };
       if (srvSelecionados.length) { sess.servicoIds = srvSelecionados; sess.servico = srvSelecionados.join(' + '); }
       else if (oldSessao && oldSessao.servico) { sess.servico = oldSessao.servico; sess.servicoIds = oldSessao.servicoIds||[]; }
       if (oldSessao && oldSessao.checkinData) { sess.checkinData = oldSessao.checkinData; sess.checkinHora = oldSessao.checkinHora; sess.checkinNome = oldSessao.checkinNome; }
