@@ -136,15 +136,49 @@ function _renderCalSemana(grid, titulo) {
     html += '<div class="cal-week-header' + (isHoje ? ' hoje-col' : '') + '"><div class="cal-week-dow">' + dows[i] + '</div><div class="cal-week-day-num">' + d.date.getDate() + ' ' + meses[d.date.getMonth()] + '</div></div>';
   });
 
+  // Altura de cada célula de hora = 36px (definido no CSS cal-week-cell min-height)
+  var CELL_H = 36;
+
   horas.forEach(function(h) {
     html += '<div class="cal-week-time">' + h + '</div>';
     diasSem.forEach(function(d) {
       var isHoje = d.str === hoje;
-      var evs = (evMap[d.str] || []).filter(function(e){ return e.hora && e.hora.startsWith(h.split(':')[0]); });
-      html += '<div class="cal-week-cell' + (isHoje ? ' hoje-col' : '') + '">';
+      var horaNum = parseInt(h.split(':')[0]);
+      var evs = (evMap[d.str] || []).filter(function(e){
+        if (!e.hora) return false;
+        var eHora = parseInt(e.hora.split(':')[0]);
+        var eMin  = parseInt(e.hora.split(':')[1]) || 0;
+        // Mostrar o evento na linha da hora em que começa
+        return eHora === horaNum;
+      });
+      html += '<div class="cal-week-cell' + (isHoje ? ' hoje-col' : '') + '" style="position:relative;min-height:' + CELL_H + 'px">';
       evs.forEach(function(e) {
         var cls = _calClasse(e.status, e.data);
-        var wStyle = e.cor ? 'style="background:' + e.cor + ';color:white;border:none;"' : ''; html += '<div class="cal-week-event ' + cls + '" ' + wStyle + ' onclick="calAbrirDetalhe(\'' + e.agId + '\',' + e.sessaoIdx + ')">' + e.cliente + '</div>';
+        // Calcular offset vertical dentro da célula (minutos)
+        var eMin = parseInt((e.hora.split(':')[1]) || 0);
+        var topPct = (eMin / 60) * 100;
+        // Calcular altura proporcional à duração
+        var alturaStyle = '';
+        var horaLabel = e.hora;
+        if (e.horaFim) {
+          var hIni = parseInt(e.hora.split(':')[0]) * 60 + parseInt(e.hora.split(':')[1] || 0);
+          var hFim = parseInt(e.horaFim.split(':')[0]) * 60 + parseInt(e.horaFim.split(':')[1] || 0);
+          var durMin = hFim - hIni;
+          if (durMin > 0) {
+            var altPx = Math.round((durMin / 60) * CELL_H);
+            alturaStyle = 'height:' + altPx + 'px;min-height:' + altPx + 'px;';
+            horaLabel = e.hora + '–' + e.horaFim;
+          }
+        }
+        var bgStyle = e.cor
+          ? 'background:' + e.cor + ';color:white;border:none;'
+          : '';
+        html += '<div class="cal-week-event ' + cls + '" '
+          + 'style="position:absolute;left:1px;right:1px;top:' + topPct + '%;' + alturaStyle + bgStyle + 'overflow:hidden;z-index:1" '
+          + 'onclick="calAbrirDetalhe(\'' + e.agId + '\',' + e.sessaoIdx + ')" '
+          + 'title="' + horaLabel + ' ' + e.cliente + '">'
+          + horaLabel + ' ' + e.cliente
+          + '</div>';
       });
       html += '</div>';
     });
