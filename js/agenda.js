@@ -54,12 +54,24 @@ function gerarCamposDatas() {
 
       var inpHora = document.createElement('input');
       inpHora.type = 'time'; inpHora.id = 'ag-hora-0';
+      inpHora.title = 'Horário de início';
       inpHora.style.cssText = 'width:90px;padding:0.4rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none';
 
-      // Sessão única: só data e hora, sem chips de serviço
+      var sep = document.createElement('span');
+      sep.style.cssText = 'font-size:11px;color:var(--text-light)';
+      sep.textContent = 'até';
+
+      var inpHoraFim = document.createElement('input');
+      inpHoraFim.type = 'time'; inpHoraFim.id = 'ag-horafim-0';
+      inpHoraFim.title = 'Horário de término';
+      inpHoraFim.style.cssText = 'width:90px;padding:0.4rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none';
+
+      // Sessão única: data + hora início + até + hora fim
       div.appendChild(lbl);
       div.appendChild(inpData);
       div.appendChild(inpHora);
+      div.appendChild(sep);
+      div.appendChild(inpHoraFim);
       campos.appendChild(div);
     }
     return;
@@ -81,7 +93,9 @@ function gerarCamposDatas() {
     div.innerHTML = `
       <span style="font-size:11px;color:var(--text-light);min-width:60px">Sessão ${i+1}</span>
       <input type="date" id="ag-data-${i}" style="padding:0.4rem 0.6rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none" value="${existing[i]||''}">
-      <input type="time" id="ag-hora-${i}" style="width:90px;padding:0.4rem 0.4rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none" value="${existingHora[i]||''}">
+      <input type="time" id="ag-hora-${i}" title="Horário de início" style="width:90px;padding:0.4rem 0.4rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none" value="${existingHora[i]||''}">
+      <span style="font-size:11px;color:var(--text-light)">até</span>
+      <input type="time" id="ag-horafim-${i}" title="Horário de término" style="width:90px;padding:0.4rem 0.4rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none">
       <div style="display:flex;flex-wrap:wrap;gap:4px">
         <input type="text" placeholder="🔍 Filtrar serviços..." oninput="(function(el){var v=el.value.toLowerCase();el.parentElement.querySelectorAll('.service-chip').forEach(function(c){c.style.display=c.textContent.toLowerCase().includes(v)?'':'none';});})(this)" style="width:100%;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px;font-family:Jost,sans-serif;outline:none;margin-bottom:4px">
         ${chipsHtml}
@@ -112,9 +126,11 @@ function salvarAgendamento() {
       return;
     }
     const horaEl0 = document.getElementById('ag-hora-0');
+    const horaFimEl0 = document.getElementById('ag-horafim-0');
     sessoes.push({
       data: dataEl0.value,
       hora: horaEl0 ? horaEl0.value : '',
+      horaFim: horaFimEl0 ? horaFimEl0.value : '',
       status: 'pendente', atendimentoId: null,
       servicoIds: [], servico: ''
     });
@@ -130,11 +146,12 @@ function salvarAgendamento() {
         continue;
       }
       const horaEl = document.getElementById('ag-hora-'+i);
+      const horaFimEl = document.getElementById('ag-horafim-'+i);
       const srvIds = db.servicos.filter(function(s){
         const el = document.getElementById('agchip_'+i+'_'+s.id);
         return el && el.classList.contains('selected');
       }).map(function(s){ return s.id; });
-      sessoes.push({ data: dataEl.value, hora: horaEl ? horaEl.value : '', status: 'pendente', atendimentoId: null, servicoIds: srvIds, servico: srvIds.map(function(id){ const sv=db.servicos.find(function(x){return x.id===id;}); return sv?sv.nome:''; }).join(' + ') });
+      sessoes.push({ data: dataEl.value, hora: horaEl ? horaEl.value : '', horaFim: horaFimEl ? horaFimEl.value : '', status: 'pendente', atendimentoId: null, servicoIds: srvIds, servico: srvIds.map(function(id){ const sv=db.servicos.find(function(x){return x.id===id;}); return sv?sv.nome:''; }).join(' + ') });
     }
   }
 
@@ -1611,9 +1628,12 @@ function _renderCorBolinhas(containerId, corAtual) {
 function selecionarCorEdit(el, containerId) {
   var cor = el.getAttribute('data-cor');
   if (!cor) return;
-  var input = document.getElementById('agedit-cor-hidden-' + containerId);
+  // Suporte ao novo ciclo: containerId='nc' usa 'nc-cor', outros usam 'agedit-cor-hidden-xxx'
+  var inputId = containerId === 'nc' ? 'nc-cor' : 'agedit-cor-hidden-' + containerId;
+  var input = document.getElementById(inputId);
   if (input) input.value = cor;
-  var container = document.getElementById('agedit-cor-wrap-' + containerId);
+  var wrapId = containerId === 'nc' ? 'nc-cor-wrap' : 'agedit-cor-wrap-' + containerId;
+  var container = document.getElementById(wrapId);
   if (container) {
     container.querySelectorAll('.cor-bolinha-edit').forEach(function(b) {
       b.style.border = '3px solid transparent';
