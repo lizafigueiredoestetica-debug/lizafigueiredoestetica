@@ -78,16 +78,14 @@ async function _supaGetNovos(tabela, desde) {
 
 // ── Salvar sessões de um agendamento ──
 async function _salvarSessoes(agId, sessoes) {
-  try {
-    await fetch(SUPA_URL + '/rest/v1/sessoes?agenda_id=eq.' + encodeURIComponent(agId), {
-      method: 'DELETE',
-      headers: _supaHeaders()
-    });
-  } catch(e) {}
+  // 1. Primeiro salvar todas as sessões via UPSERT (seguro — não perde dados se falhar)
+  var ids_novos = [];
   for (var i = 0; i < sessoes.length; i++) {
     var s = sessoes[i];
+    var sid = agId + '_s' + i;
+    ids_novos.push(sid);
     await _supaUpsert('sessoes', {
-      id: agId + '_s' + i,
+      id: sid,
       agenda_id: agId,
       indice: i,
       data: s.data || null,
@@ -102,6 +100,23 @@ async function _salvarSessoes(agId, sessoes) {
       atualizado_em: new Date().toISOString()
     });
   }
+  // 2. Só depois remover sessões antigas que não existem mais (índices removidos)
+  // Busca sessões existentes e remove apenas as que foram excluídas
+  try {
+    var resp = await fetch(SUPA_URL + '/rest/v1/sessoes?agenda_id=eq.' + encodeURIComponent(agId) + '&select=id', {
+      headers: _supaHeaders()
+    });
+    if (resp.ok) {
+      var existentes = await resp.json();
+      for (var j = 0; j < existentes.length; j++) {
+        if (ids_novos.indexOf(existentes[j].id) < 0) {
+          await fetch(SUPA_URL + '/rest/v1/sessoes?id=eq.' + encodeURIComponent(existentes[j].id), {
+            method: 'DELETE', headers: _supaHeaders()
+          });
+        }
+      }
+    }
+  } catch(e) {}
 }
 
 // ── Salvar registro específico no Supabase ──
