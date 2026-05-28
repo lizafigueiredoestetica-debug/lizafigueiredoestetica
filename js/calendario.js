@@ -33,7 +33,7 @@ function _calEventos() {
   db.agenda.forEach(function(ag) {
     ag.sessoes.forEach(function(s, idx) {
       if (!s.data) return;
-      eventos.push({ data: s.data, hora: s.hora || '', cliente: ag.cliente, servico: (function(){ var ids=s.servicoIds||[]; if(ids.length) return ids.map(function(id){ var sv=db.servicos.find(function(x){return x.id===id;}); return sv?sv.nome:id; }).join(' + '); return s.servico||_agServicos(ag); })(), status: s.status, agId: ag.id, sessaoIdx: idx, cor: ag.cor || '' });
+      eventos.push({ data: s.data, hora: s.hora || '', horaFim: s.horaFim || '', cliente: ag.cliente, servico: (function(){ var ids=s.servicoIds||[]; if(ids.length) return ids.map(function(id){ var sv=db.servicos.find(function(x){return x.id===id;}); return sv?sv.nome:id; }).join(' + '); return s.servico||_agServicos(ag); })(), status: s.status, agId: ag.id, sessaoIdx: idx, cor: ag.cor || '' });
     });
   });
   return eventos;
@@ -90,7 +90,8 @@ function _renderCalMes(grid, titulo) {
     evs.slice(0, max).forEach(function(e) {
       var cls = _calClasse(e.status, e.data);
       var evStyle = e.cor ? 'style="background:' + e.cor + ';color:white;border:none;opacity:' + (e.status==='falta'?'0.5':'1') + '"' : '';
-      html += '<div class="cal-event ' + cls + '" ' + evStyle + ' onclick="calAbrirDetalhe(\'' + e.agId + '\',' + e.sessaoIdx + ')" title="' + e.cliente + '">' + (e.hora ? e.hora + ' ' : '') + e.cliente + '</div>';
+      var _horaLabel = e.hora ? (e.horaFim ? e.hora + '–' + e.horaFim + ' ' : e.hora + ' ') : '';
+      html += '<div class="cal-event ' + cls + '" ' + evStyle + ' onclick="calAbrirDetalhe(\'' + e.agId + '\',' + e.sessaoIdx + ')" title="' + e.cliente + '">' + _horaLabel + e.cliente + '</div>';
     });
     if (evs.length > max) html += '<div class="cal-more" onclick="calVerDia(\'' + dStr + '\')">+' + (evs.length - max) + ' mais</div>';
     html += '</div>';
@@ -195,7 +196,7 @@ function calAbrirDetalhe(agId, sessaoIdx) {
     '<div class="cal-modal-body">' +
     '<div style="margin-bottom:0.5rem"><div class="cal-modal-label">Cliente</div><div style="font-size:15px;font-weight:500;color:var(--text-dark)">' + ag.cliente + '</div></div>' +
     '<div style="margin-bottom:0.5rem"><div class="cal-modal-label">Serviço</div><div style="font-size:13px;color:var(--text-mid)">' + servico + '</div></div>' +
-    '<div style="margin-bottom:0.5rem"><div class="cal-modal-label">Data</div><div style="font-size:13px;color:var(--text-mid)">' + fmtDate(s.data) + (s.hora ? ' às ' + s.hora : '') + '</div></div>' +
+    '<div style="margin-bottom:0.5rem"><div class="cal-modal-label">Data</div><div style="font-size:13px;color:var(--text-mid)">' + fmtDate(s.data) + (s.hora ? ' das ' + s.hora + (s.horaFim ? ' às ' + s.horaFim : '') : '') + '</div></div>' +
     '<div style="margin-bottom:0.5rem"><div class="cal-modal-label">Status</div><div style="font-size:13px">' + statusLabel + '</div></div>' +
     (ag.obs ? '<div style="margin-bottom:0.5rem"><div class="cal-modal-label">Obs</div><div style="font-size:12px;color:var(--text-light)">' + ag.obs + '</div></div>' : '') +
     '<div class="cal-modal-actions">' +
