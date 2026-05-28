@@ -79,17 +79,24 @@ function gerarCamposDatas() {
 
   if(qtd < 1) { wrap.style.display='none'; campos.innerHTML=''; return; }
   wrap.style.display='block';
-  // Preservar datas já preenchidas antes de limpar
+  // Preservar datas e horas já preenchidas antes de limpar
   const existing = [];
   campos.querySelectorAll('input[type=date]').forEach(function(el){ existing.push(el.value); });
   const existingHora = [];
-  campos.querySelectorAll('input[id^="ag-hora-"]:not([id^="ag-horafim"])').forEach(function(el){ existingHora.push(el.value); });
+  campos.querySelectorAll('input[id^="ag-hora-"]:not([id*="fim"])').forEach(function(el){ existingHora.push(el.value); });
+  const existingHoraFim = [];
+  campos.querySelectorAll('input[id^="ag-horafim-"]').forEach(function(el){ existingHoraFim.push(el.value); });
   // Limpar SEMPRE antes de recriar — evita duplicatas
   campos.innerHTML = '';
   campos.style.gridTemplateColumns = '1fr';
+
   for(let i=0; i<qtd; i++) {
     const div = document.createElement('div');
-    div.style.cssText = 'display:flex;align-items:center;gap:0.5rem;margin-bottom:10px;flex-wrap:wrap;padding:8px;background:var(--off-white);border-radius:8px;border:1px solid var(--border)';
+    div.style.cssText = 'margin-bottom:12px;padding:10px 12px;background:var(--off-white);border-radius:10px;border:1px solid var(--border)';
+
+    // ── Linha 1: label + data + hora início + até + hora fim ──
+    const linha1 = document.createElement('div');
+    linha1.style.cssText = 'display:flex;align-items:center;gap:0.5rem;margin-bottom:8px;flex-wrap:wrap';
 
     const lbl = document.createElement('span');
     lbl.style.cssText = 'font-size:11px;color:var(--text-light);min-width:65px;font-weight:500';
@@ -113,13 +120,43 @@ function gerarCamposDatas() {
     const inpHoraFim = document.createElement('input');
     inpHoraFim.type = 'time'; inpHoraFim.id = 'ag-horafim-' + i;
     inpHoraFim.title = 'Horário de término';
+    inpHoraFim.value = existingHoraFim[i] || '';
     inpHoraFim.style.cssText = 'width:90px;padding:0.4rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none';
 
-    div.appendChild(lbl);
-    div.appendChild(inpData);
-    div.appendChild(inpHora);
-    div.appendChild(sep);
-    div.appendChild(inpHoraFim);
+    linha1.appendChild(lbl);
+    linha1.appendChild(inpData);
+    linha1.appendChild(inpHora);
+    linha1.appendChild(sep);
+    linha1.appendChild(inpHoraFim);
+
+    // ── Linha 2: chips de serviço (cada sessão pode ter serviços diferentes) ──
+    const chipsWrap = document.createElement('div');
+    chipsWrap.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px';
+
+    const filtro = document.createElement('input');
+    filtro.type = 'text';
+    filtro.placeholder = '🔍 Filtrar serviços...';
+    filtro.style.cssText = 'width:100%;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px;font-family:Jost,sans-serif;outline:none;margin-bottom:4px';
+    filtro.oninput = function() {
+      var v = this.value.toLowerCase();
+      chipsWrap.querySelectorAll('.service-chip').forEach(function(c){
+        c.style.display = c.textContent.toLowerCase().includes(v) ? '' : 'none';
+      });
+    };
+    chipsWrap.appendChild(filtro);
+
+    db.servicos.filter(function(s){ return s.status === 'ativo'; }).forEach(function(s) {
+      var chip = document.createElement('span');
+      chip.className = 'service-chip';
+      chip.id = 'agchip_' + i + '_' + s.id;
+      chip.textContent = s.nome;
+      chip.style.cssText = 'font-size:11px;padding:2px 8px;cursor:pointer';
+      chip.onclick = function(){ this.classList.toggle('selected'); };
+      chipsWrap.appendChild(chip);
+    });
+
+    div.appendChild(linha1);
+    div.appendChild(chipsWrap);
     campos.appendChild(div);
   }
 }
@@ -1696,6 +1733,7 @@ function toggleRecorrencia() {
 function _gerarSessoesRecorrentes(sessoesBase, recorrencia) {
   var ate = (document.getElementById('ag-recorr-ate') || {value:''}).value;
   var horaFixa = (document.getElementById('ag-recorr-hora') || {value:''}).value;
+  var horaFimFixa = (document.getElementById('ag-recorr-horafim') || {value:''}).value;
   var dataInicioStr = (document.getElementById('ag-recorr-inicio') || {value:''}).value;
 
   if (!ate) return sessoesBase || [];
@@ -1730,7 +1768,7 @@ function _gerarSessoesRecorrentes(sessoesBase, recorrencia) {
     while (atual <= dataFim && sessoes.length < limite) {
       sessoes.push({
         data: _fmtDataLocal(atual),
-        hora: hora, status: 'pendente', atendimentoId: null,
+        hora: hora, horaFim: horaFimFixa, status: 'pendente', atendimentoId: null,
         servicoIds: primeira.servicoIds || [], servico: primeira.servico || ''
       });
       atual.setDate(atual.getDate() + 7);
@@ -1739,7 +1777,7 @@ function _gerarSessoesRecorrentes(sessoesBase, recorrencia) {
     while (atual <= dataFim && sessoes.length < limite) {
       sessoes.push({
         data: _fmtDataLocal(atual),
-        hora: hora, status: 'pendente', atendimentoId: null,
+        hora: hora, horaFim: horaFimFixa, status: 'pendente', atendimentoId: null,
         servicoIds: primeira.servicoIds || [], servico: primeira.servico || ''
       });
       atual.setDate(atual.getDate() + 14);
@@ -1748,7 +1786,7 @@ function _gerarSessoesRecorrentes(sessoesBase, recorrencia) {
     while (atual <= dataFim && sessoes.length < limite) {
       sessoes.push({
         data: _fmtDataLocal(atual),
-        hora: hora, status: 'pendente', atendimentoId: null,
+        hora: hora, horaFim: horaFimFixa, status: 'pendente', atendimentoId: null,
         servicoIds: primeira.servicoIds || [], servico: primeira.servico || ''
       });
       atual.setMonth(atual.getMonth() + 1);
@@ -1762,7 +1800,7 @@ function _gerarSessoesRecorrentes(sessoesBase, recorrencia) {
       if (diasSemana.indexOf(d.getDay()) >= 0) {
         sessoes.push({
           data: _fmtDataLocal(d),
-          hora: hora, status: 'pendente', atendimentoId: null,
+          hora: hora, horaFim: horaFimFixa, status: 'pendente', atendimentoId: null,
           servicoIds: primeira.servicoIds || [], servico: primeira.servico || ''
         });
       }
