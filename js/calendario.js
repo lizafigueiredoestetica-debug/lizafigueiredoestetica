@@ -172,7 +172,7 @@ function _renderCalSemana(grid, titulo) {
         }
         var bgStyle = e.cor
           ? 'background:' + e.cor + ';color:white;border:none;'
-          : '';
+          : 'background:#FCE4EC;color:#880E4F;';
         html += '<div class="cal-week-event ' + cls + '" '
           + 'style="position:absolute;left:1px;right:1px;top:' + topPct + '%;' + alturaStyle + bgStyle + 'overflow:hidden;z-index:1" '
           + 'onclick="calAbrirDetalhe(\'' + e.agId + '\',' + e.sessaoIdx + ')" '
@@ -192,7 +192,8 @@ function _renderCalSemana(grid, titulo) {
     html += '<div class="cal-week-cell' + (isHoje ? ' hoje-col' : '') + '">';
     evs.forEach(function(e) {
       var cls = _calClasse(e.status, e.data);
-      html += '<div class="cal-week-event ' + cls + '" onclick="calAbrirDetalhe(\'' + e.agId + '\',' + e.sessaoIdx + ')">' + e.cliente + '</div>';
+      var wStyleSH = e.cor ? 'style="background:' + e.cor + ';color:white;border:none"' : '';
+      html += '<div class="cal-week-event ' + cls + '" ' + wStyleSH + ' onclick="calAbrirDetalhe(\'' + e.agId + '\',' + e.sessaoIdx + ')">' + e.cliente + '</div>';
     });
     html += '</div>';
   });
