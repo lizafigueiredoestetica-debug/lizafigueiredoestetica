@@ -483,7 +483,7 @@ function renderAgenda() {
           else badge='<span class="badge-pendente">Pendente</span>';
           return `
           <div class="agenda-sessao-row ${cls}">
-            <div class="agenda-sessao-data">${fmtDate(s.data)}${s.hora?' &middot; '+s.hora:''}</div>
+            <div class="agenda-sessao-data">${fmtDate(s.data)}${s.hora?' &middot; '+s.hora+(s.horaFim?' – '+s.horaFim:''):''}</div>
             <div class="agenda-sessao-servico">${(function(s,ag){ var ids=s.servicoIds||[]; if(ids.length){ var nomes=ids.map(function(id){ var sv=db.servicos.find(function(x){return x.id===id;}); return sv?sv.nome:id; }); return nomes.join(' + '); } return s.servico||_agServicos(ag); })(s,ag)} · Sessão ${i+1}</div>
             <div class="agenda-sessao-status" style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap">
               ${badge}
