@@ -860,7 +860,7 @@ function editarAgenda(agId) {
             <button onclick="adicionarSessaoEdit('${agId}')" class="btn btn-secondary btn-sm" style="font-size:11px">+ Adicionar Sessão</button>
           </div>
           <div id="agedit-sessoes-${agId}" style="background:var(--off-white);border-radius:8px;padding:0.75rem">
-            ${sessaoRows}
+            ${sessaoRows || '<div style="text-align:center;color:var(--text-light);font-size:12px;padding:1rem">Nenhuma sessão cadastrada. Clique em + Adicionar Sessão.</div>'}
           </div>
         </div>
         <div style="display:flex;gap:0.75rem">
