@@ -970,6 +970,13 @@ function novoCiclo(agId) {
       </div>
       <div style="padding:1.5rem">
         <div style="font-size:12px;color:var(--text-light);margin-bottom:1rem">Adiciona novas sessões à ficha existente da cliente, sem perder o histórico.</div>
+        <div style="margin-bottom:1rem">
+          <div style="font-size:10px;letter-spacing:2px;color:var(--text-light);margin-bottom:8px">COR NA AGENDA</div>
+          <input type="hidden" id="nc-cor" value="${ag.cor||'#D4A0A8'}">
+          <div id="nc-cor-wrap" style="display:flex;flex-wrap:wrap;gap:8px">
+            ${_renderCorBolinhas('nc', ag.cor||'#D4A0A8')}
+          </div>
+        </div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:1rem">
           <div>
             <div style="font-size:10px;letter-spacing:2px;color:var(--text-light);margin-bottom:4px">QTD DE SESSÕES</div>
@@ -1013,7 +1020,9 @@ function gerarCamposNovoCiclo(agId) {
     div.innerHTML = `
       <span style="font-size:11px;color:var(--text-light);min-width:60px">Sessão ${i+1}</span>
       <input type="date" id="nc-data-${i}" style="padding:0.4rem 0.6rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none">
-      <input type="time" id="nc-hora-${i}" style="width:90px;padding:0.4rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none">
+      <input type="time" id="nc-hora-${i}" placeholder="Início" title="Horário de início" style="width:90px;padding:0.4rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none">
+      <span style="font-size:11px;color:var(--text-light)">até</span>
+      <input type="time" id="nc-horafim-${i}" placeholder="Fim" title="Horário de término" style="width:90px;padding:0.4rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none">
       <div style="display:flex;flex-wrap:wrap;gap:4px">
         <input type="text" placeholder="🔍 Filtrar serviços..." oninput="(function(el){var v=el.value.toLowerCase();el.parentElement.querySelectorAll('.service-chip').forEach(function(c){c.style.display=c.textContent.toLowerCase().includes(v)?'':'none';});})(this)" style="width:100%;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px;font-family:Jost,sans-serif;outline:none;margin-bottom:4px">
         ${chipsHtml}
@@ -1037,9 +1046,11 @@ function salvarNovoCiclo(agId) {
       const el = document.getElementById('ncchip_'+i+'_'+s.id);
       return el && el.classList.contains('selected');
     }).map(s => s.id);
+    const horaFimEl = document.getElementById('nc-horafim-'+i);
     novasSessoes.push({
       data: dataEl.value,
       hora: horaEl ? horaEl.value : '',
+      horaFim: horaFimEl ? horaFimEl.value : '',
       status: 'pendente',
       atendimentoId: null,
       servicoIds: srvIds,
@@ -1050,6 +1061,9 @@ function salvarNovoCiclo(agId) {
   novasSessoes.sort((a,b) => a.data.localeCompare(b.data));
   ag.sessoes = ag.sessoes.concat(novasSessoes);
   if (obs) ag.obs = obs;
+  // Atualizar cor se selecionada
+  const ncCor = (document.getElementById('nc-cor')||{value:''}).value;
+  if (ncCor) ag.cor = ncCor;
   const ncSinal = parseFloat((document.getElementById('nc-sinal')||{value:'0'}).value) || 0;
   if (ncSinal > 0) { ag.sinal = ncSinal; ag.sinalPago = true; }
 
