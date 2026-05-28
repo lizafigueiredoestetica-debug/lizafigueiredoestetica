@@ -92,6 +92,7 @@ async function _salvarSessoes(agId, sessoes) {
       indice: i,
       data: s.data || null,
       hora: s.hora || '',
+      hora_fim: s.horaFim || '',
       status: s.status || 'pendente',
       servico_ids: s.servicoIds || [],
       servico: s.servico || '',
@@ -209,7 +210,7 @@ async function _carregarDaNuvem() {
         sinal: ag.sinal, sinalPago: ag.sinal_pago, cor: ag.cor || '#D4A0A8', recorrencia: ag.recorrencia || '', servicoIds: [], servicoNome: '—',
         sessoes: sess.map(function(s) {
           return {
-            data: s.data, hora: s.hora || '', status: s.status,
+            data: s.data, hora: s.hora || '', horaFim: s.hora_fim || '', status: s.status,
             servicoIds: s.servico_ids || [], servico: s.servico || '',
             checkinData: s.checkin_data, checkinHora: s.checkin_hora,
             checkinNome: s.checkin_nome, atendimentoId: s.atendimento_id
@@ -344,7 +345,7 @@ async function _pollingNovos() {
       novasSessoes.forEach(function(s) {
         var ag = db.agenda.find(function(x){ return x.id === s.agenda_id; });
         if (ag) {
-          var obj = { data: s.data, hora: s.hora || '', status: s.status, servicoIds: s.servico_ids || [], servico: s.servico || '', checkinData: s.checkin_data, checkinHora: s.checkin_hora, checkinNome: s.checkin_nome, atendimentoId: s.atendimento_id };
+          var obj = { data: s.data, hora: s.hora || '', horaFim: s.hora_fim || '', status: s.status, servicoIds: s.servico_ids || [], servico: s.servico || '', checkinData: s.checkin_data, checkinHora: s.checkin_hora, checkinNome: s.checkin_nome, atendimentoId: s.atendimento_id };
           ag.sessoes[s.indice] = obj;
         }
       });
@@ -385,7 +386,7 @@ async function _pollingNovos() {
     if (novaAgenda && novaAgenda.length) {
       novaAgenda.forEach(function(ag) {
         var idx = db.agenda.findIndex(function(x){ return x.id === ag.id; });
-        var obj = { id: ag.id, cliente: ag.cliente, tel: ag.tel, obs: ag.obs, sinal: ag.sinal, sinalPago: ag.sinal_pago, cor: ag.cor || '#D4A0A8', recorrencia: ag.recorrencia || '', servicoIds: [], servicoNome: '—', sessoes: idx >= 0 ? db.agenda[idx].sessoes : [] };
+        var obj = { id: ag.id, cliente: ag.cliente, tel: ag.tel, obs: ag.obs, sinal: ag.sinal, sinalPago: ag.sinal_pago, servicoIds: [], servicoNome: '—', sessoes: idx >= 0 ? db.agenda[idx].sessoes : [] };
         if (idx >= 0) db.agenda[idx] = obj; else db.agenda.push(obj);
       });
       houveMudanca = true;
