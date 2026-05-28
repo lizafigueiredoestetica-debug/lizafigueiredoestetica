@@ -151,7 +151,7 @@ function _renderCalSemana(grid, titulo) {
         // Mostrar o evento na linha da hora em que começa
         return eHora === horaNum;
       });
-      html += '<div class="cal-week-cell' + (isHoje ? ' hoje-col' : '') + '" style="position:relative;min-height:' + CELL_H + 'px">';
+      html += '<div class="cal-week-cell' + (isHoje ? ' hoje-col' : '') + '" style="position:relative;min-height:' + CELL_H + 'px;overflow:visible">';
       evs.forEach(function(e) {
         var cls = _calClasse(e.status, e.data);
         // Calcular offset vertical dentro da célula (minutos)
