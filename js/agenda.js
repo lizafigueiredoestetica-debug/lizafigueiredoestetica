@@ -262,6 +262,33 @@ function salvarAgendamento() {
     }
   }
 
+  // ── Validação de conflito de horário ──
+  var conflitos = [];
+  sessoesFinais.forEach(function(nova) {
+    if (!nova.data || !nova.hora) return; // sem hora = sem conflito a verificar
+    var hIniNova = nova.hora ? parseInt(nova.hora.split(':')[0])*60 + parseInt(nova.hora.split(':')[1]||0) : null;
+    var hFimNova = nova.horaFim ? parseInt(nova.horaFim.split(':')[0])*60 + parseInt(nova.horaFim.split(':')[1]||0) : (hIniNova !== null ? hIniNova + 1 : null);
+    db.agenda.forEach(function(ag) {
+      ag.sessoes.forEach(function(s) {
+        if (s.data !== nova.data || !s.hora) return;
+        if (s.status === 'realizado' || s.status === 'falta') return;
+        var hIniEx = parseInt(s.hora.split(':')[0])*60 + parseInt(s.hora.split(':')[1]||0);
+        var hFimEx = s.horaFim ? parseInt(s.horaFim.split(':')[0])*60 + parseInt(s.horaFim.split(':')[1]||0) : hIniEx + 1;
+        // Verificar sobreposição
+        if (hIniNova < hFimEx && hFimNova > hIniEx) {
+          conflitos.push(ag.cliente + ' — ' + fmtDate(s.data) + ' ' + s.hora + (s.horaFim ? '–' + s.horaFim : ''));
+        }
+      });
+    });
+  });
+
+  if (conflitos.length > 0) {
+    var msg = '⚠️ Conflito de horário detectado!\n\nJá existe agendamento neste horário:\n' + conflitos.slice(0,3).join('\n');
+    if (conflitos.length > 3) msg += '\n... e mais ' + (conflitos.length - 3) + ' conflito(s).';
+    msg += '\n\nDeseja agendar mesmo assim?';
+    if (!confirm(msg)) return;
+  }
+
   db.agenda.push({
     id: uid(),
     cliente,
