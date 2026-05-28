@@ -79,27 +79,47 @@ function gerarCamposDatas() {
 
   if(qtd < 1) { wrap.style.display='none'; campos.innerHTML=''; return; }
   wrap.style.display='block';
-  // Keep existing values
+  // Preservar datas já preenchidas antes de limpar
   const existing = [];
-  campos.querySelectorAll('input[type=date]').forEach(i => existing.push(i.value));
+  campos.querySelectorAll('input[type=date]').forEach(function(el){ existing.push(el.value); });
   const existingHora = [];
-  campos.querySelectorAll('input[type=time]').forEach(t => existingHora.push(t.value));
-  // Mudar grid para layout em lista com chips
+  campos.querySelectorAll('input[id^="ag-hora-"]:not([id^="ag-horafim"])').forEach(function(el){ existingHora.push(el.value); });
+  // Limpar SEMPRE antes de recriar — evita duplicatas
+  campos.innerHTML = '';
   campos.style.gridTemplateColumns = '1fr';
   for(let i=0; i<qtd; i++) {
     const div = document.createElement('div');
-    div.style.cssText = 'display:flex;align-items:center;gap:0.5rem;margin-bottom:8px;flex-wrap:wrap';
-    const chipsHtml = db.servicos.filter(s=>s.status==='ativo').map(s=>`<span class="service-chip" style="font-size:11px;padding:2px 8px;cursor:pointer" id="agchip_${i}_${s.id}" onclick="this.classList.toggle('selected')">${s.nome}</span>`).join('');
-    div.innerHTML = `
-      <span style="font-size:11px;color:var(--text-light);min-width:60px">Sessão ${i+1}</span>
-      <input type="date" id="ag-data-${i}" style="padding:0.4rem 0.6rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none" value="${existing[i]||''}">
-      <input type="time" id="ag-hora-${i}" title="Horário de início" style="width:90px;padding:0.4rem 0.4rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none" value="${existingHora[i]||''}">
-      <span style="font-size:11px;color:var(--text-light)">até</span>
-      <input type="time" id="ag-horafim-${i}" title="Horário de término" style="width:90px;padding:0.4rem 0.4rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none">
-      <div style="display:flex;flex-wrap:wrap;gap:4px">
-        <input type="text" placeholder="🔍 Filtrar serviços..." oninput="(function(el){var v=el.value.toLowerCase();el.parentElement.querySelectorAll('.service-chip').forEach(function(c){c.style.display=c.textContent.toLowerCase().includes(v)?'':'none';});})(this)" style="width:100%;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px;font-family:Jost,sans-serif;outline:none;margin-bottom:4px">
-        ${chipsHtml}
-      </div>`;
+    div.style.cssText = 'display:flex;align-items:center;gap:0.5rem;margin-bottom:10px;flex-wrap:wrap;padding:8px;background:var(--off-white);border-radius:8px;border:1px solid var(--border)';
+
+    const lbl = document.createElement('span');
+    lbl.style.cssText = 'font-size:11px;color:var(--text-light);min-width:65px;font-weight:500';
+    lbl.textContent = 'Sessão ' + (i+1);
+
+    const inpData = document.createElement('input');
+    inpData.type = 'date'; inpData.id = 'ag-data-' + i;
+    inpData.value = existing[i] || '';
+    inpData.style.cssText = 'padding:0.4rem 0.6rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none';
+
+    const inpHora = document.createElement('input');
+    inpHora.type = 'time'; inpHora.id = 'ag-hora-' + i;
+    inpHora.title = 'Horário de início';
+    inpHora.value = existingHora[i] || '';
+    inpHora.style.cssText = 'width:90px;padding:0.4rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none';
+
+    const sep = document.createElement('span');
+    sep.style.cssText = 'font-size:11px;color:var(--text-light)';
+    sep.textContent = 'até';
+
+    const inpHoraFim = document.createElement('input');
+    inpHoraFim.type = 'time'; inpHoraFim.id = 'ag-horafim-' + i;
+    inpHoraFim.title = 'Horário de término';
+    inpHoraFim.style.cssText = 'width:90px;padding:0.4rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none';
+
+    div.appendChild(lbl);
+    div.appendChild(inpData);
+    div.appendChild(inpHora);
+    div.appendChild(sep);
+    div.appendChild(inpHoraFim);
     campos.appendChild(div);
   }
 }
