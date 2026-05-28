@@ -52,26 +52,37 @@ function gerarCamposDatas() {
       inpData.type = 'date'; inpData.id = 'ag-data-0'; inpData.value = hoje;
       inpData.style.cssText = 'padding:0.4rem 0.6rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none';
 
+      // Grupo hora início
+      var grpHora = document.createElement('div');
+      grpHora.style.cssText = 'display:flex;flex-direction:column;gap:2px';
+      var lblHora = document.createElement('label');
+      lblHora.style.cssText = 'font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--text-light)';
+      lblHora.textContent = 'Hora início';
       var inpHora = document.createElement('input');
       inpHora.type = 'time'; inpHora.id = 'ag-hora-0';
       inpHora.title = 'Horário de início';
-      inpHora.style.cssText = 'width:90px;padding:0.4rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none';
+      inpHora.style.cssText = 'width:100px;padding:0.4rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none';
+      grpHora.appendChild(lblHora);
+      grpHora.appendChild(inpHora);
 
-      var sep = document.createElement('span');
-      sep.style.cssText = 'font-size:11px;color:var(--text-light)';
-      sep.textContent = 'até';
-
+      // Grupo hora fim
+      var grpHoraFim = document.createElement('div');
+      grpHoraFim.style.cssText = 'display:flex;flex-direction:column;gap:2px';
+      var lblHoraFim = document.createElement('label');
+      lblHoraFim.style.cssText = 'font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--text-light)';
+      lblHoraFim.textContent = 'Hora fim';
       var inpHoraFim = document.createElement('input');
       inpHoraFim.type = 'time'; inpHoraFim.id = 'ag-horafim-0';
       inpHoraFim.title = 'Horário de término';
-      inpHoraFim.style.cssText = 'width:90px;padding:0.4rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none';
+      inpHoraFim.style.cssText = 'width:100px;padding:0.4rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none';
+      grpHoraFim.appendChild(lblHoraFim);
+      grpHoraFim.appendChild(inpHoraFim);
 
-      // Sessão única: data + hora início + até + hora fim
+      // Sessão única: data + hora início + hora fim com labels
       div.appendChild(lbl);
       div.appendChild(inpData);
-      div.appendChild(inpHora);
-      div.appendChild(sep);
-      div.appendChild(inpHoraFim);
+      div.appendChild(grpHora);
+      div.appendChild(grpHoraFim);
       campos.appendChild(div);
     }
     return;
@@ -107,27 +118,36 @@ function gerarCamposDatas() {
     inpData.value = existing[i] || '';
     inpData.style.cssText = 'padding:0.4rem 0.6rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none';
 
+    // Grupo hora início
+    const grpHi = document.createElement('div');
+    grpHi.style.cssText = 'display:flex;flex-direction:column;gap:2px';
+    const lblHi = document.createElement('label');
+    lblHi.style.cssText = 'font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--text-light)';
+    lblHi.textContent = 'Hora início';
     const inpHora = document.createElement('input');
     inpHora.type = 'time'; inpHora.id = 'ag-hora-' + i;
     inpHora.title = 'Horário de início';
     inpHora.value = existingHora[i] || '';
-    inpHora.style.cssText = 'width:90px;padding:0.4rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none';
+    inpHora.style.cssText = 'width:100px;padding:0.4rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none';
+    grpHi.appendChild(lblHi); grpHi.appendChild(inpHora);
 
-    const sep = document.createElement('span');
-    sep.style.cssText = 'font-size:11px;color:var(--text-light)';
-    sep.textContent = 'até';
-
+    // Grupo hora fim
+    const grpHf = document.createElement('div');
+    grpHf.style.cssText = 'display:flex;flex-direction:column;gap:2px';
+    const lblHf = document.createElement('label');
+    lblHf.style.cssText = 'font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--text-light)';
+    lblHf.textContent = 'Hora fim';
     const inpHoraFim = document.createElement('input');
     inpHoraFim.type = 'time'; inpHoraFim.id = 'ag-horafim-' + i;
     inpHoraFim.title = 'Horário de término';
     inpHoraFim.value = existingHoraFim[i] || '';
-    inpHoraFim.style.cssText = 'width:90px;padding:0.4rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none';
+    inpHoraFim.style.cssText = 'width:100px;padding:0.4rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none';
+    grpHf.appendChild(lblHf); grpHf.appendChild(inpHoraFim);
 
     linha1.appendChild(lbl);
     linha1.appendChild(inpData);
-    linha1.appendChild(inpHora);
-    linha1.appendChild(sep);
-    linha1.appendChild(inpHoraFim);
+    linha1.appendChild(grpHi);
+    linha1.appendChild(grpHf);
 
     // ── Linha 2: chips de serviço (cada sessão pode ter serviços diferentes) ──
     const chipsWrap = document.createElement('div');
