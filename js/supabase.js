@@ -97,6 +97,7 @@ async function _salvarSessoes(agId, sessoes) {
       checkin_data: s.checkinData || null,
       checkin_hora: s.checkinHora || null,
       checkin_nome: s.checkinNome || null,
+      cor: s.cor || null,
       atualizado_em: new Date().toISOString()
     });
   }
@@ -228,7 +229,8 @@ async function _carregarDaNuvem() {
             data: s.data, hora: s.hora || '', horaFim: s.hora_fim || '', status: s.status,
             servicoIds: s.servico_ids || [], servico: s.servico || '',
             checkinData: s.checkin_data, checkinHora: s.checkin_hora,
-            checkinNome: s.checkin_nome, atendimentoId: s.atendimento_id
+            checkinNome: s.checkin_nome, atendimentoId: s.atendimento_id,
+            cor: s.cor || null
           };
         })
       };
