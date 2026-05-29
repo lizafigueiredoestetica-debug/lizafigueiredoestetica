@@ -73,7 +73,7 @@ async function renderSolicitacoes() {
       + '<div style="margin-top:0.4rem;font-size:12px;color:var(--text-mid);background:var(--cream);border-radius:6px;padding:0.4rem 0.6rem">💬 ' + (s.observacao || '—') + '</div>'
       + '</div>'
       + '<div style="display:flex;flex-direction:column;gap:0.5rem;flex-shrink:0">'
-      + '<button class="btn btn-primary btn-sm" onclick="abrirModalAprovar(\'' + s.id + '\',\'' + s.nome.replace(/'/g,"\\'") + '\',\'' + (s.telefone||'') + '\',\'' + (s.data_preferida||'') + '\',\'' + (s.hora_preferida||'') + '\',\'' + (s.observacao||'').replace(/'/g,"\\'").replace(/\n/g,' ') + '\')" style="background:linear-gradient(135deg,#4CAF50,#388E3C)">✅ Aprovar</button>'
+      + '<button class="btn btn-primary btn-sm" onclick="abrirModalAprovar(\'' + s.id + '\',\'' + s.nome.replace(/'/g,"\\'") + '\',\'' + (s.telefone||'') + '\',\'' + (s.data_preferida||'') + '\',\'' + (s.hora_preferida||'') + '\',\'' + (s.observacao||'').replace(/'/g,"\\'").replace(/\n/g,' ') + '\',\'' + (s.hora_fim||'') + '\')" style="background:linear-gradient(135deg,#4CAF50,#388E3C)">✅ Aprovar</button>'
       + '<button class="btn btn-danger btn-sm" onclick="abrirModalRecusar(\'' + s.id + '\',\'' + s.nome.replace(/'/g,"\\'") + '\',\'' + (s.telefone||'') + '\')" style="font-size:11px">✗ Recusar</button>'
       + '</div>'
       + '</div>'
@@ -90,7 +90,8 @@ function _fmtTel(tel) {
 }
 
 // ── Modal APROVAR ──
-function abrirModalAprovar(id, nome, tel, dataPref, horaPref, obs) {
+function abrirModalAprovar(id, nome, tel, dataPref, horaPref, obs, horaFimPref) {
+  horaFimPref = horaFimPref || '';
   var old = document.getElementById('modal-aprovar');
   if (old) old.remove();
 
@@ -144,11 +145,13 @@ function abrirModalAprovar(id, nome, tel, dataPref, horaPref, obs) {
 
     // Data e hora confirmadas
 
-    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:1rem"">'
     + '<div><div style="font-size:10px;letter-spacing:2px;color:var(--text-light);text-transform:uppercase;margin-bottom:4px">Data confirmada</div>'
     + '<input type="date" id="aprovar-data" value="' + (dataPref||'') + '" style="width:100%;padding:0.5rem 0.75rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none"></div>'
-    + '<div><div style="font-size:10px;letter-spacing:2px;color:var(--text-light);text-transform:uppercase;margin-bottom:4px">Horário confirmado</div>'
+    + '<div><div style="font-size:10px;letter-spacing:2px;color:var(--text-light);text-transform:uppercase;margin-bottom:4px">Hora início</div>'
     + '<input type="time" id="aprovar-hora" value="' + (horaPref||'') + '" style="width:100%;padding:0.5rem 0.75rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none"></div>'
+    + '<div><div style="font-size:10px;letter-spacing:2px;color:var(--text-light);text-transform:uppercase;margin-bottom:4px">Hora fim</div>'
+    + '<input type="time" id="aprovar-horafim" value="' + (horaFimPref||'') + '" style="width:100%;padding:0.5rem 0.75rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none"></div>'
     + '</div>'
 
     // Botões
@@ -210,6 +213,7 @@ async function confirmarAprovacao(solId, nome, tel) {
     sessoes: [{
       data: data,
       hora: hora,
+      horaFim: (document.getElementById('aprovar-horafim')||{value:''}).value || '',
       status: 'pendente',
       servicoIds: servicoIds,
       servico: servicoNomes.join(' + '),
