@@ -1059,17 +1059,62 @@ function salvarNovoCiclo(agId) {
   }
 
   novasSessoes.sort((a,b) => a.data.localeCompare(b.data));
-  ag.sessoes = ag.sessoes.concat(novasSessoes);
-  if (obs) ag.obs = obs;
-  // Atualizar cor se selecionada
-  const ncCor = (document.getElementById('nc-cor')||{value:''}).value;
-  if (ncCor) ag.cor = ncCor;
-  const ncSinal = parseFloat((document.getElementById('nc-sinal')||{value:'0'}).value) || 0;
-  if (ncSinal > 0) { ag.sinal = ncSinal; ag.sinalPago = true; }
 
-  saveData(); renderAll();
-  document.getElementById('novo-ciclo-modal').remove();
-  showToast(`✅ ${novasSessoes.length} nova(s) sessão(ões) adicionada(s) para ${ag.cliente}!`);
-  _salvarAgenda(ag);
+  // Validação de conflito de horário
+  var conflitosNC = [];
+  novasSessoes.forEach(function(nova) {
+    if (!nova.data || !nova.hora) return;
+    var hIniNova = parseInt(nova.hora.split(':')[0])*60 + parseInt(nova.hora.split(':')[1]||0);
+    var hFimNova = nova.horaFim ? parseInt(nova.horaFim.split(':')[0])*60 + parseInt(nova.horaFim.split(':')[1]||0) : hIniNova + 1;
+    db.agenda.forEach(function(agCheck) {
+      agCheck.sessoes.forEach(function(s) {
+        if (s.data !== nova.data || !s.hora) return;
+        if (s.status === 'realizado' || s.status === 'falta') return;
+        var hIniEx = parseInt(s.hora.split(':')[0])*60 + parseInt(s.hora.split(':')[1]||0);
+        var hFimEx = s.horaFim ? parseInt(s.horaFim.split(':')[0])*60 + parseInt(s.horaFim.split(':')[1]||0) : hIniEx + 1;
+        if (hIniNova < hFimEx && hFimNova > hIniEx) {
+          conflitosNC.push(agCheck.cliente + ' — ' + fmtDate(s.data) + ' ' + s.hora + (s.horaFim ? '–' + s.horaFim : ''));
+        }
+      });
+    });
+  });
+  if (conflitosNC.length > 0) {
+    var msgNC = '⚠️ Conflito de horário!\n\nJá existe agendamento:\n' + conflitosNC.slice(0,3).join('\n');
+    if (conflitosNC.length > 3) msgNC += '\n... e mais ' + (conflitosNC.length-3) + ' conflito(s).';
+    msgNC += '\n\nAgendar mesmo assim?';
+    if (!confirm(msgNC)) return;
+  }
+
+  const ncCor = (document.getElementById('nc-cor')||{value:''}).value || ag.cor || '#D4A0A8';
+  const ncSinal = parseFloat((document.getElementById('nc-sinal')||{value:'0'}).value) || 0;
+
+  // Se cor diferente da atual → criar NOVO agendamento separado
+  if (ncCor && ncCor !== (ag.cor || '#D4A0A8')) {
+    var novoAg = {
+      id: uid(),
+      cliente: ag.cliente,
+      tel: ag.tel || '',
+      obs: obs || ag.obs || '',
+      sinal: ncSinal || 0,
+      sinalPago: ncSinal > 0,
+      cor: ncCor,
+      recorrencia: '',
+      sessoes: novasSessoes
+    };
+    db.agenda.push(novoAg);
+    saveData(); renderAll();
+    document.getElementById('novo-ciclo-modal').remove();
+    showToast('✅ Novo ciclo criado com nova cor para ' + ag.cliente + '!');
+    _salvarAgenda(novoAg);
+  } else {
+    // Mesma cor → adicionar sessões ao agendamento existente
+    ag.sessoes = ag.sessoes.concat(novasSessoes);
+    if (obs) ag.obs = obs;
+    if (ncSinal > 0) { ag.sinal = ncSinal; ag.sinalPago = true; }
+    saveData(); renderAll();
+    document.getElementById('novo-ciclo-modal').remove();
+    showToast('✅ ' + novasSessoes.length + ' nova(s) sessão(ões) adicionada(s) para ' + ag.cliente + '!');
+    _salvarAgenda(ag);
+  }
 }
 
