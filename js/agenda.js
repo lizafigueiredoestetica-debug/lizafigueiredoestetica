@@ -507,7 +507,7 @@ function renderAgenda() {
           else if(isAtrasado) badge='<span class="badge-atrasado">Não compareceu</span>';
           else badge='<span class="badge-pendente">Pendente</span>';
           return `
-          <div class="agenda-sessao-row ${cls}">
+          <div class="agenda-sessao-row ${cls}" style="${s.cor ? 'border-left:3px solid '+s.cor+';' : ''}">
             <div class="agenda-sessao-data">${fmtDate(s.data)}${s.hora?' &middot; '+s.hora+(s.horaFim?' – '+s.horaFim:''):''}</div>
             <div class="agenda-sessao-servico">${(function(s,ag){ var ids=s.servicoIds||[]; if(ids.length){ var nomes=ids.map(function(id){ var sv=db.servicos.find(function(x){return x.id===id;}); return sv?sv.nome:id; }); return nomes.join(' + '); } return s.servico||_agServicos(ag); })(s,ag)} · Sessão ${i+1}</div>
             <div class="agenda-sessao-status" style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap">
@@ -657,7 +657,7 @@ function excluirAgenda(agId) {
   const ag = db.agenda.find(x=>x.id===agId);
   if(!ag) return;
 
-  var temRecorrencia = (ag.recorrencia && ag.recorrencia !== '') || ag.sessoes.length > 1;
+  var temRecorrencia = ag.recorrencia && ag.recorrencia !== '';
 
   if (!temRecorrencia) {
     // Sem recorrência — confirmação simples
