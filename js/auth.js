@@ -267,6 +267,27 @@ function mascaraCpf(el) {
   el.value = v;
 }
 
+// ── Som de check-in ──
+function _tocarSomCheckin() {
+  try {
+    var ctx = new (window.AudioContext || window.webkitAudioContext)();
+    function _ding(freq, inicio, dur) {
+      var osc = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, ctx.currentTime + inicio);
+      gain.gain.setValueAtTime(0.4, ctx.currentTime + inicio);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + inicio + dur);
+      osc.start(ctx.currentTime + inicio);
+      osc.stop(ctx.currentTime + inicio + dur);
+    }
+    _ding(880, 0, 0.4);
+    _ding(1100, 0.2, 0.5);
+  } catch(e) {}
+}
+
 async function fazerCheckin() {
   var cpf = (document.getElementById('checkinCpf')||{value:''}).value.replace(/\D/g,'');
   var msg = document.getElementById('checkinMsg');
@@ -345,6 +366,7 @@ async function fazerCheckin() {
   sessaoEncontrada.checkinData = dataCheckin;
   sessaoEncontrada.checkinNome = nome;
   saveData();
+  _tocarSomCheckin();
   // Salvar sessão individualmente no Supabase
   if (agEncontrado) _salvarSessoes(agEncontrado.id, agEncontrado.sessoes);
   addLog('INFO', '✅ Check-in — ' + nome + ' | ' + servico + (sessaoEncontrada.hora?' às '+sessaoEncontrada.hora:'') + ' | ' + sessaoEncontrada.checkinHora);
