@@ -126,7 +126,24 @@ function abrirModalAprovar(id, nome, tel, dataPref, horaPref, obs) {
     + '</div>'
     + '</div>'
 
+    // Cor na agenda
+    + '<div style="margin-bottom:1rem">'
+    + '<div style="font-size:10px;letter-spacing:2px;color:var(--text-light);text-transform:uppercase;margin-bottom:8px">Cor na Agenda</div>'
+    + '<input type="hidden" id="aprovar-cor" value="#D4A0A8">'
+    + '<div style="display:flex;flex-wrap:wrap;gap:8px">'
+    + '<span onclick="_selecionarCorAprovar(this)" data-cor="#D4A0A8" style="background:#D4A0A8;width:28px;height:28px;border-radius:50%;cursor:pointer;border:3px solid #B07880;box-shadow:0 0 0 2px white,0 0 0 4px #B07880;transition:all 0.15s" title="Rosa"></span>'
+    + '<span onclick="_selecionarCorAprovar(this)" data-cor="#5B9BD5" style="background:#5B9BD5;width:28px;height:28px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:all 0.15s" title="Azul"></span>'
+    + '<span onclick="_selecionarCorAprovar(this)" data-cor="#70AD47" style="background:#70AD47;width:28px;height:28px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:all 0.15s" title="Verde"></span>'
+    + '<span onclick="_selecionarCorAprovar(this)" data-cor="#FF4444" style="background:#FF4444;width:28px;height:28px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:all 0.15s" title="Vermelho"></span>'
+    + '<span onclick="_selecionarCorAprovar(this)" data-cor="#FFC000" style="background:#FFC000;width:28px;height:28px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:all 0.15s" title="Amarelo"></span>'
+    + '<span onclick="_selecionarCorAprovar(this)" data-cor="#9B59B6" style="background:#9B59B6;width:28px;height:28px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:all 0.15s" title="Lilás"></span>'
+    + '<span onclick="_selecionarCorAprovar(this)" data-cor="#8B4513" style="background:#8B4513;width:28px;height:28px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:all 0.15s" title="Marrom"></span>'
+    + '<span onclick="_selecionarCorAprovar(this)" data-cor="#FF8C00" style="background:#FF8C00;width:28px;height:28px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:all 0.15s" title="Laranja"></span>'
+    + '</div>'
+    + '</div>'
+
     // Data e hora confirmadas
+
     + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">'
     + '<div><div style="font-size:10px;letter-spacing:2px;color:var(--text-light);text-transform:uppercase;margin-bottom:4px">Data confirmada</div>'
     + '<input type="date" id="aprovar-data" value="' + (dataPref||'') + '" style="width:100%;padding:0.5rem 0.75rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none"></div>'
@@ -144,6 +161,24 @@ function abrirModalAprovar(id, nome, tel, dataPref, horaPref, obs) {
 
   document.body.appendChild(modal);
   modal.addEventListener('click', function(e){ if(e.target===modal) modal.remove(); });
+}
+
+function _selecionarCorAprovar(el) {
+  var cor = el.getAttribute('data-cor');
+  if (!cor) return;
+  var input = document.getElementById('aprovar-cor');
+  if (input) input.value = cor;
+  var modal = document.getElementById('modal-aprovar');
+  if (modal) modal.querySelectorAll('[data-cor]').forEach(function(b) {
+    b.style.border = '3px solid transparent';
+    b.style.boxShadow = 'none';
+  });
+  var r = Math.max(0, parseInt(cor.slice(1,3),16)-50);
+  var g = Math.max(0, parseInt(cor.slice(3,5),16)-50);
+  var b2 = Math.max(0, parseInt(cor.slice(5,7),16)-50);
+  var dark = '#' + [r,g,b2].map(function(v){ return v.toString(16).padStart(2,'0'); }).join('');
+  el.style.border = '3px solid ' + dark;
+  el.style.boxShadow = '0 0 0 2px white, 0 0 0 4px ' + dark;
 }
 
 async function confirmarAprovacao(solId, nome, tel) {
@@ -169,6 +204,7 @@ async function confirmarAprovacao(solId, nome, tel) {
     obs: 'Agendamento via solicitação pública',
     sinal: 0,
     sinalPago: false,
+    cor: (document.getElementById('aprovar-cor')||{value:'#D4A0A8'}).value || '#D4A0A8',
     servicoIds: servicoIds,
     servicoNome: servicoNomes.join(' + ') || '—',
     sessoes: [{
