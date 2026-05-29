@@ -1088,33 +1088,22 @@ function salvarNovoCiclo(agId) {
   const ncCor = (document.getElementById('nc-cor')||{value:''}).value || ag.cor || '#D4A0A8';
   const ncSinal = parseFloat((document.getElementById('nc-sinal')||{value:'0'}).value) || 0;
 
-  // Se cor diferente da atual → criar NOVO agendamento separado
-  if (ncCor && ncCor !== (ag.cor || '#D4A0A8')) {
-    var novoAg = {
-      id: uid(),
-      cliente: ag.cliente,
-      tel: ag.tel || '',
-      obs: obs || ag.obs || '',
-      sinal: ncSinal || 0,
-      sinalPago: ncSinal > 0,
-      cor: ncCor,
-      recorrencia: '',
-      sessoes: novasSessoes
-    };
-    db.agenda.push(novoAg);
-    saveData(); renderAll();
-    document.getElementById('novo-ciclo-modal').remove();
-    showToast('✅ Novo ciclo criado com nova cor para ' + ag.cliente + '!');
-    _salvarAgenda(novoAg);
-  } else {
-    // Mesma cor → adicionar sessões ao agendamento existente
-    ag.sessoes = ag.sessoes.concat(novasSessoes);
-    if (obs) ag.obs = obs;
-    if (ncSinal > 0) { ag.sinal = ncSinal; ag.sinalPago = true; }
-    saveData(); renderAll();
-    document.getElementById('novo-ciclo-modal').remove();
-    showToast('✅ ' + novasSessoes.length + ' nova(s) sessão(ões) adicionada(s) para ' + ag.cliente + '!');
-    _salvarAgenda(ag);
-  }
+  // Novo ciclo SEMPRE cria agendamento separado — nunca sobrescreve o histórico existente
+  var novoAg = {
+    id: uid(),
+    cliente: ag.cliente,
+    tel: ag.tel || '',
+    obs: obs || '',
+    sinal: ncSinal || 0,
+    sinalPago: ncSinal > 0,
+    cor: ncCor,
+    recorrencia: '',
+    sessoes: novasSessoes
+  };
+  db.agenda.push(novoAg);
+  saveData(); renderAll();
+  document.getElementById('novo-ciclo-modal').remove();
+  showToast('✅ Novo ciclo criado para ' + ag.cliente + '!');
+  _salvarAgenda(novoAg);
 }
 
