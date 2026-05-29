@@ -968,7 +968,7 @@ function novoCiclo(agId) {
         <span style="font-family:'Cormorant Garamond',serif;font-size:18px;color:#FAF0F2;letter-spacing:2px">🔄 Novo Ciclo · ${ag.cliente}</span>
         <button onclick="document.getElementById('novo-ciclo-modal').remove()" style="background:none;border:none;color:#FAF0F2;font-size:20px;cursor:pointer">✕</button>
       </div>
-      <div style="padding:1.5rem">
+      <div style="padding:1.5rem;max-height:80vh;overflow-y:auto">
         <div style="font-size:12px;color:var(--text-light);margin-bottom:1rem">Adiciona novas sessões à ficha existente da cliente, sem perder o histórico.</div>
         <div style="margin-bottom:1rem">
           <div style="font-size:10px;letter-spacing:2px;color:var(--text-light);margin-bottom:8px">COR NA AGENDA</div>
@@ -1088,22 +1088,16 @@ function salvarNovoCiclo(agId) {
   const ncCor = (document.getElementById('nc-cor')||{value:''}).value || ag.cor || '#D4A0A8';
   const ncSinal = parseFloat((document.getElementById('nc-sinal')||{value:'0'}).value) || 0;
 
-  // Novo ciclo SEMPRE cria agendamento separado — nunca sobrescreve o histórico existente
-  var novoAg = {
-    id: uid(),
-    cliente: ag.cliente,
-    tel: ag.tel || '',
-    obs: obs || '',
-    sinal: ncSinal || 0,
-    sinalPago: ncSinal > 0,
-    cor: ncCor,
-    recorrencia: '',
-    sessoes: novasSessoes
-  };
-  db.agenda.push(novoAg);
+  // Salvar cor do ciclo em cada nova sessão individualmente — não toca em ag.cor
+  novasSessoes.forEach(function(s){ s.cor = ncCor; });
+
+  // Concatenar novas sessões no agendamento existente, preservando histórico e cor original
+  ag.sessoes = ag.sessoes.concat(novasSessoes);
+  if (obs) ag.obs = obs;
+  if (ncSinal > 0) { ag.sinal = ncSinal; ag.sinalPago = true; }
   saveData(); renderAll();
   document.getElementById('novo-ciclo-modal').remove();
-  showToast('✅ Novo ciclo criado para ' + ag.cliente + '!');
-  _salvarAgenda(novoAg);
+  showToast('✅ ' + novasSessoes.length + ' nova(s) sessão(ões) adicionada(s) para ' + ag.cliente + '!');
+  _salvarAgenda(ag);
 }
 
