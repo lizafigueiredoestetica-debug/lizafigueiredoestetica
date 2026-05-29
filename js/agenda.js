@@ -657,7 +657,7 @@ function excluirAgenda(agId) {
   const ag = db.agenda.find(x=>x.id===agId);
   if(!ag) return;
 
-  var temRecorrencia = ag.recorrencia && ag.recorrencia !== '';
+  var temRecorrencia = (ag.recorrencia && ag.recorrencia !== '') || ag.sessoes.length > 1;
 
   if (!temRecorrencia) {
     // Sem recorrência — confirmação simples
