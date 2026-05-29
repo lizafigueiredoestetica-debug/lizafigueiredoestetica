@@ -33,7 +33,7 @@ function _calEventos() {
   db.agenda.forEach(function(ag) {
     ag.sessoes.forEach(function(s, idx) {
       if (!s.data) return;
-      eventos.push({ data: s.data, hora: s.hora || '', horaFim: s.horaFim || '', cliente: ag.cliente, servico: (function(){ var ids=s.servicoIds||[]; if(ids.length) return ids.map(function(id){ var sv=db.servicos.find(function(x){return x.id===id;}); return sv?sv.nome:id; }).join(' + '); return s.servico||_agServicos(ag); })(), status: s.status, agId: ag.id, sessaoIdx: idx, cor: ag.cor || '' });
+      eventos.push({ data: s.data, hora: s.hora || '', horaFim: s.horaFim || '', cliente: ag.cliente, servico: (function(){ var ids=s.servicoIds||[]; if(ids.length) return ids.map(function(id){ var sv=db.servicos.find(function(x){return x.id===id;}); return sv?sv.nome:id; }).join(' + '); return s.servico||_agServicos(ag); })(), status: s.status, agId: ag.id, sessaoIdx: idx, cor: s.cor || ag.cor || '' });
     });
   });
   return eventos;
