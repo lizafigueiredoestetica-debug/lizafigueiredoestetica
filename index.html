@@ -997,6 +997,21 @@
     </div>
   </section>
 
+  <!-- Modelos de Ficha de Anamnese -->
+  <section class="section" id="sec-modelos">
+    <div class="main">
+      <div class="section-title">Modelos de Ficha</div>
+      <div class="section-sub">Crie fichas de anamnese personalizadas por tratamento</div>
+      <div class="divider"></div>
+      <div style="margin-bottom:1.5rem">
+        <button class="btn btn-primary" onclick="abrirEditorModelo(null)">+ Novo Modelo de Ficha</button>
+      </div>
+      <div id="modelosAnamneseList">
+        <div class="empty-state"><div class="empty-icon">📋</div><p>Carregando modelos...</p></div>
+      </div>
+    </div>
+  </section>
+
 <!-- MODAL ASSINATURA DIGITAL -->
 <div id="modalAssinatura" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.7);overflow-y:auto">
   <div style="background:white;max-width:860px;margin:1rem auto;border-radius:12px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.3)">
@@ -1063,19 +1078,6 @@
 <script src="js/calendario.js"></script>
 <!-- 14. IndexedDB + Fotos (Supabase Storage) -->
 <script src="js/idb.js"></script>
-<!-- 14c. Modelos de Ficha de Anamnese -->
-  <section class="section" id="sec-modelos">
-    <div class="section-title">Modelos de Ficha</div>
-    <div class="section-sub">Crie fichas de anamnese personalizadas por tratamento</div>
-    <div class="divider"></div>
-    <div style="margin-bottom:1.5rem">
-      <button class="btn btn-primary" onclick="abrirEditorModelo(null)">+ Novo Modelo de Ficha</button>
-    </div>
-    <div id="modelosAnamneseList">
-      <div class="empty-state"><div class="empty-icon">📋</div><p>Carregando modelos...</p></div>
-    </div>
-  </section>
-
 <!-- 14b. Mensagens WhatsApp customizáveis -->
 <script src="js/mensagens.js"></script>
 <!-- 15. Solicitações de agendamento público -->
