@@ -189,6 +189,7 @@ function showSection(id) {
   if (id === 'acomp') renderAcomp();
   if (id === 'financeiro') renderFinanceiro && renderFinanceiro();
   if (id === 'mensagens') renderMensagens();
+  if (id === 'modelos') renderModelosAnamnese();
 }
 
 function renderAll() {
@@ -229,4 +230,5 @@ function _atualizarBadges() {
   var bAn = document.getElementById('badgeAnamnese'); if(bAn) bAn.textContent = db.anamneses.length;
   // Badge acomp
   var bAc = document.getElementById('badgeAcomp'); if(bAc) bAc.textContent = db.agenda.length;
+  var bMod = document.getElementById('badgeModelos'); if(bMod) bMod.textContent = (_modelosAnamnese||[]).filter(function(m){return m.ativo;}).length;
 }
