@@ -821,6 +821,7 @@ var _modelosAnamnese = [];
 
 // ── Carregar modelos do Supabase ──
 async function _carregarModelosAnamnese() {
+  await _garantirModeloAnamnese();
   try {
     var resp = await fetch(SUPA_URL + '/rest/v1/modelos_anamnese?order=criado_em.asc', {
       headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY }
@@ -830,6 +831,58 @@ async function _carregarModelosAnamnese() {
     }
   } catch(e) { _modelosAnamnese = []; }
   _popularSelectModelos();
+}
+
+// ── Criar modelo padrão "Anamnese" se não existir ──
+async function _garantirModeloAnamnese() {
+  try {
+    var resp = await fetch(SUPA_URL + '/rest/v1/modelos_anamnese?nome=eq.Anamnese', {
+      headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY }
+    });
+    var existentes = await resp.json();
+    if (existentes && existentes.length > 0) return; // já existe
+
+    var modeloPadrao = {
+      id: 'modelo-anamnese-padrao',
+      nome: 'Anamnese',
+      descricao: 'Ficha completa de anamnese — saúde, hormonal, hábitos e queixa principal',
+      campos: [
+        { label: 'Possui alguma doença diagnosticada?', tipo: 'sim_nao_qual' },
+        { label: 'Usa medicação contínua?', tipo: 'sim_nao_qual' },
+        { label: 'Algum produto injetado no corpo?', tipo: 'sim_nao_qual' },
+        { label: 'Já realizou alguma cirurgia?', tipo: 'sim_nao_qual' },
+        { label: 'Tem alergia a algum produto ou substância?', tipo: 'sim_nao_qual' },
+        { label: 'Possui marcapasso ou próteses metálicas?', tipo: 'sim_nao' },
+        { label: 'Tem problemas circulatórios (varizes, má circulação, linfedema...)?', tipo: 'sim_nao' },
+        { label: 'Tem hipertensão?', tipo: 'sim_nao' },
+        { label: 'Tem diabetes?', tipo: 'sim_nao' },
+        { label: 'Ciclo menstrual', tipo: 'multipla', opcoes: ['Regular', 'Irregular', 'Menopausa'] },
+        { label: 'Está grávida ou amamentando?', tipo: 'sim_nao' },
+        { label: 'Utiliza anticoncepcional?', tipo: 'sim_nao_qual' },
+        { label: 'Quantos litros de água bebe por dia?', tipo: 'texto' },
+        { label: 'Como é sua alimentação?', tipo: 'multipla', opcoes: ['Saudável', 'Regular', 'Ruim'] },
+        { label: 'Pratica atividade física?', tipo: 'sim_nao_qual' },
+        { label: 'Consome bebida alcoólica?', tipo: 'sim_nao' },
+        { label: 'Fuma?', tipo: 'sim_nao' },
+        { label: 'Usa cinta modeladora?', tipo: 'sim_nao' },
+        { label: 'O que mais te incomoda no seu corpo? O que deseja melhorar?', tipo: 'texto' }
+      ],
+      ativo: true,
+      criado_em: new Date().toISOString(),
+      atualizado_em: new Date().toISOString()
+    };
+
+    await fetch(SUPA_URL + '/rest/v1/modelos_anamnese', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPA_KEY,
+        'Authorization': 'Bearer ' + SUPA_KEY,
+        'Prefer': 'resolution=merge-duplicates,return=minimal'
+      },
+      body: JSON.stringify(modeloPadrao)
+    });
+  } catch(e) {}
 }
 
 // ── Popular selects de modelo no formulário de agendamento ──
