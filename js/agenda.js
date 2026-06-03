@@ -312,7 +312,8 @@ function salvarAgendamento() {
   var _btnAnam = document.createElement('button');
   _btnAnam.textContent = '📲 Enviar Anamnese no WhatsApp';
   _btnAnam.style.cssText = 'background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.4);color:white;border-radius:6px;padding:2px 10px;font-size:11px;cursor:pointer;margin-left:4px';
-  _btnAnam.onclick = function(){ waEnviarAnamnese(cliente, _tel||''); };
+  var _modeloId = (document.getElementById('ag-modelo-anamnese')||{value:''}).value||'';
+  _btnAnam.onclick = function(){ waEnviarAnamnese(cliente, _tel||'', _modeloId); };
   var t = document.getElementById('toast');
   t.innerHTML = '📅 Agendamento salvo! ';
   t.appendChild(_btnAnam);
