@@ -7,6 +7,7 @@
 async function init() {
   if (typeof _inicializarMensagens === 'function') _inicializarMensagens();
   await loadData();
+  _carregarModelosAnamnese();
   if(db.categorias.length === 0) {
     db.categorias = [
       {id: uid(), nome: 'Bumbum'},
@@ -463,9 +464,18 @@ function gerarRelatorioPDF() {
 var _urlAnamnese = localStorage.getItem('lizafig_url_anamnese') || 'https://lizafigueiredoestetica-debug.github.io/anamnese/';
 
 // 1. Link da anamnese ao criar agendamento
-function waEnviarAnamnese(cliente, tel) {
+function waEnviarAnamnese(cliente, tel, modeloId) {
   var primeiroNome = (cliente||'').split(' ')[0];
   var msg = _getMensagem('anamnese').replace(/{nome}/g, primeiroNome);
+  // Se houver modelo selecionado, adicionar parâmetro na URL da ficha
+  if (modeloId) {
+    var modelo = _modelosAnamnese.find(function(m){ return m.id === modeloId; });
+    var nomeModelo = modelo ? encodeURIComponent(modelo.nome.toLowerCase().replace(/\s+/g,'-')) : modeloId;
+    msg = msg.replace(
+      /https:\/\/[^\s]+\/anamnese\//,
+      _urlAnamnese + '?modelo=' + nomeModelo + '&id=' + modeloId + ' '
+    );
+  }
   var telFmt = tel ? '55' + tel.replace(/\D/g,'') : '';
   window.open('https://wa.me/' + telFmt + '?text=' + encodeURIComponent(msg), '_blank');
 }
@@ -801,4 +811,192 @@ function salvarServicoSessao(agId, sessaoIdx, sid) {
   saveData();
   if (typeof renderAcomp === 'function') renderAcomp();
   showToast('Serviços da sessão '+(sessaoIdx+1)+' salvos!');
+}
+
+// ══════════════════════════════════════════════════════
+//  MODELOS DE FICHA DE ANAMNESE
+// ══════════════════════════════════════════════════════
+
+var _modelosAnamnese = [];
+
+// ── Carregar modelos do Supabase ──
+async function _carregarModelosAnamnese() {
+  try {
+    var resp = await fetch(SUPA_URL + '/rest/v1/modelos_anamnese?order=criado_em.asc', {
+      headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY }
+    });
+    if (resp.ok) {
+      _modelosAnamnese = await resp.json();
+    }
+  } catch(e) { _modelosAnamnese = []; }
+  _popularSelectModelos();
+}
+
+// ── Popular selects de modelo no formulário de agendamento ──
+function _popularSelectModelos() {
+  ['ag-modelo-anamnese', 'nc-modelo-anamnese'].forEach(function(id) {
+    var sel = document.getElementById(id);
+    if (!sel) return;
+    var val = sel.value;
+    sel.innerHTML = '<option value="">— Nenhum (ficha padrão) —</option>';
+    _modelosAnamnese.filter(function(m){ return m.ativo; }).forEach(function(m) {
+      var opt = document.createElement('option');
+      opt.value = m.id;
+      opt.textContent = m.nome;
+      if (val === m.id) opt.selected = true;
+      sel.appendChild(opt);
+    });
+  });
+}
+
+// ── Salvar modelo no Supabase ──
+async function _salvarModeloAnamnese(modelo) {
+  try {
+    await fetch(SUPA_URL + '/rest/v1/modelos_anamnese', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPA_KEY,
+        'Authorization': 'Bearer ' + SUPA_KEY,
+        'Prefer': 'resolution=merge-duplicates,return=minimal'
+      },
+      body: JSON.stringify(modelo)
+    });
+  } catch(e) {}
+}
+
+// ── Excluir modelo ──
+async function excluirModeloAnamnese(id) {
+  if (!confirm('Excluir este modelo de ficha?')) return;
+  try {
+    await fetch(SUPA_URL + '/rest/v1/modelos_anamnese?id=eq.' + id, {
+      method: 'DELETE',
+      headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY }
+    });
+    await _carregarModelosAnamnese();
+    renderModelosAnamnese();
+    showToast('Modelo excluído!');
+  } catch(e) { showToast('Erro ao excluir.'); }
+}
+
+// ── Renderizar seção de modelos ──
+function renderModelosAnamnese() {
+  var el = document.getElementById('modelosAnamneseList');
+  if (!el) return;
+  if (!_modelosAnamnese.length) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><p>Nenhum modelo criado ainda</p></div>';
+    return;
+  }
+  el.innerHTML = _modelosAnamnese.map(function(m) {
+    var campos = m.campos || [];
+    return '<div class="panel" style="margin-bottom:1rem">'
+      + '<div class="panel-header">'
+      + '<div><div class="panel-title">📋 ' + m.nome + '</div>'
+      + '<div style="font-size:11px;color:var(--text-light);margin-top:2px">' + (m.descricao||'') + ' · ' + campos.length + ' campo(s)</div></div>'
+      + '<div style="display:flex;gap:0.5rem;align-items:center">'
+      + '<span style="font-size:11px;background:' + (m.ativo?'#E8F5E9':'#FFEBEE') + ';color:' + (m.ativo?'#388E3C':'#C62828') + ';padding:2px 10px;border-radius:12px">' + (m.ativo?'Ativo':'Inativo') + '</span>'
+      + '<button class="btn btn-edit btn-sm" onclick="abrirEditorModelo(\'' + m.id + '\')">✏️ Editar</button>'
+      + '<button class="btn btn-danger btn-sm" onclick="excluirModeloAnamnese(\'' + m.id + '\')">✕</button>'
+      + '</div></div>'
+      + '<div style="padding:0.75rem 1.5rem;font-size:12px;color:var(--text-light)">'
+      + campos.map(function(c){ return '<span style="background:var(--cream);padding:2px 8px;border-radius:6px;margin:2px;display:inline-block">' + c.label + '</span>'; }).join('')
+      + '</div></div>';
+  }).join('');
+}
+
+// ── Abrir editor de modelo ──
+function abrirEditorModelo(id) {
+  var modelo = id ? _modelosAnamnese.find(function(m){ return m.id === id; }) : null;
+  var campos = modelo ? JSON.parse(JSON.stringify(modelo.campos || [])) : [];
+  var isNovo = !id;
+
+  var old = document.getElementById('modal-editor-modelo');
+  if (old) old.remove();
+
+  var modal = document.createElement('div');
+  modal.id = 'modal-editor-modelo';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(28,28,30,0.6);z-index:9998;display:flex;align-items:center;justify-content:center;padding:1rem;overflow-y:auto';
+
+  function renderCampos() {
+    return campos.map(function(c, i) {
+      return '<div style="background:var(--cream);border-radius:8px;padding:0.75rem 1rem;margin-bottom:0.5rem;display:flex;gap:0.75rem;align-items:flex-start">'
+        + '<div style="flex:1">'
+        + '<input type="text" value="' + (c.label||'').replace(/"/g,'&quot;') + '" placeholder="Nome do campo..." '
+        + 'onchange="window._editCampoLabel(' + i + ',this.value)" '
+        + 'style="width:100%;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:13px;margin-bottom:6px">'
+        + '<select onchange="window._editCampoTipo(' + i + ',this.value)" style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:12px">'
+        + ['sim_nao','sim_nao_qual','texto','multipla','numero','data'].map(function(t){
+            var labels = {sim_nao:'Sim/Não', sim_nao_qual:'Sim/Não + Detalhe', texto:'Texto livre', multipla:'Múltipla escolha', numero:'Número', data:'Data'};
+            return '<option value="' + t + '" ' + (c.tipo===t?'selected':'') + '>' + labels[t] + '</option>';
+          }).join('')
+        + '</select>'
+        + (c.tipo==='multipla' ? '<input type="text" value="' + (c.opcoes||[]).join(', ') + '" placeholder="Opções separadas por vírgula..." '
+          + 'onchange="window._editCampoOpcoes(' + i + ',this.value)" '
+          + 'style="width:100%;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:12px;margin-top:6px">' : '')
+        + '</div>'
+        + '<button onclick="window._removerCampo(' + i + ')" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:16px;padding:4px">✕</button>'
+        + '</div>';
+    }).join('');
+  }
+
+  function rebuild() {
+    var camposEl = document.getElementById('editor-campos-wrap');
+    if (camposEl) camposEl.innerHTML = renderCampos();
+  }
+
+  window._editCampoLabel = function(i, v) { campos[i].label = v; };
+  window._editCampoTipo  = function(i, v) { campos[i].tipo = v; rebuild(); };
+  window._editCampoOpcoes= function(i, v) { campos[i].opcoes = v.split(',').map(function(x){ return x.trim(); }); };
+  window._removerCampo   = function(i) { campos.splice(i, 1); rebuild(); };
+  window._adicionarCampo = function() { campos.push({ label:'', tipo:'sim_nao' }); rebuild(); };
+
+  modal.innerHTML = '<div style="background:white;border-radius:16px;max-width:600px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3)">'
+    + '<div style="padding:1.2rem 1.5rem;background:linear-gradient(135deg,#1C1C1E,#2C2C2E);border-radius:16px 16px 0 0;display:flex;justify-content:space-between;align-items:center">'
+    + '<div style="font-family:Cormorant Garamond,serif;font-size:18px;color:#FAF0F2;letter-spacing:2px">📋 ' + (isNovo ? 'Novo Modelo' : 'Editar Modelo') + '</div>'
+    + '<button onclick="document.getElementById(\'modal-editor-modelo\').remove()" style="background:none;border:none;color:white;font-size:20px;cursor:pointer">✕</button>'
+    + '</div>'
+    + '<div style="padding:1.5rem">'
+    + '<div class="form-group" style="margin-bottom:1rem"><label>Nome do Modelo</label>'
+    + '<input type="text" id="editor-modelo-nome" value="' + (modelo?modelo.nome:'').replace(/"/g,'&quot;') + '" placeholder="Ex: Hidrolipoclasia, Drenagem Linfática..." style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:14px"></div>'
+    + '<div class="form-group" style="margin-bottom:1rem"><label>Descrição (opcional)</label>'
+    + '<input type="text" id="editor-modelo-desc" value="' + (modelo&&modelo.descricao?modelo.descricao:'').replace(/"/g,'&quot;') + '" placeholder="Ex: Para procedimentos corporais com agulha" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px"></div>'
+    + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem">'
+    + '<div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--text-light)">Campos da ficha</div>'
+    + '<button onclick="window._adicionarCampo()" class="btn btn-primary btn-sm">+ Adicionar Campo</button>'
+    + '</div>'
+    + '<div id="editor-campos-wrap">' + renderCampos() + '</div>'
+    + '<div style="display:flex;gap:0.75rem;margin-top:1.25rem;flex-wrap:wrap">'
+    + '<button class="btn btn-primary" onclick="salvarModeloAnamnese(\'' + (id||'') + '\')">💾 Salvar Modelo</button>'
+    + '<button class="btn btn-secondary" onclick="document.getElementById(\'modal-editor-modelo\').remove()">Cancelar</button>'
+    + '</div></div></div>';
+
+  document.body.appendChild(modal);
+  modal.addEventListener('click', function(e){ if(e.target===modal) modal.remove(); });
+
+  // Atualizar referência de campos ao salvar
+  window._getCamposEditor = function() { return campos; };
+}
+
+// ── Salvar modelo ao fechar editor ──
+async function salvarModeloAnamnese(id) {
+  var nome = (document.getElementById('editor-modelo-nome')||{value:''}).value.trim();
+  if (!nome) { showToast('Informe o nome do modelo!'); return; }
+  var campos = window._getCamposEditor ? window._getCamposEditor() : [];
+  var camposValidos = campos.filter(function(c){ return c.label && c.label.trim(); });
+
+  var modelo = {
+    id: id || uid(),
+    nome: nome,
+    descricao: (document.getElementById('editor-modelo-desc')||{value:''}).value.trim(),
+    campos: camposValidos,
+    ativo: true,
+    atualizado_em: new Date().toISOString()
+  };
+  if (!id) modelo.criado_em = new Date().toISOString();
+
+  await _salvarModeloAnamnese(modelo);
+  await _carregarModelosAnamnese();
+  renderModelosAnamnese();
+  document.getElementById('modal-editor-modelo').remove();
+  showToast('✅ Modelo salvo com sucesso!');
 }
