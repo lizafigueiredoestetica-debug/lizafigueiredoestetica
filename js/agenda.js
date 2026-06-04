@@ -483,6 +483,7 @@ function renderAgenda() {
         <div class="agenda-cliente-badges"><span title="${ag.cor||'#D4A0A8'}" style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${ag.cor||'#D4A0A8'};flex-shrink:0"></span>
           ${temHoje ? '<span class="badge-hoje">Hoje</span>' : ''}
           ${ag.sinal > 0 ? '<span style="background:#E7F7EE;color:#276749;border-radius:12px;padding:2px 8px;font-size:10px;font-weight:500;letter-spacing:0.5px">💰 Sinal R$'+parseFloat(ag.sinal).toFixed(2).replace('.',',')+'</span>' : ''}
+          ${(function(){ var _s=_calcSaldoPacote(ag); if(!_s.totalPacote) return ''; return '<span style="background:#EDF4FF;color:#1565C0;border-radius:12px;padding:2px 10px;font-size:10px;font-weight:500;letter-spacing:0.5px" title="Total: R$'+_s.totalPacote.toFixed(2)+' | Sinal: R$'+_s.sinal.toFixed(2)+' | Pago: R$'+_s.totalPago.toFixed(2)+'">💳 Restante: R$'+_s.saldo.toFixed(2).replace('.',',')+'</span>'; })()}
           <span class="badge-pill badge-ativo">${realizados}/${total} sessões</span>
           ${pendentes > 0 ? `<span class="badge-pendente">${pendentes} pendente${pendentes>1?'s':''}</span>` : '<span class="badge-realizado">Concluído</span>'}
           <button class="btn btn-edit btn-sm" onclick="event.stopPropagation();editarAgenda('${ag.id}')" style="margin-left:0.5rem;font-size:11px;padding:4px 10px">✏️ Editar</button>
@@ -542,6 +543,41 @@ function toggleAgendaCliente(agId) {
   }
 }
 
+
+// ── Calcular saldo financeiro do pacote ──
+function _calcSaldoPacote(ag) {
+  // Total do pacote: soma dos preços de todos os serviços de todas as sessões
+  var totalPacote = 0;
+  ag.sessoes.forEach(function(s) {
+    var ids = s.servicoIds || [];
+    ids.forEach(function(id) {
+      var sv = db.servicos.find(function(x){ return x.id === id; });
+      if (sv && sv.preco) totalPacote += parseFloat(sv.preco) || 0;
+    });
+  });
+
+  // Sinal pago na entrada
+  var sinal = parseFloat(ag.sinal) || 0;
+
+  // Total já pago via atendimentos registrados para esta cliente
+  var dataMin = ag.sessoes.map(function(s){ return s.data; }).filter(Boolean).sort()[0] || '';
+  var totalPago = db.atendimentos
+    .filter(function(a) {
+      return a.cliente && a.cliente.toLowerCase().trim() === ag.cliente.toLowerCase().trim()
+        && (!dataMin || a.data >= dataMin);
+    })
+    .reduce(function(sum, a) { return sum + (parseFloat(a.valor) || 0); }, 0);
+
+  var saldo = totalPacote - sinal - totalPago;
+
+  return {
+    totalPacote: totalPacote,
+    sinal: sinal,
+    totalPago: totalPago,
+    saldo: Math.max(0, saldo)
+  };
+}
+
 function realizarSessao(agId, sessaoIdx) {
   const ag = db.agenda.find(x=>x.id===agId);
   if(!ag) return;
@@ -597,8 +633,9 @@ function realizarSessao(agId, sessaoIdx) {
   if(valorEl) {
     if(total > 0) {
       valorEl.value = valorFinal.toFixed(2);
-      if(sinalPago > 0) {
-        // Mostrar painel informativo do sinal
+      var _totalPacoteCheck = _calcSaldoPacote(ag).totalPacote;
+      if(sinalPago > 0 || _totalPacoteCheck > 0) {
+        // Mostrar painel informativo do saldo
         var painelSinal = document.getElementById('painel-sinal');
         if(!painelSinal) {
           painelSinal = document.createElement('div');
@@ -607,9 +644,11 @@ function realizarSessao(agId, sessaoIdx) {
           var formSection = document.querySelector('#sec-atendimentos .form-section');
           if(formSection) formSection.parentNode.insertBefore(painelSinal, formSection);
         }
-        painelSinal.innerHTML = '💰 <strong>Sinal registrado:</strong> R$ ' + sinalPago.toFixed(2).replace('.',',')
-          + ' &nbsp;|&nbsp; <strong>Valor do serviço:</strong> R$ ' + total.toFixed(2).replace('.',',')
-          + ' &nbsp;|&nbsp; <strong>Restante a pagar:</strong> R$ ' + valorFinal.toFixed(2).replace('.',',');
+        var _saldo = _calcSaldoPacote(ag);
+        painelSinal.innerHTML = '💰 <strong>Total do pacote:</strong> R$ ' + _saldo.totalPacote.toFixed(2).replace('.',',')
+          + ' &nbsp;|&nbsp; <strong>Sinal:</strong> R$ ' + _saldo.sinal.toFixed(2).replace('.',',')
+          + ' &nbsp;|&nbsp; <strong>Já pago:</strong> R$ ' + _saldo.totalPago.toFixed(2).replace('.',',')
+          + ' &nbsp;|&nbsp; <strong style="color:#C62828">Restante: R$ ' + _saldo.saldo.toFixed(2).replace('.',',') + '</strong>';
       }
     }
   }
