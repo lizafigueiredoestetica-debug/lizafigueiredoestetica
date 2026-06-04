@@ -57,6 +57,9 @@
           <span>📝</span><span>Fichas Custom</span>
           <span class="badge" id="badgeFichasCustom">0</span>
         </button>
+        <button class="nav-tab" onclick="fecharDrawer();showSection('acomp-custom')" data-label="Acomp. Custom">
+          <span>📊</span><span>Acomp. Custom</span>
+        </button>
         <button class="nav-tab" onclick="showSection('mensagens')" data-label="WhatsApp">
           <span>💬</span><span>WhatsApp</span>
         </button>
@@ -1007,6 +1010,9 @@
       <div class="section-title">Fichas Customizadas</div>
       <div class="section-sub">Fichas preenchidas pelas clientes com modelos personalizados</div>
       <div class="divider"></div>
+      <div style="margin-bottom:1rem">
+        <button class="btn btn-primary" onclick="abrirNovaFichaCustom()">+ Nova Ficha Manual</button>
+      </div>
       <div class="filters-bar">
         <input type="text" class="filter-input" id="filtFichaCustomNome" placeholder="🔍 Buscar cliente..." oninput="renderFichasCustom()">
         <input type="date" class="filter-input" id="filtFichaCustomDe" onchange="renderFichasCustom()">
@@ -1028,6 +1034,36 @@
             <tr><td colspan="5"><div class="empty-state"><div class="empty-icon">📝</div><p>Nenhuma ficha customizada</p></div></td></tr>
           </tbody>
         </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== ACOMPANHAMENTO FICHAS CUSTOM ===== -->
+  <section class="section" id="sec-acomp-custom">
+    <div class="main">
+      <div class="section-title">Acompanhamento Custom</div>
+      <div class="section-sub">Evolução das fichas customizadas por cliente e modelo</div>
+      <div class="divider"></div>
+      <div class="filters-bar">
+        <input class="filter-input" type="text" id="filtAcompCustomNome" placeholder="🔍 Buscar cliente..."
+          oninput="_acompCustomPagina=1;renderAcompFichasCustom()">
+        <select class="filter-input" id="filtAcompCustomModelo"
+          onchange="_acompCustomPagina=1;renderAcompFichasCustom()">
+          <option value="">Todos os modelos</option>
+        </select>
+        <input class="filter-input" type="date" id="filtAcompCustomDe"
+          oninput="_acompCustomPagina=1;renderAcompFichasCustom()" title="Data inicial">
+        <input class="filter-input" type="date" id="filtAcompCustomAte"
+          oninput="_acompCustomPagina=1;renderAcompFichasCustom()" title="Data final">
+        <button class="btn btn-secondary btn-sm" onclick="
+          document.getElementById('filtAcompCustomNome').value='';
+          document.getElementById('filtAcompCustomModelo').value='';
+          document.getElementById('filtAcompCustomDe').value='';
+          document.getElementById('filtAcompCustomAte').value='';
+          _acompCustomPagina=1;renderAcompFichasCustom()">✕ Limpar</button>
+      </div>
+      <div id="acompCustomLista">
+        <div class="empty-state"><div class="empty-icon">📊</div><p>Carregando...</p></div>
       </div>
     </div>
   </section>
