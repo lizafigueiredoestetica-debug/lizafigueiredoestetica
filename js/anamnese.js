@@ -1427,3 +1427,236 @@ function salvarFichaCustom() {
   document.getElementById('modal-ficha-custom').remove();
   showToast('✅ Ficha salva com sucesso!');
 }
+
+// =====================================================================
+// ACOMPANHAMENTO DE FICHAS CUSTOM
+// =====================================================================
+
+var _acompCustomPagina = 1;
+
+function renderAcompFichasCustom() {
+  var el = document.getElementById('acompCustomLista');
+  if (!el) return;
+
+  var busca = ((document.getElementById('filtAcompCustomNome') || {value:''}).value || '').toLowerCase().trim();
+  var filtModelo = ((document.getElementById('filtAcompCustomModelo') || {value:''}).value || '');
+  var de = ((document.getElementById('filtAcompCustomDe') || {value:''}).value || '');
+  var ate = ((document.getElementById('filtAcompCustomAte') || {value:''}).value || '');
+
+  var fichas = db.anamneses.filter(function(a) {
+    return a.modelo_respostas && Object.keys(a.modelo_respostas).length > 0;
+  });
+
+  var porCliente = {};
+  fichas.forEach(function(a) {
+    var nome = (a.pessoais && a.pessoais.nome) ? a.pessoais.nome.trim() : '—';
+    var key = nome.toLowerCase();
+    if (!porCliente[key]) porCliente[key] = { nome: nome, fichas: [] };
+    porCliente[key].fichas.push(a);
+  });
+
+  var clientes = Object.values(porCliente).sort(function(a, b) {
+    return a.nome.localeCompare(b.nome);
+  });
+
+  if (busca) {
+    clientes = clientes.filter(function(c) {
+      return c.nome.toLowerCase().indexOf(busca) >= 0;
+    });
+  }
+  if (filtModelo) {
+    clientes = clientes.filter(function(c) {
+      return c.fichas.some(function(f) { return f.modelo_nome === filtModelo; });
+    });
+  }
+  if (de || ate) {
+    clientes = clientes.filter(function(c) {
+      return c.fichas.some(function(f) {
+        var dataBr = f.dataCadastro || '';
+        var partes = dataBr.split('/');
+        var dataIso = partes.length === 3 ? partes[2]+'-'+partes[1]+'-'+partes[0] : '';
+        if (de && dataIso && dataIso < de) return false;
+        if (ate && dataIso && dataIso > ate) return false;
+        return true;
+      });
+    });
+  }
+
+  if (!clientes.length) {
+    el.innerHTML = '<div class="empty-state" style="padding:3rem"><div class="empty-icon">📝</div><p>Nenhum acompanhamento encontrado</p></div>';
+    return;
+  }
+
+  var POR_PAG = 10;
+  var totalPags = Math.ceil(clientes.length / POR_PAG);
+  if (_acompCustomPagina > totalPags) _acompCustomPagina = 1;
+  var inicio = (_acompCustomPagina - 1) * POR_PAG;
+  var pagClientes = clientes.slice(inicio, inicio + POR_PAG);
+
+  var html = '';
+
+  pagClientes.forEach(function(c) {
+    var fichasOrd = c.fichas.slice().sort(function(a, b) {
+      var da = _parseDateBrCustom(a.dataCadastro);
+      var db2 = _parseDateBrCustom(b.dataCadastro);
+      return db2.localeCompare(da);
+    });
+
+    var porModelo = {};
+    fichasOrd.forEach(function(f) {
+      var mod = f.modelo_nome || 'Sem modelo';
+      if (!porModelo[mod]) porModelo[mod] = [];
+      porModelo[mod].push(f);
+    });
+
+    var cardId = 'acomp-custom-' + c.nome.replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_]/g,'');
+
+    html += '<div class="agenda-cliente-card" style="margin-bottom:0.75rem">'
+      + '<div class="agenda-cliente-header" onclick="_toggleAcompCustomCard(\'' + cardId + '\')" style="cursor:pointer">'
+      + '<div>'
+      + '<div class="agenda-cliente-nome">👤 ' + c.nome + '</div>'
+      + '<div class="agenda-cliente-info">' + fichasOrd.length + ' ficha(s) · ' + Object.keys(porModelo).length + ' modelo(s)</div>'
+      + '</div>'
+      + '<div class="agenda-cliente-badges">'
+      + '<span class="expand-icon" id="icon-' + cardId + '">▶</span>'
+      + '</div>'
+      + '</div>'
+      + '<div class="agenda-sessoes-wrap" id="' + cardId + '">';
+
+    Object.keys(porModelo).forEach(function(modNome) {
+      var fichasModelo = porModelo[modNome];
+
+      html += '<div style="background:var(--cream);border-radius:8px;padding:0.75rem 1rem;margin-bottom:0.75rem">'
+        + '<div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--gold-dark);margin-bottom:0.75rem;font-weight:600">📋 ' + modNome + '</div>';
+
+      var todosCampos = [];
+      fichasModelo.forEach(function(f) {
+        Object.keys(f.modelo_respostas || {}).forEach(function(campo) {
+          if (todosCampos.indexOf(campo) < 0 && campo.indexOf('(detalhe)') < 0) {
+            todosCampos.push(campo);
+          }
+        });
+      });
+
+      if (!todosCampos.length) {
+        html += '<div style="font-size:12px;color:var(--text-light)">Sem campos registrados</div>';
+      } else {
+        html += '<div style="overflow-x:auto"><table style="width:100%;font-size:12px;border-collapse:collapse">'
+          + '<thead><tr>'
+          + '<th style="text-align:left;padding:4px 8px;color:var(--text-light);font-size:10px;letter-spacing:1px;text-transform:uppercase;white-space:nowrap;background:white;border-bottom:1px solid var(--border)">Campo</th>';
+
+        fichasModelo.forEach(function(f) {
+          html += '<th style="text-align:center;padding:4px 8px;color:var(--gold-dark);font-size:10px;white-space:nowrap;background:white;border-bottom:1px solid var(--border)">'
+            + (f.dataCadastro || '—')
+            + '<div style="font-size:9px;color:var(--text-light);font-weight:400">' + (f.assinatura ? '✍️' : '⏳') + '</div>'
+            + '<div style="margin-top:2px"><button onclick="verFichaCustom(\'' + f.id + '\')" style="background:var(--gold);color:white;border:none;border-radius:4px;padding:2px 6px;font-size:10px;cursor:pointer">Ver</button></div>'
+            + '</th>';
+        });
+
+        html += '</tr></thead><tbody>';
+
+        todosCampos.forEach(function(campo, ci) {
+          var bgRow = ci % 2 === 0 ? 'white' : 'var(--cream)';
+          html += '<tr style="background:' + bgRow + '">'
+            + '<td style="padding:5px 8px;color:var(--text-mid);font-weight:500;min-width:120px;max-width:200px;white-space:normal;vertical-align:middle">' + campo + '</td>';
+
+          fichasModelo.forEach(function(f) {
+            var val = (f.modelo_respostas || {})[campo];
+            var detalhe = (f.modelo_respostas || {})[campo + ' (detalhe)'];
+            var displayVal = (val !== undefined && val !== null && val !== '') ? val : '—';
+            if (detalhe) displayVal += ' (' + detalhe + ')';
+
+            var cor = '';
+            if (displayVal === 'sim') cor = 'color:#C62828;font-weight:600';
+            else if (displayVal === 'não') cor = 'color:#388E3C';
+
+            html += '<td style="padding:5px 8px;text-align:center;vertical-align:middle;' + cor + '">' + displayVal + '</td>';
+          });
+
+          html += '</tr>';
+        });
+
+        html += '</tbody></table></div>';
+      }
+
+      var modeloObj = (_modelosAnamnese || []).find(function(m) { return m.nome === modNome; });
+      if (modeloObj) {
+        html += '<div style="margin-top:0.75rem;text-align:right">'
+          + '<button class="btn btn-primary btn-sm" onclick="_novaFichaCustomParaCliente(\'' + c.nome.replace(/'/g,"\\'") + '\',\'' + modeloObj.id + '\')" style="font-size:11px">+ Nova Sessão ' + modNome + '</button>'
+          + '</div>';
+      }
+
+      html += '</div>';
+    });
+
+    html += '</div></div>';
+  });
+
+  if (totalPags > 1) {
+    html += '<div style="display:flex;align-items:center;gap:0.5rem;padding:1rem;flex-wrap:wrap">';
+    html += '<button onclick="_acompCustomPagina=Math.max(1,_acompCustomPagina-1);renderAcompFichasCustom()" ' + (_acompCustomPagina===1?'disabled':'') + ' style="padding:4px 10px;border:1px solid var(--border);border-radius:6px;background:white;cursor:pointer;font-size:12px">‹</button>';
+    for (var _p = 1; _p <= totalPags; _p++) {
+      var _isAtiva = _p === _acompCustomPagina;
+      html += '<button onclick="_acompCustomPagina=' + _p + ';renderAcompFichasCustom()" style="padding:4px 10px;border:1px solid ' + (_isAtiva?'#D4A0A8':'var(--border)') + ';border-radius:6px;background:' + (_isAtiva?'#D4A0A8':'white') + ';color:' + (_isAtiva?'white':'inherit') + ';cursor:pointer;font-size:12px">' + _p + '</button>';
+    }
+    html += '<button onclick="_acompCustomPagina=Math.min(' + totalPags + ',_acompCustomPagina+1);renderAcompFichasCustom()" ' + (_acompCustomPagina===totalPags?'disabled':'') + ' style="padding:4px 10px;border:1px solid var(--border);border-radius:6px;background:white;cursor:pointer;font-size:12px">›</button>';
+    html += '<span style="font-size:11px;color:var(--text-light)">' + (inicio+1) + '-' + Math.min(inicio+POR_PAG,clientes.length) + ' de ' + clientes.length + '</span>';
+    html += '</div>';
+  }
+
+  el.innerHTML = html;
+}
+
+function _parseDateBrCustom(dataBr) {
+  if (!dataBr) return '';
+  var p = dataBr.split('/');
+  return p.length === 3 ? p[2]+'-'+p[1]+'-'+p[0] : '';
+}
+
+function _toggleAcompCustomCard(cardId) {
+  var wrap = document.getElementById(cardId);
+  var icon = document.getElementById('icon-' + cardId);
+  if (!wrap) return;
+  var isOpen = wrap.classList.contains('open');
+  document.querySelectorAll('.agenda-sessoes-wrap.open').forEach(function(el) { el.classList.remove('open'); });
+  document.querySelectorAll('.expand-icon.open').forEach(function(el) { el.classList.remove('open'); });
+  if (!isOpen) {
+    wrap.classList.add('open');
+    if (icon) icon.classList.add('open');
+  }
+}
+
+function _novaFichaCustomParaCliente(nomeCliente, modeloId) {
+  _fichaCustomEditId = null;
+  _abrirModalFichaCustom(null);
+  setTimeout(function() {
+    var nomeEl = document.getElementById('fc-nome');
+    var modeloEl = document.getElementById('fc-modelo');
+    if (nomeEl) nomeEl.value = nomeCliente;
+    if (modeloEl) { modeloEl.value = modeloId; _carregarCamposModelo(); }
+    var fichaExist = db.anamneses.find(function(a) {
+      return a.pessoais && a.pessoais.nome &&
+             a.pessoais.nome.toLowerCase() === nomeCliente.toLowerCase() && a.pessoais.telefone;
+    });
+    if (fichaExist) {
+      var telEl = document.getElementById('fc-telefone');
+      var idadeEl = document.getElementById('fc-idade');
+      var cpfEl = document.getElementById('fc-cpf');
+      if (telEl && fichaExist.pessoais.telefone) telEl.value = fichaExist.pessoais.telefone;
+      if (idadeEl && fichaExist.pessoais.idade) idadeEl.value = fichaExist.pessoais.idade;
+      if (cpfEl && fichaExist.pessoais.cpf) cpfEl.value = fichaExist.pessoais.cpf;
+    }
+  }, 150);
+}
+
+function _popularFiltroModelos() {
+  var sel = document.getElementById('filtAcompCustomModelo');
+  if (!sel) return;
+  var modelos = [];
+  db.anamneses.forEach(function(a) {
+    if (a.modelo_nome && modelos.indexOf(a.modelo_nome) < 0) modelos.push(a.modelo_nome);
+  });
+  var html = '<option value="">Todos os modelos</option>';
+  modelos.sort().forEach(function(m) { html += '<option value="' + m + '">' + m + '</option>'; });
+  sel.innerHTML = html;
+}
