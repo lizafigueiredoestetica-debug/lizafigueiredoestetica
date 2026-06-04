@@ -768,3 +768,51 @@ function _toggleClienteCard(key) {
     if (icon) icon.classList.add('open');
   }
 }
+
+// =====================================================================
+// DASHBOARD DA CLIENTE — GERAR / REVOGAR LINK
+// =====================================================================
+
+async function gerarLinkCliente(nomeCliente) {
+  var token = Math.random().toString(36).substr(2,9) + Math.random().toString(36).substr(2,9);
+  var resp = await fetch(SUPA_URL + '/rest/v1/links_clientes', {
+    method: 'POST',
+    headers: {
+      'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY,
+      'Content-Type': 'application/json', 'Prefer': 'return=representation'
+    },
+    body: JSON.stringify({ id: token, nome_cliente: nomeCliente, ativo: true })
+  });
+  if (!resp.ok) { showToast('Erro ao gerar link.'); return; }
+  var baseUrl = window.location.origin + window.location.pathname.replace('index.html','').replace(/\/$/, '');
+  var link = baseUrl + '/cliente.html?id=' + token;
+  // Copiar para clipboard
+  try { await navigator.clipboard.writeText(link); showToast('✅ Link copiado! Envie para a cliente.'); }
+  catch(e) { showToast('Link gerado! ' + link); }
+  // Mostrar modal com link
+  _mostrarModalLink(nomeCliente, link);
+}
+
+function _mostrarModalLink(nome, link) {
+  var old = document.getElementById('modal-link-cliente');
+  if (old) old.remove();
+  var modal = document.createElement('div');
+  modal.id = 'modal-link-cliente';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(28,28,30,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem';
+  modal.innerHTML = '<div style="background:white;border-radius:16px;max-width:480px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);overflow:hidden">'
+    + '<div style="padding:1.2rem 1.5rem;background:linear-gradient(135deg,#1C1C1E,#2C2C2E);display:flex;justify-content:space-between;align-items:center">'
+    + '<div style="font-family:Cormorant Garamond,serif;font-size:18px;color:#FAF0F2;letter-spacing:2px">🔗 Link gerado!</div>'
+    + '<button onclick="document.getElementById(\'modal-link-cliente\').remove()" style="background:none;border:none;color:white;font-size:20px;cursor:pointer">✕</button>'
+    + '</div>'
+    + '<div style="padding:1.5rem">'
+    + '<div style="font-size:12px;color:var(--text-light);margin-bottom:0.5rem">Dashboard exclusivo de <strong>' + nome + '</strong></div>'
+    + '<div style="background:var(--cream);border-radius:8px;padding:0.75rem 1rem;font-size:12px;color:var(--text-mid);word-break:break-all;border:1px solid var(--border);margin-bottom:1rem">' + link + '</div>'
+    + '<div style="display:flex;gap:0.75rem;flex-wrap:wrap">'
+    + '<button onclick="navigator.clipboard.writeText(\'' + link + '\');showToast(\'✅ Link copiado!\')" class="btn btn-primary" style="flex:1">📋 Copiar Link</button>'
+    + '<button onclick="window.open(\'https://wa.me/?text=\'+encodeURIComponent(\'Olá! 🌸 Aqui está o seu espaço exclusivo na Liza Figueiredo Estética:\\n\' + \'' + link + '\'),\'_blank\')" style="background:#25D366;color:white;border:none;border-radius:8px;padding:0.65rem 1.25rem;font-family:Jost,sans-serif;font-size:12px;font-weight:500;cursor:pointer;flex:1">💬 Enviar WhatsApp</button>'
+    + '</div>'
+    + '<div style="margin-top:1rem;font-size:11px;color:var(--text-light)">⚠️ Este link dá acesso aos dados da cliente. Envie apenas para ela.</div>'
+    + '</div></div>';
+  document.body.appendChild(modal);
+  modal.addEventListener('click', function(e){ if(e.target===modal) modal.remove(); });
+}
