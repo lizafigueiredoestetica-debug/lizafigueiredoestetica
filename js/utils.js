@@ -784,8 +784,7 @@ async function gerarLinkCliente(nomeCliente) {
     body: JSON.stringify({ id: token, nome_cliente: nomeCliente, ativo: true })
   });
   if (!resp.ok) { showToast('Erro ao gerar link.'); return; }
-  var baseUrl = window.location.origin + window.location.pathname.replace('index.html','').replace(/\/$/, '');
-  var link = baseUrl + '/cliente.html?id=' + token;
+  var link = 'https://lizafigueiredoestetica-debug.github.io/cliente/cliente.html?id=' + token;
   // Copiar para clipboard
   try { await navigator.clipboard.writeText(link); showToast('✅ Link copiado! Envie para a cliente.'); }
   catch(e) { showToast('Link gerado! ' + link); }
