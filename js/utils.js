@@ -730,7 +730,7 @@ function _renderClienteAba(key, aba, c) {
         + _dField('Alimentação', hb.alimentacao||'—')
         + '</div>'
         + '<div style="margin-top:0.5rem;text-align:right">'
-        + '<button onclick="abrirFichaAnamnese(\''+a.id+'\')" class="btn btn-secondary btn-sm" style="font-size:11px">Ver ficha completa</button>'
+        + '<button onclick="showSection(\'anamnese\');editarAnamnese(\''+a.id+'\')" class="btn btn-secondary btn-sm" style="font-size:11px">Ver ficha completa</button>'
         + '</div>'
         + '</div>';
     }).join('');
