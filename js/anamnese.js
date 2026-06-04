@@ -734,34 +734,21 @@ function _buildFichaHtml(ficha, tipo) {
 
   html += sec('Informações Pessoais')
     + row([['Nome',p.nome||''],['Idade',p.idade||''],['Gênero',p.genero||'']])
-    + row([['Nascimento',p.dataNasc||''],['Telefone',p.telefone||''],['Filhos',p.filhos||'']]);
-
-  // Se tem respostas de modelo customizado, exibe elas em vez das seções fixas
-  var mr = ficha.modelo_respostas;
-  if (mr && typeof mr === 'object' && Object.keys(mr).length > 0) {
-    html += sec(ficha.modelo_nome || 'Respostas da Ficha');
-    Object.keys(mr).forEach(function(campo) {
-      var valor = mr[campo];
-      if (valor !== null && valor !== undefined && valor !== '') {
-        html += q('<strong>' + campo + ':</strong> ' + valor);
-      }
-    });
-  } else {
-    html += sec('Histórico de Saúde')
-      + q('Doença diagnosticada? '+yn(s.doenca)+' &nbsp; Qual: '+(s.doencaQual||'—'))
-      + q('Medicação contínua? '+yn(s.medicacao)+' &nbsp; Qual: '+(s.medicacaoQual||'—'))
-      + q('Produto injetado? '+yn(s.injetado)+' &nbsp; Cirurgia? '+yn(s.cirurgia)+' &nbsp; Qual/Quando: '+(s.cirurgiaQual||'—'))
-      + q('Alergia? '+yn(s.alergia)+' &nbsp; Qual: '+(s.alergiaQual||'—'))
-      + q('Marcapasso/Prótese? '+yn(s.marcapasso)+' &nbsp; Prob. circulatórios? '+yn(s.circulatorio))
-      + q('Hipertensão? '+yn(s.hipertensao)+' &nbsp; Diabetes? '+yn(s.diabetes))
-      + sec('Hormonal')
-      + q('Ciclo menstrual: ( '+(h.ciclo==='Regular'?'X':' ')+' ) Regular &nbsp; ( '+(h.ciclo==='Irregular'?'X':' ')+' ) Irregular &nbsp; ( '+(h.ciclo==='Menopausa'?'X':' ')+' ) Menopausa')
-      + q('Grávida/Amamentando? '+yn(h.gravida)+' &nbsp; Anticoncepcional? '+yn(h.anti)+' Qual: '+(h.antiQual||'—'))
-      + sec('Hábitos')
-      + q('Água: '+(hb.agua||'—')+' l/dia &nbsp; Alimentação: '+(hb.alimentacao||'—')+' &nbsp; Atividade: '+yn(hb.atividade)+' '+(hb.atividadeQual||'')+' Freq: '+(hb.atividadeFreq||'—'))
-      + q('Álcool? '+yn(hb.alcool)+' &nbsp; Fuma? '+yn(hb.fuma)+' &nbsp; Cinta modeladora? '+yn(hb.cinta))
-      + (ficha.incomoda ? q('O que mais te incomoda: '+ficha.incomoda) : '');
-  }
+    + row([['Nascimento',p.dataNasc||''],['Telefone',p.telefone||''],['Filhos',p.filhos||'']])
+    + sec('Histórico de Saúde')
+    + q('Doença diagnosticada? '+yn(s.doenca)+' &nbsp; Qual: '+(s.doencaQual||'—'))
+    + q('Medicação contínua? '+yn(s.medicacao)+' &nbsp; Qual: '+(s.medicacaoQual||'—'))
+    + q('Produto injetado? '+yn(s.injetado)+' &nbsp; Cirurgia? '+yn(s.cirurgia)+' &nbsp; Qual/Quando: '+(s.cirurgiaQual||'—'))
+    + q('Alergia? '+yn(s.alergia)+' &nbsp; Qual: '+(s.alergiaQual||'—'))
+    + q('Marcapasso/Prótese? '+yn(s.marcapasso)+' &nbsp; Prob. circulatórios? '+yn(s.circulatorio))
+    + q('Hipertensão? '+yn(s.hipertensao)+' &nbsp; Diabetes? '+yn(s.diabetes))
+    + sec('Hormonal')
+    + q('Ciclo menstrual: ( '+(h.ciclo==='Regular'?'X':' ')+' ) Regular &nbsp; ( '+(h.ciclo==='Irregular'?'X':' ')+' ) Irregular &nbsp; ( '+(h.ciclo==='Menopausa'?'X':' ')+' ) Menopausa')
+    + q('Grávida/Amamentando? '+yn(h.gravida)+' &nbsp; Anticoncepcional? '+yn(h.anti)+' Qual: '+(h.antiQual||'—'))
+    + sec('Hábitos')
+    + q('Água: '+(hb.agua||'—')+' l/dia &nbsp; Alimentação: '+(hb.alimentacao||'—')+' &nbsp; Atividade: '+yn(hb.atividade)+' '+(hb.atividadeQual||'')+' Freq: '+(hb.atividadeFreq||'—'))
+    + q('Álcool? '+yn(hb.alcool)+' &nbsp; Fuma? '+yn(hb.fuma)+' &nbsp; Cinta modeladora? '+yn(hb.cinta))
+    + (ficha.incomoda ? q('O que mais te incomoda: '+ficha.incomoda) : '');
 
   if (tipo === 'acomp') {
     html += sec('Avaliação Física')
