@@ -134,7 +134,10 @@ async function _salvarAnamnese(a) {
   return _supaUpsert('anamneses', { id: a.id, data_cadastro: a.dataCadastro, pessoais: a.pessoais, saude: a.saude, hormonal: a.hormonal, habitos: a.habitos, av_fisica: a.avFisica, av_corporal: a.avCorporal, incomoda: a.incomoda, assinatura: a.assinatura, data_assinatura: a.dataAssinatura, modelo_id: a.modelo_id || null, modelo_nome: a.modelo_nome || null, modelo_respostas: a.modelo_respostas || null, atualizado_em: new Date().toISOString() });
 }
 async function _salvarAtendimento(a) {
-  return _supaUpsert('atendimentos', { id: a.id, data: a.data, cliente: a.cliente, valor: a.valor, pagto: a.pagto, servico_ids: a.servicoIds || [], materiais: a.materiais || [], obs: a.obs, atualizado_em: new Date().toISOString() });
+  var nomesCache = (a.servicoNomesCache && a.servicoNomesCache.length)
+    ? a.servicoNomesCache
+    : (a.servicoIds||[]).map(function(id){ var sv=db.servicos.find(function(x){return x.id===id;}); return sv?sv.nome:''; }).filter(Boolean);
+  return _supaUpsert('atendimentos', { id: a.id, data: a.data, cliente: a.cliente, valor: a.valor, pagto: a.pagto, servico_ids: a.servicoIds || [], servico_nomes_cache: nomesCache, materiais: a.materiais || [], obs: a.obs, atualizado_em: new Date().toISOString() });
 }
 async function _salvarAgenda(ag) {
   await _supaUpsert('agenda', { id: ag.id, cliente: ag.cliente, tel: ag.tel, obs: ag.obs, sinal: ag.sinal, sinal_pago: ag.sinalPago, cor: ag.cor || '#D4A0A8', recorrencia: ag.recorrencia || '', atualizado_em: new Date().toISOString() });
@@ -205,7 +208,9 @@ async function _carregarDaNuvem() {
     db.atendimentos = (atendimentos || []).map(function(a) {
       return {
         id: a.id, data: a.data, cliente: a.cliente, valor: a.valor,
-        pagto: a.pagto, servicoIds: a.servico_ids || [], materiais: a.materiais || [], obs: a.obs
+        pagto: a.pagto, servicoIds: a.servico_ids || [],
+        servicoNomesCache: a.servico_nomes_cache || [],
+        materiais: a.materiais || [], obs: a.obs
       };
     });
     db.despAdm = (despAdm || []).map(function(d) {
@@ -245,6 +250,8 @@ async function _carregarDaNuvem() {
     localStorage.setItem('lizafig_lastsync', now);
     _atualizarStatusSync('ok', now);
     addLog('INFO', '☁️ Dados carregados — ' + db.atendimentos.length + ' atend, ' + db.agenda.length + ' agend, ' + db.anamneses.length + ' anam');
+    // Migrar nomes em background (só atendimentos sem cache)
+    setTimeout(migrarNomesAtendimentos, 2000);
     return true;
   } catch(e) {
     addLog('WARN', '⚠️ Erro ao carregar: ' + e.message);
@@ -354,7 +361,7 @@ async function _pollingNovos() {
     if (novosAtend && novosAtend.length) {
       novosAtend.forEach(function(a) {
         var idx = db.atendimentos.findIndex(function(x){ return x.id === a.id; });
-        var obj = { id: a.id, data: a.data, cliente: a.cliente, valor: a.valor, pagto: a.pagto, servicoIds: a.servico_ids || [], materiais: a.materiais || [], obs: a.obs };
+        var obj = { id: a.id, data: a.data, cliente: a.cliente, valor: a.valor, pagto: a.pagto, servicoIds: a.servico_ids || [], servicoNomesCache: a.servico_nomes_cache || [], materiais: a.materiais || [], obs: a.obs };
         if (idx >= 0) db.atendimentos[idx] = obj; else db.atendimentos.push(obj);
       });
       houveMudanca = true;
@@ -439,6 +446,34 @@ async function sincronizarAgora() {
   } catch(e) {
     if (btn) { btn.textContent = '🔄'; btn.disabled = false; }
   }
+}
+
+// ── Migrar nomes de serviços nos atendimentos existentes ──
+async function migrarNomesAtendimentos() {
+  var sem_cache = db.atendimentos.filter(function(a) {
+    return (!a.servicoNomesCache || !a.servicoNomesCache.length) && a.servicoIds && a.servicoIds.length;
+  });
+  if (!sem_cache.length) return;
+  addLog('INFO', '🔄 Migrando nomes de ' + sem_cache.length + ' atendimentos...');
+  for (var i = 0; i < sem_cache.length; i++) {
+    var a = sem_cache[i];
+    var nomes = a.servicoIds.map(function(id) {
+      var sv = db.servicos.find(function(x){ return x.id === id; });
+      return sv ? sv.nome : '';
+    }).filter(Boolean);
+    if (nomes.length) {
+      a.servicoNomesCache = nomes;
+      await _supaUpsert('atendimentos', {
+        id: a.id, data: a.data, cliente: a.cliente, valor: a.valor,
+        pagto: a.pagto, servico_ids: a.servicoIds,
+        servico_nomes_cache: nomes,
+        materiais: a.materiais || [], obs: a.obs,
+        atualizado_em: new Date().toISOString()
+      });
+    }
+  }
+  saveData();
+  addLog('INFO', '✅ Migração de nomes concluída!');
 }
 
 // ── Legados / stubs ──
