@@ -86,16 +86,18 @@ function renderAtendimentos() {
     // Support both old (servicoId) and new (servicoIds) formats
     const servicoIds = a.servicoIds || (a.servicoId ? [a.servicoId] : []);
     const s = db.servicos.find(x=>x.id===servicoIds[0]); // first for table display
-    // Usar cache de nomes se o serviço foi deletado do cadastro
+    // Resolver nomes: tenta por ID; se não achar, usa o valor como nome legado
     const _nomesCache = a.servicoNomesCache || [];
     const servNomes = servicoIds.length
       ? servicoIds.map(function(sid, idx) {
-          const sv = db.servicos.find(function(x){ return x.id===sid; });
+          if (!sid) return _nomesCache[idx] || '?';
+          const sv = db.servicos.find(function(x){ return x.id === sid; });
           if (sv) return sv.nome;
-          // Fallback: cache salvo no momento do registro
-          return _nomesCache[idx] || a.servicoNome || '?';
+          // Valor já é um nome (formato legado) — usar direto
+          if (sid.indexOf(' ') >= 0 || sid.length < 8) return sid;
+          return _nomesCache[idx] || sid;
         }).join(' + ')
-      : (a.servicoNomesCache && a.servicoNomesCache.length ? a.servicoNomesCache.join(' + ') : (a.servicoNome || '—'));
+      : (_nomesCache.length ? _nomesCache.join(' + ') : (a.servicoNome || '—'));
     const matsNomes = (a.materiais && typeof a.materiais === 'object' && !Array.isArray(a.materiais))
       ? Object.keys(a.materiais).map(mid=>{ const m=db.materiais.find(x=>x.id===mid); return m?m.nome+(a.materiais[mid]>1?' ×'+a.materiais[mid]:''):'?'; }).join(', ')||'Nenhum'
       : (a.materiais||[]).map(item=>{ const mid=typeof item==='object'?item.id:item; const m=db.materiais.find(x=>x.id===mid); return m?m.nome:'?'; }).join(', ')||'Nenhum';
