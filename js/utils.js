@@ -191,6 +191,7 @@ function showSection(id) {
   if (id === 'mensagens') renderMensagens();
   if (id === 'modelos') renderModelosAnamnese();
   if (id === 'fichas-custom') renderFichasCustom();
+  if (id === 'acomp-custom') { _popularFiltroModelos(); renderAcompFichasCustom(); }
 }
 
 function renderAll() {
@@ -206,6 +207,10 @@ function renderAll() {
   if (typeof renderDespAdm === 'function') renderDespAdm();
   if (typeof renderDespExtra === 'function') renderDespExtra();
   if (typeof renderFinanceiro === 'function') renderFinanceiro();
+  if (typeof renderAcompFichasCustom === 'function') {
+    var _secAcomp = document.getElementById('sec-acomp-custom');
+    if (_secAcomp && _secAcomp.classList.contains('active')) { _popularFiltroModelos(); renderAcompFichasCustom(); }
+  }
   _atualizarBadges();
 }
 
