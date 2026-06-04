@@ -227,6 +227,8 @@ function renderAnamnese() {
   var ate = (document.getElementById('filtAnamAte')||{value:''}).value;
 
   var lista = db.anamneses.filter(function(a) {
+    // Fichas customizadas ficam só na aba "Fichas Custom"
+    if (a.modelo_respostas && Object.keys(a.modelo_respostas).length > 0) return false;
     var nome = (a.pessoais && a.pessoais.nome)||'';
     if(busca && nome.toLowerCase().indexOf(busca) < 0) return false;
     if(de || ate) {
@@ -1150,7 +1152,7 @@ function renderFichasCustom() {
       + '<td><span style="background:#EDD5D8;color:#B07880;padding:2px 8px;border-radius:12px;font-size:11px">' + modelo + '</span></td>'
       + '<td>' + data + '</td>'
       + '<td>' + assinatura + '</td>'
-      + '<td><button class="btn btn-primary btn-sm" onclick="verFichaCustom(\'' + a.id + '\')" style="font-size:11px;padding:4px 8px">👁 Ver</button></td>'
+      + '<td style="display:flex;gap:4px"><button class="btn btn-edit btn-sm" onclick="editarFichaCustom(\'' + a.id + '\')" style="font-size:11px">✏️</button><button class="btn btn-primary btn-sm" onclick="verFichaCustom(\'' + a.id + '\')" style="font-size:11px;padding:4px 8px">👁 Ver</button></td>'
       + '</tr>';
   }).join('');
 }
@@ -1223,4 +1225,205 @@ function verFichaCustom(id) {
       document.getElementById('canvasHint').style.display = 'flex';
     }
   }, 200);
+}
+
+// ── Modal Nova/Editar Ficha Custom ──
+var _fichaCustomEditId = null;
+
+function abrirNovaFichaCustom() {
+  _fichaCustomEditId = null;
+  _abrirModalFichaCustom(null);
+}
+
+function editarFichaCustom(id) {
+  var ficha = db.anamneses.find(function(a) { return a.id === id; });
+  if (!ficha) return;
+  _fichaCustomEditId = id;
+  _abrirModalFichaCustom(ficha);
+}
+
+function _abrirModalFichaCustom(ficha) {
+  var old = document.getElementById('modal-ficha-custom');
+  if (old) old.remove();
+
+  var modelos = (_modelosAnamnese || []).filter(function(m) { return m.ativo; });
+  var p = ficha ? (ficha.pessoais || {}) : {};
+  var modeloAtual = ficha ? (ficha.modelo_id || '') : '';
+  var mr = ficha ? (ficha.modelo_respostas || {}) : {};
+
+  var modal = document.createElement('div');
+  modal.id = 'modal-ficha-custom';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(28,28,30,0.6);z-index:9998;display:flex;align-items:center;justify-content:center;padding:1rem;overflow-y:auto';
+
+  modal.innerHTML = '<div style="background:white;border-radius:16px;max-width:700px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3)">'
+    + '<div style="padding:1.2rem 1.5rem;background:linear-gradient(135deg,#1C1C1E,#2C2C2E);border-radius:16px 16px 0 0;display:flex;justify-content:space-between;align-items:center">'
+    + '<div style="font-family:Cormorant Garamond,serif;font-size:18px;color:#FAF0F2;letter-spacing:2px">📝 ' + (ficha ? 'Editar Ficha' : 'Nova Ficha Manual') + '</div>'
+    + '<button onclick="document.getElementById(\'modal-ficha-custom\').remove()" style="background:none;border:none;color:white;font-size:20px;cursor:pointer">✕</button>'
+    + '</div>'
+    + '<div style="padding:1.5rem">'
+    // Modelo
+    + '<div class="form-group" style="margin-bottom:1rem"><label>Modelo de Ficha</label>'
+    + '<select id="fc-modelo" onchange="_carregarCamposModelo()" style="width:100%;padding:0.65rem 0.9rem;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px">'
+    + '<option value="">— Selecione um modelo —</option>'
+    + modelos.map(function(m) { return '<option value="' + m.id + '" ' + (modeloAtual === m.id ? 'selected' : '') + '>' + m.nome + '</option>'; }).join('')
+    + '</select></div>'
+    // Dados pessoais
+    + '<div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--text-light);margin-bottom:0.75rem">Dados Pessoais</div>'
+    + '<div class="form-grid" style="margin-bottom:1rem">'
+    + '<div class="form-group"><label>Nome Completo *</label><input type="text" id="fc-nome" value="' + (p.nome||'') + '" placeholder="Nome completo"></div>'
+    + '<div class="form-group"><label>Telefone (WhatsApp) *</label><input type="text" id="fc-telefone" value="' + (p.telefone||'') + '" placeholder="(xx) xxxxx-xxxx"></div>'
+    + '<div class="form-group"><label>Idade</label><input type="text" id="fc-idade" value="' + (p.idade||'') + '"></div>'
+    + '<div class="form-group"><label>Gênero</label><select id="fc-genero"><option value="">-</option><option value="Feminino" ' + (p.genero==='Feminino'?'selected':'') + '>Feminino</option><option value="Masculino" ' + (p.genero==='Masculino'?'selected':'') + '>Masculino</option><option value="Outro" ' + (p.genero==='Outro'?'selected':'') + '>Outro</option></select></div>'
+    + '<div class="form-group"><label>CPF</label><input type="text" id="fc-cpf" value="' + (p.cpf||'') + '"></div>'
+    + '<div class="form-group"><label>Data de Nascimento</label><input type="date" id="fc-dataNasc" value="' + (p.dataNasc||'') + '"></div>'
+    + '</div>'
+    // Campos do modelo
+    + '<div id="fc-campos-wrap"></div>'
+    + '<div style="display:flex;gap:0.75rem;margin-top:1.25rem">'
+    + '<button class="btn btn-primary" onclick="salvarFichaCustom()">💾 Salvar Ficha</button>'
+    + '<button class="btn btn-secondary" onclick="document.getElementById(\'modal-ficha-custom\').remove()">Cancelar</button>'
+    + '</div>'
+    + '</div></div>';
+
+  document.body.appendChild(modal);
+  modal.addEventListener('click', function(e) { if (e.target === modal) modal.remove(); });
+
+  // Guardar respostas existentes para preencher depois
+  window._fcRespostasExistentes = mr;
+
+  // Se já tem modelo selecionado, carregar campos
+  if (modeloAtual) {
+    setTimeout(_carregarCamposModelo, 100);
+  }
+}
+
+function _carregarCamposModelo() {
+  var modeloId = (document.getElementById('fc-modelo')||{value:''}).value;
+  var wrap = document.getElementById('fc-campos-wrap');
+  if (!wrap) return;
+
+  if (!modeloId) { wrap.innerHTML = ''; return; }
+
+  var modelo = (_modelosAnamnese || []).find(function(m) { return m.id === modeloId; });
+  if (!modelo) { wrap.innerHTML = ''; return; }
+
+  var mr = window._fcRespostasExistentes || {};
+  var campos = modelo.campos || [];
+
+  var html = '<div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--text-light);margin-bottom:0.75rem">' + modelo.nome + '</div>';
+
+  campos.forEach(function(c, i) {
+    var val = mr[c.label] || '';
+    var detalhe = mr[c.label + ' (detalhe)'] || '';
+    html += '<div style="background:var(--cream);border-radius:8px;padding:0.75rem 1rem;margin-bottom:0.5rem">'
+      + '<div style="font-size:13px;font-weight:500;margin-bottom:0.5rem">• ' + c.label + '</div>';
+
+    if (c.tipo === 'sim_nao' || c.tipo === 'sim_nao_qual') {
+      html += '<div style="display:flex;gap:1rem">'
+        + '<label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="radio" name="fcc_' + i + '" value="sim" ' + (val==='sim'?'checked':'') + '> Sim</label>'
+        + '<label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="radio" name="fcc_' + i + '" value="não" ' + (val==='não'?'checked':'') + '> Não</label>'
+        + '</div>';
+      if (c.tipo === 'sim_nao_qual') {
+        html += '<div style="margin-top:0.5rem"><input type="text" id="fcc_qual_' + i + '" value="' + detalhe.replace(/"/g,'&quot;') + '" placeholder="Qual?" style="width:100%;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:13px"></div>';
+      }
+    } else if (c.tipo === 'texto') {
+      html += '<textarea id="fcc_texto_' + i + '" rows="3" placeholder="Descreva..." style="width:100%;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:13px;resize:vertical">' + val + '</textarea>';
+    } else if (c.tipo === 'numero') {
+      html += '<input type="number" id="fcc_num_' + i + '" value="' + val + '" style="width:100%;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:13px">';
+    } else if (c.tipo === 'data') {
+      html += '<input type="date" id="fcc_data_' + i + '" value="' + val + '" style="width:100%;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:13px">';
+    } else if (c.tipo === 'multipla') {
+      var selecionados = val ? val.split(', ') : [];
+      html += '<div style="display:flex;flex-wrap:wrap;gap:0.5rem">';
+      (c.opcoes||[]).forEach(function(op, oi) {
+        html += '<label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="fcc_mult_' + i + '_' + oi + '" value="' + op + '" ' + (selecionados.indexOf(op)>=0?'checked':'') + '> ' + op + '</label>';
+      });
+      html += '</div>';
+    }
+    html += '</div>';
+  });
+
+  wrap.innerHTML = html;
+  // Guardar referência ao modelo atual
+  wrap.dataset.modeloId = modeloId;
+  wrap.dataset.modeloNome = modelo.nome;
+  wrap.dataset.totalCampos = campos.length;
+  window._fcCamposAtual = campos;
+}
+
+function salvarFichaCustom() {
+  var nome = (document.getElementById('fc-nome')||{value:''}).value.trim();
+  var telefone = (document.getElementById('fc-telefone')||{value:''}).value.trim();
+  var modeloId = (document.getElementById('fc-modelo')||{value:''}).value;
+
+  if (!nome) { showToast('⚠️ Preencha o nome!'); return; }
+  if (!telefone) { showToast('⚠️ Preencha o telefone!'); return; }
+  if (!modeloId) { showToast('⚠️ Selecione um modelo!'); return; }
+
+  var wrap = document.getElementById('fc-campos-wrap');
+  var campos = window._fcCamposAtual || [];
+  var respostas = {};
+
+  campos.forEach(function(c, i) {
+    if (c.tipo === 'sim_nao' || c.tipo === 'sim_nao_qual') {
+      var el = document.querySelector('input[name="fcc_' + i + '"]:checked');
+      respostas[c.label] = el ? el.value : '';
+      if (c.tipo === 'sim_nao_qual') {
+        var qual = document.getElementById('fcc_qual_' + i);
+        if (qual && qual.value) respostas[c.label + ' (detalhe)'] = qual.value;
+      }
+    } else if (c.tipo === 'texto') {
+      var t = document.getElementById('fcc_texto_' + i);
+      respostas[c.label] = t ? t.value : '';
+    } else if (c.tipo === 'numero') {
+      var n = document.getElementById('fcc_num_' + i);
+      respostas[c.label] = n ? n.value : '';
+    } else if (c.tipo === 'data') {
+      var d = document.getElementById('fcc_data_' + i);
+      respostas[c.label] = d ? d.value : '';
+    } else if (c.tipo === 'multipla') {
+      var sel = [];
+      (c.opcoes||[]).forEach(function(op, oi) {
+        var cb = document.getElementById('fcc_mult_' + i + '_' + oi);
+        if (cb && cb.checked) sel.push(op);
+      });
+      respostas[c.label] = sel.join(', ');
+    }
+  });
+
+  var modelo = (_modelosAnamnese||[]).find(function(m){ return m.id === modeloId; });
+
+  var ficha = {
+    id: _fichaCustomEditId || uid(),
+    dataCadastro: new Date().toLocaleDateString('pt-BR'),
+    pessoais: {
+      nome: nome,
+      telefone: telefone,
+      idade: (document.getElementById('fc-idade')||{value:''}).value,
+      genero: (document.getElementById('fc-genero')||{value:''}).value,
+      cpf: (document.getElementById('fc-cpf')||{value:''}).value,
+      dataNasc: (document.getElementById('fc-dataNasc')||{value:''}).value
+    },
+    saude: {}, hormonal: {}, habitos: {},
+    av_fisica: {}, av_corporal: {},
+    incomoda: '',
+    modelo_id: modeloId,
+    modelo_nome: modelo ? modelo.nome : '',
+    modelo_respostas: respostas,
+    atualizado_em: new Date().toISOString()
+  };
+
+  if (_fichaCustomEditId) {
+    var idx = db.anamneses.findIndex(function(a) { return a.id === _fichaCustomEditId; });
+    if (idx >= 0) db.anamneses[idx] = ficha;
+  } else {
+    db.anamneses.push(ficha);
+  }
+
+  saveData();
+  _salvarAnamnese(ficha);
+  renderFichasCustom();
+  _atualizarBadges();
+  document.getElementById('modal-ficha-custom').remove();
+  showToast('✅ Ficha salva com sucesso!');
 }
