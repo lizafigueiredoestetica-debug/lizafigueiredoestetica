@@ -124,7 +124,7 @@
           style="width:100%;padding:0.75rem 1rem;background:rgba(255,255,255,0.08);border:1px solid rgba(196,168,130,0.3);border-radius:8px;color:#F0E8DC;font-family:Jost,sans-serif;font-size:14px;outline:none;box-sizing:border-box"
           onkeydown="if(event.key==='Enter')document.getElementById('loginPass').focus()">
       </div>
-      <div style="margin-bottom:1.5rem">
+      <div style="margin-bottom:1.5rem;display:flex;gap:0.75rem;align-items:center;flex-wrap:wrap">
         <label style="font-size:10px;letter-spacing:2px;color:#8B5060;text-transform:uppercase;display:block;margin-bottom:6px">Senha</label>
         <input type="password" id="loginPass" placeholder="Digite sua senha"
           style="width:100%;padding:0.75rem 1rem;background:rgba(255,255,255,0.08);border:1px solid rgba(196,168,130,0.3);border-radius:8px;color:#F0E8DC;font-family:Jost,sans-serif;font-size:14px;outline:none;box-sizing:border-box"
@@ -1046,7 +1046,8 @@
         <input class="filter-input" type="text" id="filtClienteBusca"
           placeholder="🔍 Buscar por nome, CPF, telefone, qualquer dado..."
           oninput="renderClientes()"
-          style="width:100%;max-width:500px;font-size:14px;padding:0.75rem 1rem">
+          style="flex:1;min-width:250px;max-width:500px;font-size:14px;padding:0.75rem 1rem">
+        <button class="btn btn-secondary btn-sm" onclick="document.getElementById('filtClienteBusca').value='';renderClientes()">✕ Limpar</button>
       </div>
       <div id="clientesResumo" style="margin-bottom:1rem"></div>
       <div id="clientesLista"></div>
