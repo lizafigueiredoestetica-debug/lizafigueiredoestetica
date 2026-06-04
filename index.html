@@ -57,9 +57,9 @@
           <span>📝</span><span>Fichas Custom</span>
           <span class="badge" id="badgeFichasCustom">0</span>
         </button>
-        <button class="nav-tab" onclick="fecharDrawer();showSection('checkins')" data-label="Check-ins">
-          <span>✅</span><span>Check-ins</span>
-          <span class="badge" id="badgeCheckins">0</span>
+        <button class="nav-tab" onclick="fecharDrawer();showSection('clientes')" data-label="Clientes">
+          <span>👥</span><span>Clientes</span>
+          <span class="badge" id="badgeClientes">0</span>
         </button>
         <button class="nav-tab" onclick="showSection('mensagens')" data-label="WhatsApp">
           <span>💬</span><span>WhatsApp</span>
@@ -1036,45 +1036,20 @@
     </div>
   </section>
 
-  <!-- ===== CHECK-INS ===== -->
-  <section class="section" id="sec-checkins">
+  <!-- ===== CLIENTES ===== -->
+  <section class="section" id="sec-clientes">
     <div class="main">
-      <div class="section-title">Histórico de Check-ins</div>
-      <div class="section-sub">Registro de presença das clientes</div>
+      <div class="section-title">Clientes</div>
+      <div class="section-sub">Ficha consolidada de cada cliente</div>
       <div class="divider"></div>
-      <div class="filters-bar" style="margin-bottom:1.5rem">
-        <input class="filter-input" type="text" id="filtCheckinNome" placeholder="🔍 Buscar cliente..."
-          oninput="renderCheckins()">
-        <input class="filter-input" type="date" id="filtCheckinDe"
-          oninput="renderCheckins()" title="Data inicial">
-        <input class="filter-input" type="date" id="filtCheckinAte"
-          oninput="renderCheckins()" title="Data final">
-        <button class="btn btn-secondary btn-sm" onclick="
-          document.getElementById('filtCheckinNome').value='';
-          document.getElementById('filtCheckinDe').value='';
-          document.getElementById('filtCheckinAte').value='';
-          renderCheckins()">✕ Limpar</button>
-        <button class="btn btn-secondary btn-sm" id="btnExportCheckins" onclick="exportCheckinsCsv()" style="margin-left:auto">⬇ Exportar CSV</button>
+      <div style="margin-bottom:1.5rem">
+        <input class="filter-input" type="text" id="filtClienteBusca"
+          placeholder="🔍 Buscar por nome, CPF, telefone, qualquer dado..."
+          oninput="renderClientes()"
+          style="width:100%;max-width:500px;font-size:14px;padding:0.75rem 1rem">
       </div>
-      <div id="checkinResumo" style="margin-bottom:1rem"></div>
-      <div class="panel">
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Data</th>
-                <th>Hora</th>
-                <th>Cliente</th>
-                <th>Serviço</th>
-                <th>Sessão</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody id="tbodyCheckins"></tbody>
-          </table>
-        </div>
-        <div id="pagCheckins"></div>
-      </div>
+      <div id="clientesResumo" style="margin-bottom:1rem"></div>
+      <div id="clientesLista"></div>
     </div>
   </section>
 
