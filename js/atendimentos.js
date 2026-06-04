@@ -20,10 +20,14 @@ function salvarAtendimento() {
   // Build materiais array with qty for storage
   const materiaisUsados = Object.entries(selectedMateriais).map(([mid, qtd]) => ({id: mid, qtd}));
 
+  // Cache dos nomes dos serviços para exibição mesmo se deletados futuramente
+  const _nomesCache = selectedServicos.map(function(id){ const sv=db.servicos.find(function(x){return x.id===id;}); return sv?sv.nome:''; }).filter(Boolean);
+
   db.atendimentos.push({
     id: uid(), data, cliente, valor: parseFloat(valor),
     pagto,
     servicoIds: [...selectedServicos],
+    servicoNomesCache: _nomesCache,
     materiais: materiaisUsados,
     obs: document.getElementById('atend-obs').value
   });
@@ -82,7 +86,16 @@ function renderAtendimentos() {
     // Support both old (servicoId) and new (servicoIds) formats
     const servicoIds = a.servicoIds || (a.servicoId ? [a.servicoId] : []);
     const s = db.servicos.find(x=>x.id===servicoIds[0]); // first for table display
-    const servNomes = servicoIds.map(sid=>{const sv=db.servicos.find(x=>x.id===sid);return sv?sv.nome:'?'}).join(' + ')||'—';
+    // Usar cache de nomes se o serviço foi deletado do cadastro
+    const _nomesCache = a.servicoNomesCache || [];
+    const servNomes = servicoIds.length
+      ? servicoIds.map(function(sid, idx) {
+          const sv = db.servicos.find(function(x){ return x.id===sid; });
+          if (sv) return sv.nome;
+          // Fallback: cache salvo no momento do registro
+          return _nomesCache[idx] || a.servicoNome || '?';
+        }).join(' + ')
+      : (a.servicoNomesCache && a.servicoNomesCache.length ? a.servicoNomesCache.join(' + ') : (a.servicoNome || '—'));
     const matsNomes = (a.materiais && typeof a.materiais === 'object' && !Array.isArray(a.materiais))
       ? Object.keys(a.materiais).map(mid=>{ const m=db.materiais.find(x=>x.id===mid); return m?m.nome+(a.materiais[mid]>1?' ×'+a.materiais[mid]:''):'?'; }).join(', ')||'Nenhum'
       : (a.materiais||[]).map(item=>{ const mid=typeof item==='object'?item.id:item; const m=db.materiais.find(x=>x.id===mid); return m?m.nome:'?'; }).join(', ')||'Nenhum';
