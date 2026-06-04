@@ -192,6 +192,7 @@ function showSection(id) {
   if (id === 'modelos') renderModelosAnamnese();
   if (id === 'fichas-custom') renderFichasCustom();
   if (id === 'aniversariantes') renderAniversariantesAba();
+  if (id === 'checkins') renderCheckins();
 }
 
 function renderAll() {
@@ -234,6 +235,13 @@ function _atualizarBadges() {
   var bAc = document.getElementById('badgeAcomp'); if(bAc) bAc.textContent = db.agenda.length;
   var bMod = document.getElementById('badgeModelos'); if(bMod) bMod.textContent = (_modelosAnamnese||[]).filter(function(m){return m.ativo;}).length;
   var bFC = document.getElementById('badgeFichasCustom'); if(bFC) bFC.textContent = db.anamneses.filter(function(a){ return a.modelo_respostas && Object.keys(a.modelo_respostas).length > 0; }).length;
+  // Badge checkins — total geral
+  var _bCk = document.getElementById('badgeCheckins');
+  if (_bCk) {
+    var _ckTotal = 0;
+    db.agenda.forEach(function(ag){ ag.sessoes.forEach(function(s){ if(s.checkinData) _ckTotal++; }); });
+    _bCk.textContent = _ckTotal;
+  }
   // Badge aniversariantes do mês atual
   var _mesAtual = new Date().getMonth() + 1;
   var _bAniv = document.getElementById('badgeAniv');
@@ -356,4 +364,135 @@ function renderAniversariantesAba() {
 
   html += '</div>';
   el.innerHTML = html;
+}
+
+// =====================================================================
+// HISTÓRICO DE CHECK-INS
+// =====================================================================
+
+var _checkinPag = 1;
+var _POR_PAG_CK = 20;
+
+function _coletarCheckins() {
+  var lista = [];
+  db.agenda.forEach(function(ag) {
+    ag.sessoes.forEach(function(s, idx) {
+      if (!s.checkinData) return;
+      var srvIds = s.servicoIds || [];
+      var srvNome = srvIds.length
+        ? srvIds.map(function(id){ var sv=db.servicos.find(function(x){return x.id===id;}); return sv?sv.nome:id; }).join(' + ')
+        : (s.servico || _agServicos(ag) || '—');
+      // Converter data DD/MM/AAAA → AAAA-MM-DD para ordenação
+      var partes = s.checkinData.split('/');
+      var dataIso = partes.length === 3 ? partes[2]+'-'+partes[1]+'-'+partes[0] : s.checkinData;
+      lista.push({
+        dataIso: dataIso,
+        dataFmt: s.checkinData,
+        hora: s.checkinHora || '—',
+        nome: s.checkinNome || ag.cliente,
+        servico: srvNome,
+        sessao: idx + 1,
+        status: s.status
+      });
+    });
+  });
+  // Ordenar mais recente primeiro (data desc, hora desc)
+  lista.sort(function(a, b) {
+    var cmp = b.dataIso.localeCompare(a.dataIso);
+    if (cmp !== 0) return cmp;
+    return b.hora.localeCompare(a.hora);
+  });
+  return lista;
+}
+
+function renderCheckins() {
+  var tbody = document.getElementById('tbodyCheckins');
+  var resumoEl = document.getElementById('checkinResumo');
+  var pagEl = document.getElementById('pagCheckins');
+  if (!tbody) return;
+
+  var busca = ((document.getElementById('filtCheckinNome')||{value:''}).value||'').toLowerCase().trim();
+  var de = ((document.getElementById('filtCheckinDe')||{value:''}).value||'');
+  var ate = ((document.getElementById('filtCheckinAte')||{value:''}).value||'');
+
+  var lista = _coletarCheckins();
+
+  if (busca) lista = lista.filter(function(c){ return c.nome.toLowerCase().indexOf(busca) >= 0; });
+  if (de) lista = lista.filter(function(c){ return c.dataIso >= de; });
+  if (ate) lista = lista.filter(function(c){ return c.dataIso <= ate; });
+
+  // Resumo
+  if (resumoEl) {
+    var totalFiltrado = lista.length;
+    var clientesUnicos = {};
+    lista.forEach(function(c){ clientesUnicos[c.nome.toLowerCase()] = 1; });
+    resumoEl.innerHTML = totalFiltrado
+      ? '<div style="display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:0.5rem">'
+        + '<span style="background:#E7F7EE;color:#276749;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:500">✅ ' + totalFiltrado + ' check-in' + (totalFiltrado>1?'s':'') + '</span>'
+        + '<span style="background:#EDF4FF;color:#1565C0;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:500">👤 ' + Object.keys(clientesUnicos).length + ' cliente' + (Object.keys(clientesUnicos).length>1?'s':'') + '</span>'
+        + '</div>'
+      : '';
+  }
+
+  if (!lista.length) {
+    tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">✅</div><p>Nenhum check-in encontrado</p></div></td></tr>';
+    if (pagEl) pagEl.innerHTML = '';
+    return;
+  }
+
+  // Paginação
+  var totalPags = Math.ceil(lista.length / _POR_PAG_CK);
+  if (_checkinPag > totalPags) _checkinPag = 1;
+  var inicio = (_checkinPag - 1) * _POR_PAG_CK;
+  var pagina = lista.slice(inicio, inicio + _POR_PAG_CK);
+
+  tbody.innerHTML = pagina.map(function(c) {
+    var statusBadge = c.status === 'realizado'
+      ? '<span class="badge-realizado">✓ Realizado</span>'
+      : '<span class="badge-presente">✅ Presente</span>';
+    return '<tr>'
+      + '<td>' + c.dataFmt + '</td>'
+      + '<td><strong style="color:var(--gold-dark)">' + c.hora + '</strong></td>'
+      + '<td><strong>' + c.nome + '</strong></td>'
+      + '<td style="font-size:12px;color:var(--text-mid)">' + c.servico + '</td>'
+      + '<td style="font-size:12px;color:var(--text-light);text-align:center">Sessão ' + c.sessao + '</td>'
+      + '<td>' + statusBadge + '</td>'
+      + '</tr>';
+  }).join('');
+
+  // Paginação HTML
+  if (pagEl) {
+    if (totalPags <= 1) { pagEl.innerHTML = ''; return; }
+    var ph = '<div style="display:flex;align-items:center;gap:0.5rem;padding:1rem;flex-wrap:wrap">';
+    ph += '<button onclick="_checkinPag=Math.max(1,_checkinPag-1);renderCheckins()" ' + (_checkinPag===1?'disabled':'') + ' style="padding:4px 10px;border:1px solid var(--border);border-radius:6px;background:white;cursor:pointer;font-size:12px">‹</button>';
+    for (var p = 1; p <= totalPags; p++) {
+      var at = p === _checkinPag;
+      ph += '<button onclick="_checkinPag='+p+';renderCheckins()" style="padding:4px 10px;border:1px solid '+(at?'#D4A0A8':'var(--border)')+';border-radius:6px;background:'+(at?'#D4A0A8':'white')+';color:'+(at?'white':'inherit')+';cursor:pointer;font-size:12px">'+p+'</button>';
+    }
+    ph += '<button onclick="_checkinPag=Math.min('+totalPags+',_checkinPag+1);renderCheckins()" ' + (_checkinPag===totalPags?'disabled':'') + ' style="padding:4px 10px;border:1px solid var(--border);border-radius:6px;background:white;cursor:pointer;font-size:12px">›</button>';
+    ph += '<span style="font-size:11px;color:var(--text-light)">'+(inicio+1)+'-'+Math.min(inicio+_POR_PAG_CK,lista.length)+' de '+lista.length+'</span>';
+    ph += '</div>';
+    pagEl.innerHTML = ph;
+  }
+}
+
+function exportCheckinsCsv() {
+  var busca = ((document.getElementById('filtCheckinNome')||{value:''}).value||'').toLowerCase().trim();
+  var de = ((document.getElementById('filtCheckinDe')||{value:''}).value||'');
+  var ate = ((document.getElementById('filtCheckinAte')||{value:''}).value||'');
+  var lista = _coletarCheckins();
+  if (busca) lista = lista.filter(function(c){ return c.nome.toLowerCase().indexOf(busca) >= 0; });
+  if (de) lista = lista.filter(function(c){ return c.dataIso >= de; });
+  if (ate) lista = lista.filter(function(c){ return c.dataIso <= ate; });
+
+  var csv = 'Data;Hora;Cliente;Serviço;Sessão;Status\n';
+  lista.forEach(function(c) {
+    csv += [c.dataFmt, c.hora, c.nome, c.servico, 'Sessão '+c.sessao, c.status].map(function(v){ return '"'+String(v).replace(/"/g,'""')+'"'; }).join(';') + '\n';
+  });
+  var blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'checkins-' + _hoje() + '.csv';
+  a.click();
+  showToast('✅ CSV exportado!');
 }
