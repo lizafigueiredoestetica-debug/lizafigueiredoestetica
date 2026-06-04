@@ -556,6 +556,9 @@ function _consolidarClientes() {
   return Object.values(mapa).sort(function(a, b) { return a.nome.localeCompare(b.nome); });
 }
 
+var _clientePag = 1;
+var _POR_PAG_CLI = 15;
+
 function renderClientes() {
   var el = document.getElementById('clientesLista');
   var resumoEl = document.getElementById('clientesResumo');
@@ -580,17 +583,26 @@ function renderClientes() {
     });
   }
 
-  if (resumoEl) {
-    resumoEl.innerHTML = '<span style="font-size:12px;color:var(--text-light)">'
-      + clientes.length + ' cliente' + (clientes.length !== 1 ? 's' : '') + (busca ? ' encontrado' + (clientes.length !== 1 ? 's' : '') : '') + '</span>';
-  }
+
 
   if (!clientes.length) {
     el.innerHTML = '<div class="empty-state" style="padding:3rem"><div class="empty-icon">👥</div><p>Nenhuma cliente encontrada</p></div>';
     return;
   }
 
-  el.innerHTML = clientes.map(function(c) {
+  var totalPags = Math.ceil(clientes.length / _POR_PAG_CLI);
+  if (_clientePag > totalPags) _clientePag = 1;
+  var _inicio = (_clientePag - 1) * _POR_PAG_CLI;
+  var _pagina = clientes.slice(_inicio, _inicio + _POR_PAG_CLI);
+
+  if (resumoEl) {
+    resumoEl.innerHTML = '<span style="font-size:12px;color:var(--text-light)">'
+      + clientes.length + ' cliente' + (clientes.length !== 1 ? 's' : '')
+      + (busca ? ' encontrado' + (clientes.length !== 1 ? 's' : '') : '')
+      + ' &nbsp;·&nbsp; página ' + _clientePag + ' de ' + (totalPags||1) + '</span>';
+  }
+
+  var _htmlCli = _pagina.map(function(c) {
     var key = c.nome.toLowerCase().trim().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'');
     var p = c.pessoais;
     var totalSessoes = 0, realizadas = 0;
@@ -601,6 +613,7 @@ function renderClientes() {
     var ultimoAtend = c.atendimentos.slice().sort(function(a,b){ return b.data.localeCompare(a.data); })[0];
     var totalGasto = c.atendimentos.reduce(function(s,a){ return s + (parseFloat(a.valor)||0); }, 0);
 
+    var nomeEsc = c.nome.replace(/'/g,"\\\\'");
     return '<div class="agenda-cliente-card" style="margin-bottom:0.5rem" id="cli-card-'+key+'">'
       // HEADER
       + '<div class="agenda-cliente-header" onclick="_toggleClienteCard(\''+key+'\')" style="cursor:pointer">'
@@ -619,6 +632,7 @@ function renderClientes() {
       + '</div>'
       + '<div style="display:flex;align-items:center;gap:0.5rem">'
       + (p.telefone ? '<button onclick="event.stopPropagation();var msg=_getMensagem(\'pos_atendimento\').replace(/{nome}/g,\''+c.nome.split(' ')[0]+'\').replace(/{servico}/g,\'\');window.open(\'https://wa.me/55'+((p.telefone||'').replace(/\D/g,''))+'?text=\'+encodeURIComponent(msg),\'_blank\')" style="background:#E7F7EE;border:1px solid #7DB87D;color:#276749;border-radius:8px;padding:5px 10px;font-size:11px;cursor:pointer">💬 WA</button>' : '')
+      + '<button onclick="event.stopPropagation();gerarLinkCliente(\''+nomeEsc+'\')" style="background:#EDF4FF;border:1px solid #90CAF9;color:#1565C0;border-radius:8px;padding:5px 10px;font-size:11px;cursor:pointer" title="Dashboard da cliente">🔗</button>'
       + '<span class="expand-icon" id="icon-cli-'+key+'">▶</span>'
       + '</div>'
       + '</div>'
@@ -628,6 +642,21 @@ function renderClientes() {
       + '</div>'
       + '</div>';
   }).join('');
+
+  // Paginação
+  if (totalPags > 1) {
+    _htmlCli += '<div style="display:flex;align-items:center;gap:0.5rem;padding:1rem;flex-wrap:wrap;margin-top:0.5rem">';
+    _htmlCli += '<button onclick="_clientePag=Math.max(1,_clientePag-1);renderClientes()" ' + (_clientePag===1?'disabled':'') + ' style="padding:4px 10px;border:1px solid var(--border);border-radius:6px;background:white;cursor:pointer;font-size:12px">‹</button>';
+    for (var _pp = 1; _pp <= totalPags; _pp++) {
+      var _at = _pp === _clientePag;
+      _htmlCli += '<button onclick="_clientePag='+_pp+';renderClientes()" style="padding:4px 10px;border:1px solid '+(_at?'#D4A0A8':'var(--border)')+';border-radius:6px;background:'+(_at?'#D4A0A8':'white')+';color:'+(_at?'white':'inherit')+';cursor:pointer;font-size:12px">'+_pp+'</button>';
+    }
+    _htmlCli += '<button onclick="_clientePag=Math.min('+totalPags+',_clientePag+1);renderClientes()" ' + (_clientePag===totalPags?'disabled':'') + ' style="padding:4px 10px;border:1px solid var(--border);border-radius:6px;background:white;cursor:pointer;font-size:12px">›</button>';
+    _htmlCli += '<span style="font-size:11px;color:var(--text-light)">'+(_inicio+1)+'-'+Math.min(_inicio+_POR_PAG_CLI,clientes.length)+' de '+clientes.length+'</span>';
+    _htmlCli += '</div>';
+  }
+
+  el.innerHTML = _htmlCli;
 }
 
 function _renderFichaCliente(c, key) {
