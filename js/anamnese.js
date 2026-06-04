@@ -1101,3 +1101,126 @@ function salvarNovoCiclo(agId) {
   _salvarAgenda(ag);
 }
 
+
+// ══════════════════════════════════════════════════════
+//  FICHAS CUSTOMIZADAS — aba separada, sem tocar na anamnese
+// ══════════════════════════════════════════════════════
+
+function renderFichasCustom() {
+  var tbody = document.getElementById('tbodyFichasCustom');
+  if (!tbody) return;
+
+  var busca = (document.getElementById('filtFichaCustomNome')||{value:''}).value.toLowerCase().trim();
+  var de = (document.getElementById('filtFichaCustomDe')||{value:''}).value;
+  var ate = (document.getElementById('filtFichaCustomAte')||{value:''}).value;
+
+  // Filtrar só fichas com modelo_respostas preenchido
+  var lista = db.anamneses.filter(function(a) {
+    if (!a.modelo_respostas || Object.keys(a.modelo_respostas).length === 0) return false;
+    var nome = (a.pessoais && a.pessoais.nome) || '';
+    if (busca && nome.toLowerCase().indexOf(busca) < 0) return false;
+    if (de || ate) {
+      var dataBr = a.dataCadastro || '';
+      var partes = dataBr.split('/');
+      var dataComp = partes.length === 3 ? partes[2] + '-' + partes[1] + '-' + partes[0] : '';
+      if (de && dataComp && dataComp < de) return false;
+      if (ate && dataComp && dataComp > ate) return false;
+    }
+    return true;
+  });
+
+  // Atualizar badge
+  var badge = document.getElementById('badgeFichasCustom');
+  if (badge) badge.textContent = lista.length;
+
+  if (!lista.length) {
+    tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><div class="empty-icon">📝</div><p>Nenhuma ficha customizada encontrada</p></div></td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = lista.map(function(a) {
+    var nome = (a.pessoais && a.pessoais.nome) || '—';
+    var modelo = a.modelo_nome || '—';
+    var data = a.dataCadastro || '—';
+    var assinatura = a.assinatura
+      ? '<span class="badge-pill" style="background:#E8F5E9;color:#2E7D32;font-size:11px">✍️ Assinada</span>'
+      : '<span class="badge-pill badge-pendente" style="font-size:11px">Pendente</span>';
+    return '<tr>'
+      + '<td><strong>' + nome + '</strong></td>'
+      + '<td><span style="background:#EDD5D8;color:#B07880;padding:2px 8px;border-radius:12px;font-size:11px">' + modelo + '</span></td>'
+      + '<td>' + data + '</td>'
+      + '<td>' + assinatura + '</td>'
+      + '<td><button class="btn btn-primary btn-sm" onclick="verFichaCustom(\'' + a.id + '\')" style="font-size:11px;padding:4px 8px">👁 Ver</button></td>'
+      + '</tr>';
+  }).join('');
+}
+
+function verFichaCustom(id) {
+  var ficha = db.anamneses.find(function(a) { return a.id === id; });
+  if (!ficha) return;
+
+  var p = ficha.pessoais || {};
+  var mr = ficha.modelo_respostas || {};
+  var sec = function(t) { return '<div style="background:#1C1C1E;color:#FAF0F2;padding:4px 10px;border-radius:4px;font-size:10px;letter-spacing:2px;text-transform:uppercase;margin:1rem 0 0.5rem">' + t + '</div>'; };
+  var row = function(fields) { return '<div style="display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:6px">' + fields.map(function(f) { return f ? '<div style="flex:1;min-width:140px"><div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:1px">' + f[0] + '</div><div style="font-size:13px;font-weight:500;border-bottom:1px solid #ddd;padding-bottom:2px">' + (f[1]||'—') + '</div></div>' : ''; }).join('') + '</div>'; };
+  var q = function(t) { return '<div style="font-size:12px;margin-bottom:5px">• ' + t + '</div>'; };
+
+  var html = '<div style="text-align:center;margin-bottom:1rem">'
+    + '<div style="font-size:14px;font-weight:700;color:#1C1C1E;letter-spacing:2px">LIZA FIGUEIREDO ESTÉTICA</div>'
+    + '<div style="font-size:10px;color:#888;letter-spacing:1px">FICHA: ' + (ficha.modelo_nome || 'CUSTOMIZADA') + ' · ' + (ficha.dataCadastro || '') + '</div>'
+    + '</div>';
+
+  html += sec('Informações Pessoais')
+    + row([['Nome', p.nome], ['Idade', p.idade], ['Gênero', p.genero]])
+    + row([['Nascimento', p.dataNasc], ['Telefone', p.telefone], ['CPF', p.cpf]]);
+
+  if (Object.keys(mr).length > 0) {
+    html += sec(ficha.modelo_nome || 'Respostas');
+    Object.keys(mr).forEach(function(campo) {
+      var valor = mr[campo];
+      if (valor !== null && valor !== undefined && valor !== '') {
+        html += q('<strong>' + campo + ':</strong> ' + valor);
+      }
+    });
+  }
+
+  html += '<div style="background:#F5F8E8;border-radius:6px;padding:0.75rem;font-size:11px;color:#555;margin-top:1rem">TERMO DE RESPONSABILIDADE: Declaro que as afirmações acima são verdadeiras, não cabendo ao profissional qualquer responsabilidade por informações omitidas ou incorretas.</div>';
+
+  if (ficha.assinatura) {
+    html += '<div style="margin-top:1rem;text-align:center">'
+      + '<div style="font-size:10px;color:#888;margin-bottom:4px">ASSINATURA DA CLIENTE</div>'
+      + '<img src="' + ficha.assinatura + '" style="max-width:280px;border-bottom:1px solid #333;display:block;margin:0 auto">'
+      + '<div style="font-size:11px;color:#555;margin-top:4px">' + (p.nome || '') + '</div>'
+      + '</div>';
+  }
+
+  // Reusar o modal de assinatura existente
+  _fichaAssinaturaAtual = { ficha: ficha, tipo: 'anamnese' };
+  document.getElementById('modalAnamTitulo').textContent = (p.nome || 'Cliente') + ' · ' + (ficha.modelo_nome || 'Ficha Custom');
+  document.getElementById('modalAnamConteudo').innerHTML = html;
+  document.getElementById('modalAssinatura').style.display = 'block';
+  document.body.style.overflow = 'hidden';
+
+  var jaAssinado = !!(ficha.assinatura && ficha.assinatura !== 'signed');
+  setTimeout(function() { _setAssinBloqueado(jaAssinado); }, 150);
+  setTimeout(function() {
+    var old = document.getElementById('canvasAssinatura');
+    var c = old.cloneNode(false);
+    old.parentNode.replaceChild(c, old);
+    var rect = c.parentNode.getBoundingClientRect();
+    c.width = rect.width || 600;
+    c.height = 180;
+    c.style.cssText = 'width:100%;height:180px;touch-action:none;cursor:crosshair;display:block;border-radius:8px';
+    var ctx = c.getContext('2d');
+    ctx.fillStyle = '#FFFBF8';
+    ctx.fillRect(0, 0, c.width, c.height);
+    if (ficha.assinatura && ficha.assinatura !== 'signed') {
+      var img = new Image();
+      img.onload = function() { ctx.drawImage(img, 0, 0, c.width, c.height); };
+      img.src = ficha.assinatura;
+      document.getElementById('canvasHint').style.display = 'none';
+    } else {
+      document.getElementById('canvasHint').style.display = 'flex';
+    }
+  }, 200);
+}
