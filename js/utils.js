@@ -193,6 +193,7 @@ function showSection(id) {
   if (id === 'fichas-custom') renderFichasCustom();
   if (id === 'aniversariantes') renderAniversariantesAba();
   if (id === 'checkins') renderCheckins();
+  if (id === 'clientes') renderClientes();
 }
 
 function renderAll() {
@@ -235,6 +236,14 @@ function _atualizarBadges() {
   var bAc = document.getElementById('badgeAcomp'); if(bAc) bAc.textContent = db.agenda.length;
   var bMod = document.getElementById('badgeModelos'); if(bMod) bMod.textContent = (_modelosAnamnese||[]).filter(function(m){return m.ativo;}).length;
   var bFC = document.getElementById('badgeFichasCustom'); if(bFC) bFC.textContent = db.anamneses.filter(function(a){ return a.modelo_respostas && Object.keys(a.modelo_respostas).length > 0; }).length;
+  // Badge clientes
+  var _bCli = document.getElementById('badgeClientes');
+  if (_bCli) {
+    var _nomesUnicos = {};
+    db.anamneses.forEach(function(a){ if(a.pessoais&&a.pessoais.nome) _nomesUnicos[a.pessoais.nome.toLowerCase().trim()]=1; });
+    db.agenda.forEach(function(ag){ if(ag.cliente) _nomesUnicos[ag.cliente.toLowerCase().trim()]=1; });
+    _bCli.textContent = Object.keys(_nomesUnicos).length;
+  }
   // Badge checkins — total geral
   var _bCk = document.getElementById('badgeCheckins');
   if (_bCk) {
@@ -495,4 +504,267 @@ function exportCheckinsCsv() {
   a.download = 'checkins-' + _hoje() + '.csv';
   a.click();
   showToast('✅ CSV exportado!');
+}
+
+// =====================================================================
+// ABA CLIENTES — FICHA CONSOLIDADA
+// =====================================================================
+
+var _clienteAbaAtiva = {}; // { nomeKey: 'atendimentos' }
+
+function _consolidarClientes() {
+  var mapa = {};
+
+  // Fonte 1: anamneses
+  db.anamneses.forEach(function(a) {
+    var p = a.pessoais || {};
+    if (!p.nome) return;
+    var key = p.nome.toLowerCase().trim();
+    if (!mapa[key]) mapa[key] = { nome: p.nome, pessoais: {}, anamneses: [], fichasCustom: [], agenda: [], atendimentos: [] };
+    // Mesclar dados pessoais (prioriza o mais completo)
+    var cur = mapa[key].pessoais;
+    if (!cur.telefone && p.telefone) cur.telefone = p.telefone;
+    if (!cur.cpf && p.cpf) cur.cpf = p.cpf;
+    if (!cur.idade && p.idade) cur.idade = p.idade;
+    if (!cur.dataNasc && p.dataNasc) cur.dataNasc = p.dataNasc;
+    if (!cur.genero && p.genero) cur.genero = p.genero;
+    if (a.modelo_respostas && Object.keys(a.modelo_respostas).length > 0) {
+      mapa[key].fichasCustom.push(a);
+    } else {
+      mapa[key].anamneses.push(a);
+    }
+  });
+
+  // Fonte 2: agenda
+  db.agenda.forEach(function(ag) {
+    if (!ag.cliente) return;
+    var key = ag.cliente.toLowerCase().trim();
+    if (!mapa[key]) mapa[key] = { nome: ag.cliente, pessoais: {}, anamneses: [], fichasCustom: [], agenda: [], atendimentos: [] };
+    mapa[key].agenda.push(ag);
+    // Telefone da agenda
+    if (!mapa[key].pessoais.telefone && ag.tel) mapa[key].pessoais.telefone = ag.tel;
+  });
+
+  // Fonte 3: atendimentos
+  db.atendimentos.forEach(function(a) {
+    if (!a.cliente) return;
+    var key = a.cliente.toLowerCase().trim();
+    if (!mapa[key]) mapa[key] = { nome: a.cliente, pessoais: {}, anamneses: [], fichasCustom: [], agenda: [], atendimentos: [] };
+    mapa[key].atendimentos.push(a);
+  });
+
+  return Object.values(mapa).sort(function(a, b) { return a.nome.localeCompare(b.nome); });
+}
+
+function renderClientes() {
+  var el = document.getElementById('clientesLista');
+  var resumoEl = document.getElementById('clientesResumo');
+  if (!el) return;
+
+  var busca = ((document.getElementById('filtClienteBusca')||{value:''}).value||'').toLowerCase().trim();
+
+  var clientes = _consolidarClientes();
+
+  if (busca) {
+    clientes = clientes.filter(function(c) {
+      var p = c.pessoais;
+      var campos = [
+        c.nome,
+        p.telefone||'', p.cpf||'', p.idade||'', p.dataNasc||'', p.genero||''
+      ].join(' ').toLowerCase();
+      // Buscar também em anamneses
+      var temAnamnese = c.anamneses.some(function(a) {
+        return JSON.stringify(a).toLowerCase().indexOf(busca) >= 0;
+      });
+      return campos.indexOf(busca) >= 0 || temAnamnese;
+    });
+  }
+
+  if (resumoEl) {
+    resumoEl.innerHTML = '<span style="font-size:12px;color:var(--text-light)">'
+      + clientes.length + ' cliente' + (clientes.length !== 1 ? 's' : '') + (busca ? ' encontrado' + (clientes.length !== 1 ? 's' : '') : '') + '</span>';
+  }
+
+  if (!clientes.length) {
+    el.innerHTML = '<div class="empty-state" style="padding:3rem"><div class="empty-icon">👥</div><p>Nenhuma cliente encontrada</p></div>';
+    return;
+  }
+
+  el.innerHTML = clientes.map(function(c) {
+    var key = c.nome.toLowerCase().trim().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'');
+    var p = c.pessoais;
+    var totalSessoes = 0, realizadas = 0;
+    c.agenda.forEach(function(ag) {
+      totalSessoes += ag.sessoes.length;
+      realizadas += ag.sessoes.filter(function(s){ return s.status === 'realizado'; }).length;
+    });
+    var ultimoAtend = c.atendimentos.slice().sort(function(a,b){ return b.data.localeCompare(a.data); })[0];
+    var totalGasto = c.atendimentos.reduce(function(s,a){ return s + (parseFloat(a.valor)||0); }, 0);
+
+    return '<div class="agenda-cliente-card" style="margin-bottom:0.5rem" id="cli-card-'+key+'">'
+      // HEADER
+      + '<div class="agenda-cliente-header" onclick="_toggleClienteCard(\''+key+'\')" style="cursor:pointer">'
+      + '<div style="display:flex;align-items:center;gap:1rem">'
+      + '<div style="width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#D4A0A8,#B07880);display:flex;align-items:center;justify-content:center;color:white;font-family:Cormorant Garamond,serif;font-size:20px;flex-shrink:0">'+c.nome.charAt(0).toUpperCase()+'</div>'
+      + '<div>'
+      + '<div class="agenda-cliente-nome">'+c.nome+'</div>'
+      + '<div class="agenda-cliente-info" style="display:flex;gap:0.75rem;flex-wrap:wrap">'
+      + (p.telefone ? '<span>📱 '+p.telefone+'</span>' : '')
+      + (p.cpf ? '<span>🪪 '+p.cpf+'</span>' : '')
+      + (totalSessoes ? '<span>📅 '+realizadas+'/'+totalSessoes+' sessões</span>' : '')
+      + (ultimoAtend ? '<span>💆 Último: '+fmtDate(ultimoAtend.data)+'</span>' : '')
+      + (totalGasto > 0 ? '<span>💰 Total: '+fmtMoney(totalGasto)+'</span>' : '')
+      + '</div>'
+      + '</div>'
+      + '</div>'
+      + '<div style="display:flex;align-items:center;gap:0.5rem">'
+      + (p.telefone ? '<button onclick="event.stopPropagation();var msg=_getMensagem(\'pos_atendimento\').replace(/{nome}/g,\''+c.nome.split(' ')[0]+'\').replace(/{servico}/g,\'\');window.open(\'https://wa.me/55'+((p.telefone||'').replace(/\D/g,''))+'?text=\'+encodeURIComponent(msg),\'_blank\')" style="background:#E7F7EE;border:1px solid #7DB87D;color:#276749;border-radius:8px;padding:5px 10px;font-size:11px;cursor:pointer">💬 WA</button>' : '')
+      + '<span class="expand-icon" id="icon-cli-'+key+'">▶</span>'
+      + '</div>'
+      + '</div>'
+      // CONTEÚDO EXPANSÍVEL
+      + '<div class="agenda-sessoes-wrap" id="cli-body-'+key+'">'
+      + _renderFichaCliente(c, key)
+      + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+function _renderFichaCliente(c, key) {
+  var abaAtiva = _clienteAbaAtiva[key] || 'pessoais';
+  var abas = [
+    { id:'pessoais', label:'👤 Dados' },
+    { id:'agenda', label:'📅 Pacotes ('+c.agenda.length+')' },
+    { id:'atendimentos', label:'💆 Atendimentos ('+c.atendimentos.length+')' },
+    { id:'anamnese', label:'📋 Anamnese ('+c.anamneses.length+')' },
+    { id:'fichas', label:'📝 Fichas Custom ('+c.fichasCustom.length+')' }
+  ];
+
+  var tabsHtml = '<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:1rem;border-bottom:1px solid var(--border);padding-bottom:0.75rem">'
+    + abas.map(function(a) {
+        var ativa = a.id === abaAtiva;
+        return '<button onclick="event.stopPropagation();_clienteAbaAtiva[\''+key+'\']=\''+a.id+'\';document.getElementById(\'cli-content-'+key+'\').innerHTML=_renderClienteAba(\''+key+'\',\''+a.id+'\')" '
+          + 'style="padding:5px 12px;border-radius:20px;font-size:11px;font-weight:500;cursor:pointer;border:1px solid '+(ativa?'#D4A0A8':'var(--border)')+';background:'+(ativa?'#D4A0A8':'white')+';color:'+(ativa?'white':'var(--text-mid)')+'">'+a.label+'</button>';
+      }).join('')
+    + '</div>';
+
+  return '<div style="padding:0.5rem 0">'
+    + tabsHtml
+    + '<div id="cli-content-'+key+'">'+_renderClienteAba(key, abaAtiva, c)+'</div>'
+    + '</div>';
+}
+
+function _renderClienteAba(key, aba, c) {
+  // Buscar cliente novamente se não passado
+  if (!c) {
+    var todos = _consolidarClientes();
+    c = todos.find(function(x){ return x.nome.toLowerCase().trim().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'') === key; });
+    if (!c) return '<div class="empty-state"><p>Cliente não encontrado</p></div>';
+  }
+  var p = c.pessoais;
+
+  if (aba === 'pessoais') {
+    var meses = ['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    var aniv = '';
+    if (p.dataNasc) {
+      var parts = p.dataNasc.split('-');
+      if (parts.length === 3) aniv = parts[2]+'/'+meses[parseInt(parts[1])]+' ('+p.dataNasc+')';
+    }
+    return '<div class="detail-box" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">'
+      + _dField('Nome completo', c.nome)
+      + _dField('Telefone', p.telefone||'—')
+      + _dField('CPF', p.cpf||'—')
+      + _dField('Idade', p.idade||'—')
+      + _dField('Gênero', p.genero||'—')
+      + _dField('Aniversário', aniv||'—')
+      + '</div>';
+  }
+
+  if (aba === 'agenda') {
+    if (!c.agenda.length) return '<div class="empty-state" style="padding:2rem"><div class="empty-icon">📅</div><p>Nenhum pacote</p></div>';
+    return c.agenda.map(function(ag) {
+      var real = ag.sessoes.filter(function(s){ return s.status==='realizado'; }).length;
+      var saldo = _calcSaldoPacote(ag);
+      return '<div style="background:var(--cream);border-radius:10px;padding:0.75rem 1rem;margin-bottom:0.75rem;border-left:4px solid '+(ag.cor||'#D4A0A8')+'">'
+        + '<div style="font-weight:600;font-size:13px;margin-bottom:4px">'+_agServicos(ag)+(ag.obs?' · <span style="font-weight:400;color:var(--text-light)">'+ag.obs+'</span>':'')+'</div>'
+        + '<div style="display:flex;gap:1rem;flex-wrap:wrap;font-size:12px;color:var(--text-mid)">'
+        + '<span>📅 '+real+'/'+ag.sessoes.length+' sessões</span>'
+        + (saldo.sinal>0?'<span>💰 Sinal: '+fmtMoney(saldo.sinal)+'</span>':'')
+        + (saldo.totalPacote>0?'<span>Total: '+fmtMoney(saldo.totalPacote)+'</span>':'')
+        + (saldo.totalPago>0?'<span>Pago: '+fmtMoney(saldo.totalPago)+'</span>':'')
+        + (saldo.saldo>0?'<span style="color:var(--danger);font-weight:600">Restante: '+fmtMoney(saldo.saldo)+'</span>':'<span style="color:var(--success)">✓ Quitado</span>')
+        + '</div>'
+        + '</div>';
+    }).join('');
+  }
+
+  if (aba === 'atendimentos') {
+    if (!c.atendimentos.length) return '<div class="empty-state" style="padding:2rem"><div class="empty-icon">💆</div><p>Nenhum atendimento</p></div>';
+    var ats = c.atendimentos.slice().sort(function(a,b){ return b.data.localeCompare(a.data); });
+    return '<div class="table-wrap"><table style="width:100%;font-size:12px"><thead><tr>'
+      + '<th>Data</th><th>Serviço</th><th>Pagamento</th><th>Valor</th>'
+      + '</tr></thead><tbody>'
+      + ats.map(function(a) {
+          var srvIds = a.servicoIds||[];
+          var nomes = srvIds.map(function(id){
+            var sv=db.servicos.find(function(x){return x.id===id;}); return sv?sv.nome:id;
+          }).join(' + ') || (a.servicoNomesCache||[]).join(' + ') || '—';
+          return '<tr><td>'+fmtDate(a.data)+'</td><td style="font-size:11px">'+nomes+'</td>'
+            +'<td><span class="badge-pill '+pagtoBadge(a.pagto)+'">'+pagtoLabel(a.pagto)+'</span></td>'
+            +'<td><strong>'+fmtMoney(a.valor)+'</strong></td></tr>';
+        }).join('')
+      + '</tbody></table></div>';
+  }
+
+  if (aba === 'anamnese') {
+    if (!c.anamneses.length) return '<div class="empty-state" style="padding:2rem"><div class="empty-icon">📋</div><p>Nenhuma anamnese</p></div>';
+    return c.anamneses.map(function(a) {
+      var p2 = a.pessoais||{}, s=a.saude||{}, hb=a.habitos||{};
+      return '<div style="background:var(--cream);border-radius:10px;padding:0.75rem 1rem;margin-bottom:0.75rem">'
+        + '<div style="font-size:10px;letter-spacing:2px;color:var(--gold-dark);text-transform:uppercase;margin-bottom:0.5rem">Ficha · '+( a.dataCadastro||'—')+'</div>'
+        + '<div class="detail-box" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr))">'
+        + _dField('Doença', s.doencaQual||s.doenca||'—')
+        + _dField('Medicação', s.medicacaoQual||s.medicacao||'—')
+        + _dField('Água/dia', hb.agua||'—')
+        + _dField('Atividade física', hb.atividadeQual||hb.atividade||'—')
+        + _dField('Alimentação', hb.alimentacao||'—')
+        + '</div>'
+        + '<div style="margin-top:0.5rem;text-align:right">'
+        + '<button onclick="abrirFichaAnamnese(\''+a.id+'\')" class="btn btn-secondary btn-sm" style="font-size:11px">Ver ficha completa</button>'
+        + '</div>'
+        + '</div>';
+    }).join('');
+  }
+
+  if (aba === 'fichas') {
+    if (!c.fichasCustom.length) return '<div class="empty-state" style="padding:2rem"><div class="empty-icon">📝</div><p>Nenhuma ficha custom</p></div>';
+    return c.fichasCustom.map(function(f) {
+      return '<div style="background:var(--cream);border-radius:10px;padding:0.75rem 1rem;margin-bottom:0.5rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.5rem">'
+        + '<div>'
+        + '<div style="font-weight:600;font-size:13px">'+(f.modelo_nome||'Sem modelo')+'</div>'
+        + '<div style="font-size:11px;color:var(--text-light)">'+(f.dataCadastro||'—')+(f.assinatura?' · ✍️ Assinada':' · ⏳ Pendente')+'</div>'
+        + '</div>'
+        + '<button onclick="verFichaCustom(\''+f.id+'\')" class="btn btn-primary btn-sm" style="font-size:11px">Ver ficha</button>'
+        + '</div>';
+    }).join('');
+  }
+
+  return '';
+}
+
+function _dField(label, val) {
+  return '<div class="detail-field"><label>'+label+'</label><span>'+(val||'—')+'</span></div>';
+}
+
+function _toggleClienteCard(key) {
+  var wrap = document.getElementById('cli-body-'+key);
+  var icon = document.getElementById('icon-cli-'+key);
+  if (!wrap) return;
+  var isOpen = wrap.classList.contains('open');
+  document.querySelectorAll('.agenda-sessoes-wrap.open').forEach(function(el){ el.classList.remove('open'); });
+  document.querySelectorAll('.expand-icon.open').forEach(function(el){ el.classList.remove('open'); });
+  if (!isOpen) {
+    wrap.classList.add('open');
+    if (icon) icon.classList.add('open');
+  }
 }
