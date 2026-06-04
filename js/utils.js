@@ -190,6 +190,7 @@ function showSection(id) {
   if (id === 'financeiro') renderFinanceiro && renderFinanceiro();
   if (id === 'mensagens') renderMensagens();
   if (id === 'modelos') renderModelosAnamnese();
+  if (id === 'fichas-custom') renderFichasCustom();
 }
 
 function renderAll() {
@@ -231,4 +232,5 @@ function _atualizarBadges() {
   // Badge acomp
   var bAc = document.getElementById('badgeAcomp'); if(bAc) bAc.textContent = db.agenda.length;
   var bMod = document.getElementById('badgeModelos'); if(bMod) bMod.textContent = (_modelosAnamnese||[]).filter(function(m){return m.ativo;}).length;
+  var bFC = document.getElementById('badgeFichasCustom'); if(bFC) bFC.textContent = db.anamneses.filter(function(a){ return a.modelo_respostas && Object.keys(a.modelo_respostas).length > 0; }).length;
 }
