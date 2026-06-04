@@ -191,7 +191,7 @@ function showSection(id) {
   if (id === 'mensagens') renderMensagens();
   if (id === 'modelos') renderModelosAnamnese();
   if (id === 'fichas-custom') renderFichasCustom();
-  if (id === 'acomp-custom') { _popularFiltroModelos(); renderAcompFichasCustom(); }
+  if (id === 'aniversariantes') renderAniversariantesAba();
 }
 
 function renderAll() {
@@ -207,10 +207,6 @@ function renderAll() {
   if (typeof renderDespAdm === 'function') renderDespAdm();
   if (typeof renderDespExtra === 'function') renderDespExtra();
   if (typeof renderFinanceiro === 'function') renderFinanceiro();
-  if (typeof renderAcompFichasCustom === 'function') {
-    var _secAcomp = document.getElementById('sec-acomp-custom');
-    if (_secAcomp && _secAcomp.classList.contains('active')) { _popularFiltroModelos(); renderAcompFichasCustom(); }
-  }
   _atualizarBadges();
 }
 
@@ -238,4 +234,126 @@ function _atualizarBadges() {
   var bAc = document.getElementById('badgeAcomp'); if(bAc) bAc.textContent = db.agenda.length;
   var bMod = document.getElementById('badgeModelos'); if(bMod) bMod.textContent = (_modelosAnamnese||[]).filter(function(m){return m.ativo;}).length;
   var bFC = document.getElementById('badgeFichasCustom'); if(bFC) bFC.textContent = db.anamneses.filter(function(a){ return a.modelo_respostas && Object.keys(a.modelo_respostas).length > 0; }).length;
+  // Badge aniversariantes do mês atual
+  var _mesAtual = new Date().getMonth() + 1;
+  var _bAniv = document.getElementById('badgeAniv');
+  if (_bAniv) _bAniv.textContent = db.anamneses.filter(function(a){
+    if (!a.pessoais || !a.pessoais.dataNasc) return false;
+    var p = a.pessoais.dataNasc.split('-'); return p.length >= 2 && parseInt(p[1]) === _mesAtual;
+  }).length;
+}
+
+// =====================================================================
+// ABA ANIVERSARIANTES
+// =====================================================================
+
+var _anivMesAtual = new Date().getMonth() + 1;
+var _anivAnoAtual = new Date().getFullYear();
+
+var _MESES_ANIV = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
+                   'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+function anivMesAnterior() {
+  _anivMesAtual--;
+  if (_anivMesAtual < 1) { _anivMesAtual = 12; _anivAnoAtual--; }
+  renderAniversariantesAba();
+}
+function anivMesProximo() {
+  _anivMesAtual++;
+  if (_anivMesAtual > 12) { _anivMesAtual = 1; _anivAnoAtual++; }
+  renderAniversariantesAba();
+}
+function anivMesAtual() {
+  var agora = new Date();
+  _anivMesAtual = agora.getMonth() + 1;
+  _anivAnoAtual = agora.getFullYear();
+  renderAniversariantesAba();
+}
+
+function renderAniversariantesAba() {
+  var el = document.getElementById('anivListaCompleta');
+  var titulo = document.getElementById('anivMesTitulo');
+  var contador = document.getElementById('anivContador');
+  if (!el) return;
+
+  if (titulo) titulo.textContent = _MESES_ANIV[_anivMesAtual - 1] + ' ' + _anivAnoAtual;
+
+  var hoje = new Date();
+  var mesHoje = hoje.getMonth() + 1;
+  var diaHoje = hoje.getDate();
+  var anoHoje = hoje.getFullYear();
+
+  // Coletar todos do mês selecionado
+  var lista = [];
+  db.anamneses.forEach(function(a) {
+    if (!a.pessoais || !a.pessoais.dataNasc) return;
+    var partes = a.pessoais.dataNasc.split('-');
+    if (partes.length < 3) return;
+    var anoNasc = parseInt(partes[0]);
+    var mes = parseInt(partes[1]);
+    var dia = parseInt(partes[2]);
+    if (mes !== _anivMesAtual) return;
+
+    var idade = _anivAnoAtual - anoNasc;
+    var isHoje = (mes === mesHoje && dia === diaHoje && _anivAnoAtual === anoHoje);
+    var jaPAssou = (_anivAnoAtual === anoHoje && mes === mesHoje && dia < diaHoje);
+    var tel = a.pessoais.telefone ? a.pessoais.telefone.replace(/\D/g,'') : '';
+
+    lista.push({ nome: a.pessoais.nome || '—', dia: dia, mes: mes, idade: idade,
+                 tel: tel, isHoje: isHoje, jaPAssou: jaPAssou });
+  });
+
+  lista.sort(function(a, b) { return a.dia - b.dia; });
+
+  if (contador) contador.textContent = lista.length + (lista.length === 1 ? ' aniversariante' : ' aniversariantes');
+
+  if (!lista.length) {
+    el.innerHTML = '<div class="empty-state" style="padding:3rem"><div class="empty-icon">🎂</div><p>Nenhum aniversariante em ' + _MESES_ANIV[_anivMesAtual-1] + '</p></div>';
+    return;
+  }
+
+  var html = '<div style="display:flex;flex-direction:column;gap:0.5rem">';
+
+  lista.forEach(function(a) {
+    var msg = _getMensagem('aniversario').replace(/{nome}/g, a.nome.split(' ')[0]);
+    var waUrl = 'https://wa.me/' + (a.tel ? '55' + a.tel : '') + '?text=' + encodeURIComponent(msg);
+
+    var bgCard = 'background:white;border:1px solid var(--border)';
+    var labelStatus = '';
+
+    if (a.isHoje) {
+      bgCard = 'background:linear-gradient(135deg,#FFF8F9,#FFF0F5);border:1px solid #D4A0A8';
+      labelStatus = '<span style="background:#D4A0A8;color:white;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600">🎂 Hoje!</span>';
+    } else if (a.jaPAssou) {
+      bgCard = 'background:#FAFAFA;border:1px solid var(--border)';
+      labelStatus = '<span style="background:#F5F5F5;color:var(--text-light);padding:3px 10px;border-radius:20px;font-size:11px">✓ Passou</span>';
+    } else {
+      labelStatus = '<span style="background:#EDF4FF;color:#1565C0;padding:3px 10px;border-radius:20px;font-size:11px">Dia ' + String(a.dia).padStart(2,'0') + '</span>';
+    }
+
+    html += '<div style="' + bgCard + ';border-radius:12px;padding:0.9rem 1.25rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.75rem">'
+      + '<div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">'
+      + '<div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#D4A0A8,#B07880);display:flex;align-items:center;justify-content:center;color:white;font-family:Cormorant Garamond,serif;font-size:18px;flex-shrink:0">'
+      + a.nome.charAt(0).toUpperCase()
+      + '</div>'
+      + '<div>'
+      + '<div style="font-weight:600;font-size:14px;color:var(--text-dark)">' + a.nome + '</div>'
+      + '<div style="font-size:12px;color:var(--text-light);margin-top:2px">'
+      + String(a.dia).padStart(2,'0') + '/' + String(a.mes).padStart(2,'0')
+      + (a.idade > 0 ? ' &nbsp;·&nbsp; ' + a.idade + ' anos' : '')
+      + (a.tel ? ' &nbsp;·&nbsp; ' + a.tel : '')
+      + '</div>'
+      + '</div>'
+      + labelStatus
+      + '</div>'
+      + '<div style="display:flex;gap:0.5rem;align-items:center">'
+      + (a.tel
+        ? '<button onclick="window.open(\'' + waUrl.replace(/'/g,"\\'") + '\',\'_blank\')" style="background:#E7F7EE;border:1px solid #7DB87D;color:#276749;border-radius:8px;padding:6px 14px;font-size:12px;cursor:pointer;white-space:nowrap">💬 Parabenizar</button>'
+        : '<span style="font-size:11px;color:var(--text-light)">Sem telefone</span>')
+      + '</div>'
+      + '</div>';
+  });
+
+  html += '</div>';
+  el.innerHTML = html;
 }
