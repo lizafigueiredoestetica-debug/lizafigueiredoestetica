@@ -131,7 +131,7 @@ async function _salvarMaterial(m) {
   return _supaUpsert('materiais', { id: m.id, nome: m.nome, fornecedor: m.fornecedor, custo: m.custo, qtd: m.qtd, min: m.min, unidade: m.unidade, atualizado_em: new Date().toISOString() });
 }
 async function _salvarAnamnese(a) {
-  return _supaUpsert('anamneses', { id: a.id, data_cadastro: a.dataCadastro, pessoais: a.pessoais, saude: a.saude, hormonal: a.hormonal, habitos: a.habitos, av_fisica: a.avFisica, av_corporal: a.avCorporal, incomoda: a.incomoda, assinatura: a.assinatura, data_assinatura: a.dataAssinatura, atualizado_em: new Date().toISOString() });
+  return _supaUpsert('anamneses', { id: a.id, data_cadastro: a.dataCadastro, pessoais: a.pessoais, saude: a.saude, hormonal: a.hormonal, habitos: a.habitos, av_fisica: a.avFisica, av_corporal: a.avCorporal, incomoda: a.incomoda, assinatura: a.assinatura, data_assinatura: a.dataAssinatura, modelo_id: a.modelo_id || null, modelo_nome: a.modelo_nome || null, modelo_respostas: a.modelo_respostas || null, atualizado_em: new Date().toISOString() });
 }
 async function _salvarAtendimento(a) {
   return _supaUpsert('atendimentos', { id: a.id, data: a.data, cliente: a.cliente, valor: a.valor, pagto: a.pagto, servico_ids: a.servicoIds || [], materiais: a.materiais || [], obs: a.obs, atualizado_em: new Date().toISOString() });
@@ -196,6 +196,7 @@ async function _carregarDaNuvem() {
       return {
         id: a.id, dataCadastro: a.data_cadastro,
         pessoais: a.pessoais || {}, saude: a.saude || {},
+        modelo_id: a.modelo_id || null, modelo_nome: a.modelo_nome || null, modelo_respostas: a.modelo_respostas || null,
         hormonal: a.hormonal || {}, habitos: a.habitos || {},
         avFisica: a.av_fisica || {}, avCorporal: a.av_corporal || {},
         incomoda: a.incomoda, assinatura: a.assinatura, dataAssinatura: a.data_assinatura
@@ -302,7 +303,7 @@ async function _migrarParaNovaArquitetura() {
     }
     for (var i = 0; i < db.anamneses.length; i++) {
       var a = db.anamneses[i];
-      await _supaUpsert('anamneses', { id: a.id, data_cadastro: a.dataCadastro, pessoais: a.pessoais, saude: a.saude, hormonal: a.hormonal, habitos: a.habitos, av_fisica: a.avFisica, av_corporal: a.avCorporal, incomoda: a.incomoda, assinatura: a.assinatura, data_assinatura: a.dataAssinatura, atualizado_em: new Date().toISOString() });
+      await _supaUpsert('anamneses', { id: a.id, data_cadastro: a.dataCadastro, pessoais: a.pessoais, saude: a.saude, hormonal: a.hormonal, habitos: a.habitos, av_fisica: a.avFisica, av_corporal: a.avCorporal, incomoda: a.incomoda, assinatura: a.assinatura, data_assinatura: a.dataAssinatura, modelo_id: a.modelo_id || null, modelo_nome: a.modelo_nome || null, modelo_respostas: a.modelo_respostas || null, atualizado_em: new Date().toISOString() });
     }
     for (var i = 0; i < db.atendimentos.length; i++) {
       var at = db.atendimentos[i];
@@ -387,7 +388,7 @@ async function _pollingNovos() {
     if (novasAnam && novasAnam.length) {
       novasAnam.forEach(function(a) {
         var idx = db.anamneses.findIndex(function(x){ return x.id === a.id; });
-        var obj = { id: a.id, dataCadastro: a.data_cadastro, pessoais: a.pessoais || {}, saude: a.saude || {}, hormonal: a.hormonal || {}, habitos: a.habitos || {}, avFisica: a.av_fisica || {}, avCorporal: a.av_corporal || {}, incomoda: a.incomoda, assinatura: a.assinatura, dataAssinatura: a.data_assinatura };
+        var obj = { id: a.id, dataCadastro: a.data_cadastro, pessoais: a.pessoais || {}, saude: a.saude || {}, hormonal: a.hormonal || {}, habitos: a.habitos || {}, avFisica: a.av_fisica || {}, avCorporal: a.av_corporal || {}, incomoda: a.incomoda, assinatura: a.assinatura, dataAssinatura: a.data_assinatura, modelo_id: a.modelo_id || null, modelo_nome: a.modelo_nome || null, modelo_respostas: a.modelo_respostas || null };
         if (idx >= 0) db.anamneses[idx] = obj; else db.anamneses.push(obj);
       });
       houveMudanca = true;
