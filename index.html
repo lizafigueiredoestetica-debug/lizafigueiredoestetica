@@ -3,574 +3,1087 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ficha de Anamnese · Liza Figueiredo Estética</title>
-<style>
-  * { margin:0; padding:0; box-sizing:border-box; }
-  body { font-family: 'Segoe UI', Arial, sans-serif; background:#FDF7F9; color:#2C1A22; font-size:14px; }
-  .header { background:linear-gradient(135deg,#3D1A28,#6B3550); padding:2rem; text-align:center; color:white; }
-  .header h1 { font-size:24px; letter-spacing:3px; margin-bottom:4px; font-weight:300; }
-  .header h2 { font-size:12px; letter-spacing:4px; color:#F0C4D0; text-transform:uppercase; font-weight:400; }
-  .container { max-width:720px; margin:2rem auto; padding:0 1rem 4rem; }
-  .aviso { background:#FFF8E1; border-left:4px solid #C4708A; padding:1rem 1.2rem; border-radius:6px; margin-bottom:2rem; font-size:13px; color:#5D4037; line-height:1.6; }
-  .section-title { background:linear-gradient(135deg,#3D1A28,#6B3550); color:#F0C4D0; padding:0.6rem 1.2rem; border-radius:6px; font-size:11px; letter-spacing:3px; text-transform:uppercase; font-weight:600; margin:2rem 0 1rem; text-align:center; }
-  .form-group { margin-bottom:1rem; }
-  .form-group label { display:block; font-size:11px; font-weight:600; color:#6B3550; letter-spacing:1px; text-transform:uppercase; margin-bottom:4px; }
-  .form-group input[type=text],
-  .form-group input[type=date],
-  .form-group input[type=number],
-  .form-group input[type=tel],
-  .form-group select,
-  .form-group textarea {
-    width:100%; padding:0.6rem 0.8rem; border:1px solid #F0D8E0; border-radius:8px;
-    font-family:inherit; font-size:14px; background:white; outline:none; color:#2C1A22;
-  }
-  .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color:#C4708A; }
-  .form-row { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
-  @media(max-width:500px){ .form-row{ grid-template-columns:1fr; } }
-  .question-block { background:white; border:1px solid #F0D8E0; border-radius:10px; padding:1rem 1.2rem; margin-bottom:0.75rem; }
-  .question-label { font-size:13px; font-weight:500; color:#2C1A22; margin-bottom:0.6rem; line-height:1.5; }
-  .radio-group { display:flex; flex-wrap:wrap; gap:1rem; align-items:center; }
-  .radio-group label { font-size:13px; color:#2C1A22; display:flex; align-items:center; gap:5px; cursor:pointer; }
-  .radio-group input[type=radio] { accent-color:#C4708A; width:16px; height:16px; cursor:pointer; }
-  .check-group { display:flex; flex-wrap:wrap; gap:0.75rem; }
-  .check-group label { font-size:13px; color:#2C1A22; display:flex; align-items:center; gap:5px; cursor:pointer; }
-  .check-group input[type=checkbox] { accent-color:#C4708A; width:16px; height:16px; cursor:pointer; }
-  .qual-row { display:flex; align-items:center; gap:0.5rem; margin-top:0.6rem; }
-  .qual-row span { font-size:12px; color:#888; white-space:nowrap; }
-  .qual-row input { flex:1; padding:0.4rem 0.7rem; border:none; border-bottom:1px solid #C4708A; font-family:inherit; font-size:13px; outline:none; background:transparent; color:#2C1A22; }
-  .medidas-grid { display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; margin-top:0.75rem; }
-  @media(max-width:500px){ .medidas-grid{ grid-template-columns:1fr; } }
-  .medida-item { display:flex; flex-direction:column; gap:4px; }
-  .medida-item label { font-size:11px; color:#888; }
-  .medida-item input { padding:0.4rem 0.6rem; border:1px solid #F0D8E0; border-radius:6px; font-family:inherit; font-size:13px; outline:none; }
-  .medida-item input:focus { border-color:#C4708A; }
-  .btn-enviar { width:100%; padding:1rem; background:linear-gradient(135deg,#C4708A,#9E4A65); color:white; border:none; border-radius:10px; font-size:16px; font-weight:600; letter-spacing:1px; cursor:pointer; margin-top:2rem; font-family:inherit; transition:opacity 0.2s; }
-  .btn-enviar:hover { opacity:0.9; }
-  .btn-enviar:disabled { opacity:0.6; cursor:not-allowed; }
-  .sucesso { display:none; background:#E8F5E9; border:2px solid #4CAF50; border-radius:12px; padding:2rem; text-align:center; margin-top:2rem; }
-  .sucesso h2 { color:#2E7D32; font-size:22px; margin-bottom:0.5rem; }
-  .sucesso p { color:#388E3C; font-size:14px; line-height:1.6; }
-  .toast { position:fixed; bottom:2rem; right:2rem; background:#3D1A28; color:#F0C4D0; padding:0.8rem 1.5rem; border-radius:8px; font-size:13px; z-index:9999; opacity:0; transform:translateY(20px); transition:all 0.3s; pointer-events:none; max-width:280px; text-align:center; }
-  .toast.show { opacity:1; transform:translateY(0); }
-  .campo-obrigatorio { color:#C4708A; }
-</style>
+<title>Liza Figueiredo · Estética</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+<!-- CSS Modular -->
+<link rel="stylesheet" href="css/global.css">
+<link rel="stylesheet" href="css/sidebar.css">
+<link rel="stylesheet" href="css/dashboard.css">
+<link rel="stylesheet" href="css/components.css">
+
+<!-- Biblioteca PDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
 
-<div class="header">
-  <h1>Liza Figueiredo</h1>
-  <h2>Estética & Beleza · Ficha de Anamnese</h2>
+<!-- APP LAYOUT -->
+<div class="app-layout">
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="appSidebar">
+  <div class="sidebar-brand">
+    <div class="sidebar-logo">LF</div>
+    <div class="sidebar-brand-text">
+      <div class="sidebar-title">Liza <span>Figueiredo</span></div>
+      <div class="sidebar-sub">Estética & Beleza</div>
+    </div>
+    <button class="sidebar-toggle" onclick="toggleSidebar()" title="Minimizar menu">☰</button>
+  </div>
+
+  <nav class="sidebar-nav" id="sidebarNav">
+    <div class="sidebar-label">Principal</div>
+    <button class="nav-tab active" data-perm="dashboard" data-label="Dashboard" onclick="fecharDrawer();showSection('dashboard')">📊 <span>Dashboard</span></button>
+    <button class="nav-tab" data-perm="agenda" data-label="Agenda" onclick="fecharDrawer();showSection('agenda')">📅 <span>Agenda</span> <span class="badge" id="badgeAgenda">0</span></button>
+    <button class="nav-tab" data-perm="atendimentos" data-label="Atendimentos" onclick="fecharDrawer();showSection('atendimentos')">✨ <span>Atendimentos</span> <span class="badge" id="badgeAtend">0</span></button>
+
+    <div class="sidebar-label admin-only">Clínica</div>
+    <button class="nav-tab" data-perm="anamnese" data-label="Anamnese" onclick="fecharDrawer();showSection('anamnese')">📋 <span>Anamnese</span> <span class="badge" id="badgeAnamnese">0</span></button>
+    <button class="nav-tab" data-perm="acomp" data-label="Acompanhamento" onclick="fecharDrawer();showSection('acomp')">📊 <span>Acompanhamento</span> <span class="badge" id="badgeAcomp">0</span></button>
+
+    <div class="sidebar-label admin-only">Gestão</div>
+    <button class="nav-tab admin-only" data-perm="servicos" data-label="Serviços" onclick="fecharDrawer();showSection('servicos')">💆 <span>Serviços</span> <span class="badge" id="badgeServ">0</span></button>
+    <button class="nav-tab admin-only" data-perm="materiais" data-label="Materiais" onclick="fecharDrawer();showSection('materiais')">🧴 <span>Materiais</span> <span class="badge" id="badgeMat">0</span></button>
+    <button class="nav-tab admin-only" data-perm="despAdm" data-label="Desp. Adm." onclick="fecharDrawer();showSection('despAdm')">🏢 <span>Desp. Adm.</span> <span class="badge" id="badgeDespAdm">0</span></button>
+    <button class="nav-tab admin-only" data-perm="despExtra" data-label="Despesas" onclick="fecharDrawer();showSection('despExtra')">💸 <span>Despesas</span> <span class="badge" id="badgeDespExtra">0</span></button>
+    <button class="nav-tab admin-only" data-perm="categorias" data-label="Categorias" onclick="fecharDrawer();showSection('categorias')">🏷️ <span>Categorias</span> <span class="badge" id="badgeCat">0</span></button>
+  </nav>
+
+        <button class="nav-tab" onclick="showSection('modelos')" data-label="Modelos Ficha">
+          <span>📋</span><span>Modelos Ficha</span>
+          <span class="badge" id="badgeModelos">0</span>
+        </button>
+        <button class="nav-tab" onclick="showSection('mensagens')" data-label="WhatsApp">
+          <span>💬</span><span>WhatsApp</span>
+        </button>
+  <div class="sidebar-footer">
+    <div class="sidebar-user">
+      <div class="sidebar-avatar" id="sidebarAvatarLetter">L</div>
+      <span class="sidebar-username" id="sidebarUserName">Usuário</span>
+      <button class="sidebar-logout" onclick="fazerLogout()" title="Sair">⬚</button>
+    </div>
+  </div>
+</aside>
+
+<!-- OVERLAY MOBILE -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="fecharDrawer()"></div>
+
+<!-- CONTENT -->
+<div class="app-content">
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-left" style="display:flex;align-items:center;gap:0.5rem">
+    <button class="btn-hamburger" id="btnHamburger" onclick="toggleDrawer()" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="topbar-save">💾 <span id="lastSave">Nenhum backup ainda</span></div>
+  </div>
+  <div style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center">
+    <div class="topbar-date" id="headerDate"></div>
+    <button id="btnSincronizar" class="btn btn-secondary btn-sm" onclick="sincronizarAgora()" title="Sincronizar dados agora" style="background:white;border-color:#8A9A5A;color:#5A6A3A">🔄</button>
+    <button class="btn btn-secondary btn-sm" onclick="abrirModalRelatorio()" title="Relatório Mensal PDF" style="background:white;border-color:#8A9A5A;color:#5A6A3A">📄 Relatório</button>
+
+    <button class="btn btn-secondary btn-sm" onclick="configurarSenhaAssinatura()" title="Senha assinatura">🔑</button>
+    <button class="btn btn-secondary btn-sm admin-only" data-perm="usuarios" onclick="gerenciarUsuarios()">👥 Usuários</button>
+    <button class="btn btn-secondary btn-sm admin-only" onclick="exportData()" title="Fazer backup dos dados" style="background:white;border-color:#8A9A5A;color:#5A6A3A">⬇️ Backup</button>
+    <label class="btn btn-secondary btn-sm admin-only" title="Restaurar backup" style="background:white;border-color:#B07880;color:#B07880;cursor:pointer">⬆️ Restaurar<input type="file" accept=".json" style="display:none" onchange="importData(event)"></label>
+    <button class="btn btn-sm" onclick="toggleLog()" style="background:white;color:#6B5B52;border:1px solid var(--border);">📋</button>
+  </div>
 </div>
 
-<div class="container">
-
-  <div class="aviso">
-    📋 <strong>Olá!</strong> Preencha os campos abaixo com atenção. Suas informações são confidenciais e essenciais para um atendimento seguro e personalizado.<br><br>
-    Ao clicar em <strong>"Enviar Ficha"</strong>, seus dados serão enviados diretamente para a Liza. <strong>Não é necessário copiar nem enviar nada pelo WhatsApp!</strong> ✨
+<!-- MAIN -->
+<div id="loginScreen" style="display:none;position:fixed;inset:0;z-index:99999;background:#111113;align-items:center;justify-content:center;flex-direction:column">
+  <!-- Logo -->
+  <div style="margin-bottom:2.5rem;text-align:center">
+    <svg viewBox="0 0 200 200" width="110" height="110" xmlns="http://www.w3.org/2000/svg">
+      <rect x="40" y="40" width="120" height="120" fill="none" stroke="#8A9A5A" stroke-width="1.5"/>
+      <text x="100" y="130" font-family="Cormorant Garamond,Georgia,serif" font-size="110" fill="#8A9A5A" text-anchor="middle" font-style="italic" opacity="0.9">lz</text>
+    </svg>
+    <div style="color:#8A9A5A;font-family:'Cormorant Garamond',Georgia,serif;font-size:22px;letter-spacing:3px;margin-top:0.5rem">Lizandra Figueiredo</div>
+    <div style="color:#8B5060;font-family:Jost,sans-serif;font-size:11px;letter-spacing:4px;text-transform:uppercase;margin-top:4px">Estética</div>
   </div>
 
-  <!-- INFORMAÇÕES PESSOAIS -->
-  <div class="section-title">Informações Pessoais</div>
+  <!-- Dois painéis lado a lado -->
+  <div style="display:flex;gap:1.5rem;width:100%;max-width:680px;padding:0 1rem;box-sizing:border-box;flex-wrap:wrap;justify-content:center">
 
-  <div class="form-group">
-    <label>Nome completo <span class="campo-obrigatorio">*</span></label>
-    <input type="text" id="nome" placeholder="Seu nome completo">
-  </div>
-  <div class="form-group">
-    <label>CPF</label>
-    <input type="tel" id="cpf" placeholder="000.000.000-00" maxlength="14" oninput="mascaraCpf(this)">
-  </div>
-  <div class="form-row">
-    <div class="form-group">
-      <label>Idade</label>
-      <input type="number" id="idade" placeholder="Ex: 32" min="1" max="120">
+    <!-- Painel Login -->
+    <div style="flex:1;min-width:280px;max-width:300px;background:rgba(255,255,255,0.05);border:1px solid rgba(196,168,130,0.2);border-radius:16px;padding:2rem;backdrop-filter:blur(10px)">
+      <div style="font-size:10px;letter-spacing:3px;color:#8A9A5A;text-transform:uppercase;text-align:center;margin-bottom:1.5rem">Acesso ao Sistema</div>
+      <div style="margin-bottom:1rem">
+        <label style="font-size:10px;letter-spacing:2px;color:#8B5060;text-transform:uppercase;display:block;margin-bottom:6px">Usuário</label>
+        <input type="text" id="loginUser" placeholder="Digite seu usuário"
+          style="width:100%;padding:0.75rem 1rem;background:rgba(255,255,255,0.08);border:1px solid rgba(196,168,130,0.3);border-radius:8px;color:#F0E8DC;font-family:Jost,sans-serif;font-size:14px;outline:none;box-sizing:border-box"
+          onkeydown="if(event.key==='Enter')document.getElementById('loginPass').focus()">
+      </div>
+      <div style="margin-bottom:1.5rem">
+        <label style="font-size:10px;letter-spacing:2px;color:#8B5060;text-transform:uppercase;display:block;margin-bottom:6px">Senha</label>
+        <input type="password" id="loginPass" placeholder="Digite sua senha"
+          style="width:100%;padding:0.75rem 1rem;background:rgba(255,255,255,0.08);border:1px solid rgba(196,168,130,0.3);border-radius:8px;color:#F0E8DC;font-family:Jost,sans-serif;font-size:14px;outline:none;box-sizing:border-box"
+          onkeydown="if(event.key==='Enter')fazerLogin()">
+      </div>
+      <button onclick="fazerLogin()" ontouchend="event.preventDefault();fazerLogin()"
+        style="width:100%;padding:0.85rem;background:linear-gradient(135deg,#1C1C1E,#2C2C2E);border:none;border-radius:8px;color:#FAF0F2;font-family:Jost,sans-serif;font-size:13px;letter-spacing:3px;cursor:pointer;text-transform:uppercase">
+        Entrar
+      </button>
+      <div id="loginErro" style="color:#F48080;font-size:12px;text-align:center;margin-top:0.75rem;display:none">Usuário ou senha incorretos.</div>
     </div>
-    <div class="form-group">
-      <label>Gênero</label>
-      <select id="genero">
-        <option value="">Selecione...</option>
-        <option>Feminino</option>
-        <option>Masculino</option>
-        <option>Outro</option>
-      </select>
+
+    <!-- Divisor -->
+    <div style="display:flex;align-items:center;justify-content:center;color:rgba(196,168,130,0.3);font-size:20px;padding:0 0.5rem">·</div>
+
+    <!-- Painel Check-in -->
+    <div style="flex:1;min-width:280px;max-width:300px;background:rgba(255,255,255,0.05);border:1px solid rgba(196,168,130,0.2);border-radius:16px;padding:2rem;backdrop-filter:blur(10px)">
+      <div style="font-size:10px;letter-spacing:3px;color:#8A9A5A;text-transform:uppercase;text-align:center;margin-bottom:1.5rem">Check-in da Cliente</div>
+      <div style="margin-bottom:1.5rem">
+        <label style="font-size:10px;letter-spacing:2px;color:#8B5060;text-transform:uppercase;display:block;margin-bottom:6px">CPF</label>
+        <input type="tel" inputmode="numeric" id="checkinCpf" placeholder="000.000.000-00" maxlength="14"
+          style="width:100%;padding:0.75rem 1rem;background:rgba(255,255,255,0.08);border:1px solid rgba(196,168,130,0.3);border-radius:8px;color:#F0E8DC;font-family:Jost,sans-serif;font-size:18px;outline:none;box-sizing:border-box;text-align:center;letter-spacing:3px"
+          oninput="mascaraCpf(this);if(this.value.replace(/\D/g,'').length>=11){this.blur();fazerCheckin();}"
+          onkeydown="if(event.key==='Enter'){this.blur();fazerCheckin();}">
+      </div>
+      <button onclick="fazerCheckin()" ontouchend="event.preventDefault();fazerCheckin()"
+        style="width:100%;padding:0.85rem;background:linear-gradient(135deg,#1A3D28,#355B45);border:none;border-radius:8px;color:#C4F0D0;font-family:Jost,sans-serif;font-size:13px;letter-spacing:3px;cursor:pointer;text-transform:uppercase">
+        Check-in
+      </button>
+      <div id="checkinMsg" style="font-size:13px;text-align:center;margin-top:0.75rem;display:none;line-height:1.5"></div>
     </div>
+
   </div>
-  <div class="form-group">
-    <label>Data de nascimento</label>
-    <input type="date" id="dataNasc">
-  </div>
-  <div class="form-group">
-    <label>Telefone (WhatsApp) <span class="campo-obrigatorio">*</span></label>
-    <input type="tel" id="telefone" placeholder="(xx) xxxxx-xxxx" oninput="mascaraTel(this)">
-  </div>
-  <div class="form-row">
-    <div class="form-group">
-      <label>Tem filhos?</label>
-      <select id="filhos">
-        <option value="">-</option>
-        <option value="sim">Sim</option>
-        <option value="não">Não</option>
-      </select>
-    </div>
-    <div class="form-group">
-      <label>Data (último parto)</label>
-      <input type="date" id="dataFilhos">
-    </div>
-  </div>
-
-  <!-- SEÇÕES FIXAS — ocultadas quando modelo customizado está ativo -->
-  <div id="secoes-fixas-wrap">
-  <!-- HISTÓRICO DE SAÚDE -->
-  <div class="section-title">Histórico de Saúde</div>
-
-  <div class="question-block">
-    <div class="question-label">• Possui alguma doença diagnosticada?</div>
-    <div class="radio-group">
-      <label><input type="radio" name="doenca" value="sim"> Sim</label>
-      <label><input type="radio" name="doenca" value="não"> Não</label>
-    </div>
-    <div class="qual-row"><span>Qual?</span><input type="text" id="doencaQual" placeholder="Descreva..."></div>
-  </div>
-
-  <div class="question-block">
-    <div class="question-label">• Usa medicação contínua?</div>
-    <div class="radio-group">
-      <label><input type="radio" name="medicacao" value="sim"> Sim</label>
-      <label><input type="radio" name="medicacao" value="não"> Não</label>
-    </div>
-    <div class="qual-row"><span>Qual?</span><input type="text" id="medicacaoQual" placeholder="Descreva..."></div>
-  </div>
-
-  <div class="question-block">
-    <div class="question-label">• Algum produto injetado no corpo?</div>
-    <div class="radio-group">
-      <label><input type="radio" name="injetado" value="sim"> Sim</label>
-      <label><input type="radio" name="injetado" value="não"> Não</label>
-    </div>
-    <div class="qual-row"><span>Qual?</span><input type="text" id="injetadoQual" placeholder="Descreva..."></div>
-  </div>
-
-  <div class="question-block">
-    <div class="question-label">• Já realizou alguma cirurgia?</div>
-    <div class="radio-group">
-      <label><input type="radio" name="cirurgia" value="sim"> Sim</label>
-      <label><input type="radio" name="cirurgia" value="não"> Não</label>
-    </div>
-    <div class="qual-row"><span>Qual / Quando?</span><input type="text" id="cirurgiaQual" placeholder="Descreva..."></div>
-  </div>
-
-  <div class="question-block">
-    <div class="question-label">• Tem alergia a algum produto ou substância?</div>
-    <div class="radio-group">
-      <label><input type="radio" name="alergia" value="sim"> Sim</label>
-      <label><input type="radio" name="alergia" value="não"> Não</label>
-    </div>
-    <div class="qual-row"><span>Qual?</span><input type="text" id="alergiaQual" placeholder="Descreva..."></div>
-  </div>
-
-  <div class="question-block">
-    <div class="question-label">• Possui marcapasso ou próteses metálicas?</div>
-    <div class="radio-group">
-      <label><input type="radio" name="marcapasso" value="sim"> Sim</label>
-      <label><input type="radio" name="marcapasso" value="não"> Não</label>
-    </div>
-  </div>
-
-  <div class="question-block">
-    <div class="question-label">• Tem problemas circulatórios (varizes, má circulação, linfedema...)?</div>
-    <div class="radio-group">
-      <label><input type="radio" name="circulatorio" value="sim"> Sim</label>
-      <label><input type="radio" name="circulatorio" value="não"> Não</label>
-    </div>
-  </div>
-
-  <div class="question-block">
-    <div class="question-label">• Tem hipertensão?</div>
-    <div class="radio-group">
-      <label><input type="radio" name="hipertensao" value="sim"> Sim</label>
-      <label><input type="radio" name="hipertensao" value="não"> Não</label>
-    </div>
-  </div>
-
-  <div class="question-block">
-    <div class="question-label">• Tem diabetes?</div>
-    <div class="radio-group">
-      <label><input type="radio" name="diabetes" value="sim"> Sim</label>
-      <label><input type="radio" name="diabetes" value="não"> Não</label>
-    </div>
-  </div>
-
-  <!-- HORMONAL -->
-  <div class="section-title">Parte Hormonal e Hormônios</div>
-
-  <div class="question-block">
-    <div class="question-label">• Ciclo menstrual:</div>
-    <div class="radio-group">
-      <label><input type="radio" name="ciclo" value="Regular"> Regular</label>
-      <label><input type="radio" name="ciclo" value="Irregular"> Irregular</label>
-      <label><input type="radio" name="ciclo" value="Menopausa"> Menopausa</label>
-    </div>
-  </div>
-
-  <div class="question-block">
-    <div class="question-label">• Está grávida ou amamentando?</div>
-    <div class="radio-group">
-      <label><input type="radio" name="gravida" value="sim"> Sim</label>
-      <label><input type="radio" name="gravida" value="não"> Não</label>
-    </div>
-  </div>
-
-  <div class="question-block">
-    <div class="question-label">• Utiliza anticoncepcional?</div>
-    <div class="radio-group">
-      <label><input type="radio" name="anticoncepcional" value="sim"> Sim</label>
-      <label><input type="radio" name="anticoncepcional" value="não"> Não</label>
-    </div>
-    <div class="qual-row"><span>Qual?</span><input type="text" id="antiQual" placeholder="Descreva..."></div>
-  </div>
-
-  <!-- HÁBITOS -->
-  <div class="section-title">Hábitos de Vida</div>
-
-  <div class="question-block">
-    <div class="question-label">• Quantos litros de água bebe por dia?</div>
-    <input type="text" id="agua" placeholder="Ex: 2L" style="margin-top:0.5rem;width:100%;padding:0.5rem 0.8rem;border:1px solid #F0D8E0;border-radius:8px;font-family:inherit;font-size:13px;outline:none;">
-  </div>
-
-  <div class="question-block">
-    <div class="question-label">• Como é sua alimentação?</div>
-    <div class="radio-group" style="margin-top:0.4rem">
-      <label><input type="radio" name="alimentacao" value="saudavel"> Saudável</label>
-      <label><input type="radio" name="alimentacao" value="regular"> Regular</label>
-      <label><input type="radio" name="alimentacao" value="ruim"> Ruim</label>
-    </div>
-  </div>
-
-  <div class="question-block">
-    <div class="question-label">• Pratica atividade física?</div>
-    <div class="radio-group">
-      <label><input type="radio" name="atividade" value="sim"> Sim</label>
-      <label><input type="radio" name="atividade" value="não"> Não</label>
-    </div>
-    <div class="qual-row"><span>Qual?</span><input type="text" id="atividadeQual" placeholder="Ex: Musculação, caminhada..."></div>
-    <div class="qual-row"><span>Frequência:</span><input type="text" id="atividadeFreq" placeholder="Ex: 3x por semana"></div>
-  </div>
-
-  <div class="question-block">
-    <div class="question-label">• Consome bebida alcoólica?</div>
-    <div class="radio-group">
-      <label><input type="radio" name="alcool" value="sim"> Sim</label>
-      <label><input type="radio" name="alcool" value="não"> Não</label>
-    </div>
-  </div>
-
-  <div class="question-block">
-    <div class="question-label">• Fuma?</div>
-    <div class="radio-group">
-      <label><input type="radio" name="fuma" value="sim"> Sim</label>
-      <label><input type="radio" name="fuma" value="não"> Não</label>
-    </div>
-  </div>
-
-  <div class="question-block">
-    <div class="question-label">• Usa cinta modeladora?</div>
-    <div class="radio-group">
-      <label><input type="radio" name="cinta" value="sim"> Sim</label>
-      <label><input type="radio" name="cinta" value="não"> Não</label>
-    </div>
-  </div>
-
-  <!-- O QUE INCOMODA -->
-  <div class="section-title">Queixa Principal</div>
-  <div class="question-block">
-    <div class="question-label">• O que mais te incomoda no seu corpo? O que deseja melhorar?</div>
-    <textarea id="incomoda" rows="4" placeholder="Descreva aqui suas principais queixas e objetivos..." style="margin-top:0.5rem;width:100%;padding:0.6rem 0.8rem;border:1px solid #F0D8E0;border-radius:8px;font-family:inherit;font-size:13px;outline:none;resize:vertical;"></textarea>
-  </div>
-
-  </div><!-- /secoes-fixas-wrap -->
-
-  <!-- BOTÃO -->
-  <button class="btn-enviar" id="btnEnviar" onclick="enviarFicha()">✅ Enviar Ficha para a Liza</button>
-
-  <!-- TELA DE SUCESSO -->
-  <div class="sucesso" id="telaSuccesso">
-    <div style="font-size:48px;margin-bottom:1rem">🌸</div>
-    <h2>Ficha enviada com sucesso!</h2>
-    <p>Obrigada, <strong id="nomeSuccesso"></strong>!<br><br>
-    Sua ficha de anamnese foi recebida pela Liza e já está no sistema dela.<br>
-    Você não precisa fazer mais nada. Até breve! ✨</p>
-  </div>
-
 </div>
 
+<div class="main">
+
+  <!-- ===== DASHBOARD ===== -->
+  <section class="section active" id="sec-dashboard">
+    <div class="section-title">Dashboard</div>
+    <div class="section-sub">Visão Geral da Clínica</div>
+    <div class="divider"></div>
+
+    <!-- Period Filter -->
+    <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap">
+      <span style="font-size:11px;color:var(--text-light);letter-spacing:1px">PERÍODO:</span>
+      <div class="period-btns">
+        <button class="period-btn active" onclick="setPeriod('hoje',this)">Hoje</button>
+        <button class="period-btn" onclick="setPeriod('semana',this)">7 dias</button>
+        <button class="period-btn" onclick="setPeriod('mes',this)">Este mês</button>
+        <button class="period-btn" onclick="setPeriod('todos',this)">Tudo</button>
+      </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="summary-grid" id="dashCards"></div>
+
+    <!-- Aniversariantes -->
+  <div id="anivPanel" style="display:none"></div>
+
+  <!-- Linha 1: Sessões de Hoje + Check-ins de Hoje -->
+    <div class="dashboard-grid" style="margin-top:1.5rem">
+      <div class="panel">
+        <div class="panel-header"><div class="panel-title">📅 Sessões de Hoje</div></div>
+        <div id="sessoesHojePanel" style="padding:0">
+          <div class="empty-state" style="padding:2rem"><div class="empty-icon">📅</div><p>Nenhuma sessão hoje</p></div>
+        </div>
+      </div>
+      <div class="panel" id="dashCheckinPanel">
+        <div class="panel-header"><div class="panel-title">✅ Check-ins de Hoje</div></div>
+        <div id="dashCheckinBody" style="padding:0">
+          <div class="empty-state" style="padding:2rem"><div class="empty-icon">✅</div><p>Nenhum check-in hoje</p></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Linha 2: Últimos Atendimentos + Top 5 Serviços -->
+    <div class="dashboard-grid">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">📋 Últimos Atendimentos</div>
+        </div>
+        <div class="panel-body" id="ultimosAtend" style="padding:0">
+          <div class="empty-state" style="padding:2rem"><div class="empty-icon">📋</div><p>Nenhum atendimento</p></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">🏆 Top 5 Serviços</div>
+        </div>
+        <div class="panel-body" id="top5Panel">
+          <div class="empty-state"><div class="empty-icon">💆</div><p>Nenhum atendimento ainda</p></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Linha 0: Solicitações de Agendamento -->
+    <div class="panel" id="painelSolicitacoesWrap" style="margin-bottom:1.5rem">
+      <div class="panel-header" style="background:linear-gradient(135deg,#1C1C1E,#2C2C2E)">
+        <div class="panel-title" style="color:#FAF0F2">📲 Solicitações de Agendamento <span id="badgeSolicitacoes" style="background:rgba(212,160,168,0.3);color:#FAF0F2;border-radius:20px;padding:1px 8px;font-size:11px;margin-left:6px"></span></div>
+      </div>
+      <div id="painelSolicitacoes" style="padding:0">
+        <div class="empty-state" style="padding:2rem"><div class="empty-icon">📅</div><p>Nenhuma solicitação pendente</p></div>
+      </div>
+    </div>
+
+    <!-- Linha 3: Formas de Pagamento + Estoque Baixo -->
+    <div class="dashboard-grid">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">💳 Formas de Pagamento</div>
+        </div>
+        <div class="panel-body" id="pagtoPanel">
+          <div class="empty-state"><div class="empty-icon">💳</div><p>Nenhum atendimento ainda</p></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">⚠️ Estoque Baixo</div>
+        </div>
+        <div class="panel-body" id="estoqueAlert">
+          <div class="empty-state"><div class="empty-icon">✅</div><p>Estoque OK</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== ATENDIMENTOS ===== -->
+  <section class="section" id="sec-atendimentos">
+    <div class="section-title">Atendimentos</div>
+    <div class="section-sub">Registrar serviço prestado</div>
+    <div class="divider"></div>
+
+    <!-- Form -->
+    <div class="form-section">
+      <div class="form-header">
+        <div class="form-header-title">✨ Novo Atendimento</div>
+      </div>
+      <div class="form-body">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Data</label>
+            <input type="date" id="atend-data">
+          </div>
+          <div class="form-group">
+            <label>Cliente</label>
+            <input type="text" id="atend-cliente" placeholder="Nome da cliente">
+          </div>
+          <div class="form-group">
+            <label>Valor Cobrado (R$)</label>
+            <input type="number" id="atend-valor" placeholder="0,00" step="0.01" min="0">
+          </div>
+          <div class="form-group">
+            <label>Forma de Pagamento</label>
+            <select id="atend-pagto">
+              <option value="">Selecione...</option>
+              <option value="pix">PIX</option>
+              <option value="dinheiro">Dinheiro</option>
+              <option value="cartao_debito">Cartão Débito</option>
+              <option value="cartao_credito">Cartão Crédito</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:1rem">
+          <label>Serviços (clique para selecionar)</label>
+          <input type="text" class="chip-filter-input" id="filtServicos" placeholder="Filtrar serviços..." oninput="renderServiceChips()">
+          <div class="atend-service-select" id="serviceChips">
+            <div style="font-size:12px;color:var(--text-light);padding:0.5rem">Cadastre serviços primeiro</div>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:1rem">
+          <label>Materiais Utilizados (clique para selecionar)</label>
+          <input type="text" class="chip-filter-input" id="filtMateriais" placeholder="Filtrar materiais..." oninput="renderServiceChips()">
+          <div class="material-chip-wrap" id="materialChips">
+            <div style="font-size:12px;color:var(--text-light);padding:4px">Cadastre materiais primeiro</div>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:1rem">
+          <label>Observações</label>
+          <textarea id="atend-obs" rows="2" placeholder="Observações do atendimento..."></textarea>
+        </div>
+        <div style="display:flex;gap:0.75rem">
+          <button class="btn btn-primary" onclick="salvarAtendimento()">✓ Registrar Atendimento</button>
+          <button class="btn btn-secondary" onclick="limparFormAtend()">Limpar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filters-bar">
+      <input class="filter-input" type="text" placeholder="🔍 Buscar cliente..." id="filtAtendCliente" oninput="renderAtendimentos()">
+      <input class="filter-input" type="date" id="filtAtendDe" oninput="renderAtendimentos()">
+      <input class="filter-input" type="date" id="filtAtendAte" oninput="renderAtendimentos()">
+      <select class="filter-input" id="filtAtendPagto" onchange="renderAtendimentos()">
+        <option value="">Todos pagamentos</option>
+        <option value="pix">PIX</option>
+        <option value="dinheiro">Dinheiro</option>
+        <option value="cartao_debito">Cartão Débito</option>
+        <option value="cartao_credito">Cartão Crédito</option>
+      </select>
+    </div>
+
+    <!-- Table -->
+    <div class="panel">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th></th>
+              <th>Data</th>
+              <th>Cliente</th>
+              <th>Serviço</th>
+              <th>Pagamento</th>
+              <th>Valor</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="tbodyAtend"></tbody>
+        </table>
+        <div id="pagAtend"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== SERVIÇOS ===== -->
+  <section class="section" id="sec-servicos">
+    <div class="section-title">Serviços</div>
+    <div class="section-sub">Catálogo de serviços da clínica</div>
+    <div class="divider"></div>
+
+    <div class="form-section">
+      <div class="form-header">
+        <div class="form-header-title">💆 Novo Serviço</div>
+      </div>
+      <div class="form-body">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Nome do Serviço</label>
+            <input type="text" id="serv-nome" placeholder="Ex: Limpeza de Pele">
+          </div>
+          <div class="form-group">
+            <label>Categoria</label>
+            <select id="serv-cat">
+              <option value="">Selecione...</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Duração (min)</label>
+            <input type="number" id="serv-duracao" placeholder="60" min="1">
+          </div>
+          <div class="form-group">
+            <label>Preço (R$)</label>
+            <input type="number" id="serv-preco" placeholder="0,00" step="0.01" min="0">
+          </div>
+          <div class="form-group">
+            <label>Status</label>
+            <select id="serv-status">
+              <option value="ativo">Ativo</option>
+              <option value="inativo">Inativo</option>
+            </select>
+          </div>
+        </div>
+        <div style="display:flex;gap:0.75rem">
+          <button class="btn btn-primary" onclick="salvarServico()">✓ Salvar Serviço</button>
+          <button class="btn btn-secondary" onclick="limparFormServ()">Limpar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="filters-bar">
+      <input class="filter-input" type="text" placeholder="🔍 Buscar serviço..." id="filtServNome" oninput="renderServicos()">
+      <select class="filter-input" id="filtServCat" onchange="renderServicos()">
+        <option value="">Todas categorias</option>
+      </select>
+      <select class="filter-input" id="filtServStatus" onchange="renderServicos()">
+        <option value="">Todos status</option>
+        <option value="ativo">Ativo</option>
+        <option value="inativo">Inativo</option>
+      </select>
+    </div>
+
+    <div class="panel">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th></th><th>Serviço</th><th>Categoria</th><th>Duração</th><th>Preço</th><th>Status</th><th></th></tr>
+          </thead>
+          <tbody id="tbodyServ"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== MATERIAIS ===== -->
+  <section class="section" id="sec-materiais">
+    <div class="section-title">Materiais</div>
+    <div class="section-sub">Controle de estoque</div>
+    <div class="divider"></div>
+
+    <div class="form-section">
+      <div class="form-header">
+        <div class="form-header-title">🧴 Novo Material</div>
+      </div>
+      <div class="form-body">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Nome do Material</label>
+            <input type="text" id="mat-nome" placeholder="Ex: Creme Hidratante">
+          </div>
+          <div class="form-group">
+            <label>Fornecedor</label>
+            <input type="text" id="mat-fornecedor" placeholder="Nome do fornecedor">
+          </div>
+          <div class="form-group">
+            <label>Preço de Custo (R$)</label>
+            <input type="number" id="mat-custo" placeholder="0,00" step="0.01" min="0">
+          </div>
+          <div class="form-group">
+            <label>Quantidade em Estoque</label>
+            <input type="number" id="mat-qtd" placeholder="0" min="0">
+          </div>
+          <div class="form-group">
+            <label>Estoque Mínimo</label>
+            <input type="number" id="mat-min" placeholder="5" min="0">
+          </div>
+          <div class="form-group">
+            <label>Unidade</label>
+            <select id="mat-unidade">
+              <option>un</option><option>ml</option><option>g</option><option>L</option><option>kg</option><option>cx</option>
+            </select>
+          </div>
+        </div>
+        <div style="display:flex;gap:0.75rem">
+          <button class="btn btn-primary" onclick="salvarMaterial()">✓ Salvar Material</button>
+          <button class="btn btn-secondary" onclick="limparFormMat()">Limpar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="filters-bar">
+      <input class="filter-input" type="text" placeholder="🔍 Buscar material..." id="filtMatNome" oninput="renderMateriais()">
+    </div>
+
+    <div class="panel">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th></th><th>Material</th><th>Fornecedor</th><th>Custo Unit.</th><th>Estoque</th><th>Mín.</th><th>Situação</th><th></th></tr>
+          </thead>
+          <tbody id="tbodyMat"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== DESP ADM ===== -->
+  <section class="section" id="sec-despAdm">
+    <div class="section-title">Despesas Administrativas</div>
+    <div class="section-sub">Custos fixos e operacionais</div>
+    <div class="divider"></div>
+
+    <div class="form-section">
+      <div class="form-header">
+        <div class="form-header-title">🏢 Nova Despesa Administrativa</div>
+      </div>
+      <div class="form-body">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Descrição</label>
+            <input type="text" id="dadm-desc" placeholder="Ex: Aluguel, Luz, Internet...">
+          </div>
+          <div class="form-group">
+            <label>Categoria</label>
+            <select id="dadm-cat">
+              <option value="">Selecione...</option>
+              <option>Aluguel</option><option>Energia Elétrica</option><option>Água</option>
+              <option>Internet</option><option>Telefone</option><option>Salários</option>
+              <option>Contabilidade</option><option>Software</option><option>Outros</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Valor (R$)</label>
+            <input type="number" id="dadm-valor" placeholder="0,00" step="0.01" min="0">
+          </div>
+          <div class="form-group">
+            <label>Data</label>
+            <input type="date" id="dadm-data">
+          </div>
+          <div class="form-group">
+            <label>Recorrência</label>
+            <select id="dadm-recorrencia">
+              <option value="unica">Única</option>
+              <option value="mensal">Mensal</option>
+            </select>
+          </div>
+        </div>
+        <div style="display:flex;gap:0.75rem">
+          <button class="btn btn-primary" onclick="salvarDespAdm()">✓ Salvar Despesa</button>
+          <button class="btn btn-secondary" onclick="limparFormDespAdm()">Limpar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="filters-bar">
+      <input class="filter-input" type="text" placeholder="🔍 Buscar..." id="filtDespAdmDesc" oninput="renderDespAdm()">
+      <select class="filter-input" id="filtDespAdmCat" onchange="renderDespAdm()">
+        <option value="">Todas categorias</option>
+        <option>Aluguel</option><option>Energia Elétrica</option><option>Água</option>
+        <option>Internet</option><option>Telefone</option><option>Salários</option>
+        <option>Contabilidade</option><option>Software</option><option>Outros</option>
+      </select>
+      <input class="filter-input" type="date" id="filtDespAdmDe" oninput="renderDespAdm()" title="Data inicial">
+      <input class="filter-input" type="date" id="filtDespAdmAte" oninput="renderDespAdm()" title="Data final">
+    </div>
+    <div style="padding:0.6rem 1rem;background:var(--cream);border-radius:8px;margin-bottom:1rem;font-size:13px;display:flex;justify-content:space-between;align-items:center">
+      <span style="color:var(--text-light);font-size:11px;letter-spacing:1px;text-transform:uppercase">Total no período</span>
+      <strong id="totalDespAdm" style="color:var(--gold-dark);font-size:16px">R$ 0,00</strong>
+    </div>
+
+    <div class="panel">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th></th><th>Descrição</th><th>Categoria</th><th>Recorrência</th><th>Data</th><th>Valor</th><th></th></tr>
+          </thead>
+          <tbody id="tbodyDespAdm"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== DESP EXTRA ===== -->
+  <section class="section" id="sec-despExtra">
+    <div class="section-title">Despesas</div>
+    <div class="section-sub">Todas as despesas da clínica</div>
+    <div class="divider"></div>
+
+    <div class="form-section">
+      <div class="form-header">
+        <div class="form-header-title">💸 Nova Despesa</div>
+      </div>
+      <div class="form-body">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Descrição</label>
+            <input type="text" id="dext-desc" placeholder="Ex: Compra de equipamento...">
+          </div>
+          <div class="form-group">
+            <label>Valor (R$)</label>
+            <input type="number" id="dext-valor" placeholder="0,00" step="0.01" min="0">
+          </div>
+          <div class="form-group">
+            <label>Data</label>
+            <input type="date" id="dext-data">
+          </div>
+          <div class="form-group">
+            <label>Observação</label>
+            <input type="text" id="dext-obs" placeholder="Detalhe da despesa">
+          </div>
+        </div>
+        <div style="display:flex;gap:0.75rem">
+          <button class="btn btn-primary" onclick="salvarDespExtra()">✓ Salvar Despesa</button>
+          <button class="btn btn-secondary" onclick="limparFormDespExtra()">Limpar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="filters-bar">
+      <input class="filter-input" type="text" placeholder="🔍 Buscar..." id="filtDespExtraDesc" oninput="renderDespExtra()">
+      <input class="filter-input" type="date" id="filtDespExtraDe" oninput="renderDespExtra()">
+      <input class="filter-input" type="date" id="filtDespExtraAte" oninput="renderDespExtra()">
+    </div>
+    <div style="padding:0.6rem 1rem;background:var(--cream);border-radius:8px;margin-bottom:1rem;font-size:13px;display:flex;justify-content:space-between;align-items:center">
+      <span style="color:var(--text-light);font-size:11px;letter-spacing:1px;text-transform:uppercase">Total no período</span>
+      <strong id="totalDespExtra" style="color:var(--gold-dark);font-size:16px">R$ 0,00</strong>
+    </div>
+
+    <div class="panel">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th></th><th>Descrição</th><th>Data</th><th>Observação</th><th>Valor</th><th></th></tr>
+          </thead>
+          <tbody id="tbodyDespExtra"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== CATEGORIAS ===== -->
+  <section class="section" id="sec-categorias">
+    <div class="section-title">Categorias</div>
+    <div class="section-sub">Gerencie suas categorias de serviços</div>
+    <div class="divider"></div>
+
+    <div class="form-section">
+      <div class="form-header">
+        <div class="form-header-title">🏷️ Nova Categoria</div>
+      </div>
+      <div class="form-body">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Nome da Categoria</label>
+            <input type="text" id="cat-nome" placeholder="Ex: Bumbum, Barriga, Rosto...">
+          </div>
+        </div>
+        <div style="display:flex;gap:0.75rem">
+          <button class="btn btn-primary" onclick="salvarCategoria()">✓ Salvar Categoria</button>
+          <button class="btn btn-secondary" onclick="document.getElementById('cat-nome').value=''">Limpar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Categoria</th><th>Serviços Vinculados</th><th></th></tr>
+          </thead>
+          <tbody id="tbodyCat"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== AGENDA ===== -->
+  <section class="section" id="sec-agenda">
+    <div class="section-title">Agenda</div>
+    <div class="section-sub">Pacotes e agendamentos de clientes</div>
+    <div class="divider"></div>
+
+    <!-- Painel Check-ins de Hoje -->
+    <div id="checkinPainel" style="background:linear-gradient(135deg,#E3F2FD,#F0F8FF);border:1px solid #90CAF9;border-radius:12px;padding:1rem 1.25rem;margin-bottom:1.25rem">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;flex-wrap:wrap;gap:0.5rem">
+        <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap">
+          <div style="font-size:11px;letter-spacing:2px;color:#1565C0;text-transform:uppercase;font-weight:600">✅ Check-ins</div>
+          <input type="date" id="filtCheckinDe" oninput="renderAgenda()" title="De" style="padding:3px 8px;border:1px solid #90CAF9;border-radius:6px;font-size:12px;font-family:Jost,sans-serif;outline:none;background:white">
+          <input type="date" id="filtCheckinAte" oninput="renderAgenda()" title="Até" style="padding:3px 8px;border:1px solid #90CAF9;border-radius:6px;font-size:12px;font-family:Jost,sans-serif;outline:none;background:white">
+          <button onclick="limparFiltrosCheckin()" style="font-size:11px;padding:3px 10px;border:1px solid #90CAF9;border-radius:6px;background:white;color:#1565C0;cursor:pointer">✕ Limpar</button>
+        </div>
+        <div id="checkinCount" style="background:#1565C0;color:white;border-radius:20px;padding:2px 10px;font-size:11px"></div>
+      </div>
+      <table id="checkinTabela" style="width:100%;border-collapse:collapse">
+        <thead>
+          <tr style="border-bottom:1px solid #90CAF9">
+            <th style="font-size:10px;letter-spacing:1px;color:#1565C0;text-align:left;padding:4px 8px">DATA</th>
+            <th style="font-size:10px;letter-spacing:1px;color:#1565C0;text-align:left;padding:4px 8px">HORA</th>
+            <th style="font-size:10px;letter-spacing:1px;color:#1565C0;text-align:left;padding:4px 8px">CLIENTE</th>
+            <th style="font-size:10px;letter-spacing:1px;color:#1565C0;text-align:left;padding:4px 8px">SERVIÇO</th>
+            <th style="font-size:10px;letter-spacing:1px;color:#1565C0;text-align:left;padding:4px 8px">SESSÃO</th>
+          </tr>
+        </thead>
+        <tbody id="checkinTabelaBody"></tbody>
+      </table>
+    </div>
+
+    <!-- Form cadastro pacote -->
+    <div class="form-section">
+      <div class="form-header">
+        <div class="form-header-title">📅 Novo Agendamento / Pacote</div>
+      </div>
+      <div class="form-body">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Nome do Cliente</label>
+            <input type="text" id="ag-cliente" placeholder="Nome completo da cliente">
+          </div>
+          <div class="form-group">
+            <label>Qtd de Sessões</label>
+            <input type="number" id="ag-qtd" placeholder="Ex: 5 (opcional)" min="0" max="30" oninput="gerarCamposDatas()">
+          </div>
+          <div class="form-group">
+            <label>Telefone (WhatsApp)</label>
+            <input type="tel" id="ag-tel" placeholder="(xx) xxxxx-xxxx" oninput="mascaraTel(this)">
+          </div>
+          <div class="form-group">
+            <label>Sinal / Entrada (R$)</label>
+            <input type="number" id="ag-sinal" placeholder="0,00" step="0.01" min="0">
+          </div>
+          <div class="form-group">
+            <label>Observação</label>
+            <input type="text" id="ag-obs" placeholder="Ex: Pacote criolipólise barriga">
+          </div>
+          <div class="form-group">
+            <label>Cor na Agenda</label>
+            <select id="ag-cor" style="width:100%;padding:0.65rem 0.9rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none;background:white">
+              <option value="#D4A0A8">🌸 Rosa</option>
+              <option value="#5B9BD5">🔵 Azul</option>
+              <option value="#70AD47">🟢 Verde</option>
+              <option value="#FF4444">🔴 Vermelho</option>
+              <option value="#FFC000">🟡 Amarelo</option>
+              <option value="#9B59B6">🟣 Lilás</option>
+              <option value="#8B4513">🟤 Marrom</option>
+              <option value="#FF8C00">🟠 Laranja</option>
+            </select>
+          </div>
+          <div class="form-group full-width">
+            <label>Recorrência</label>
+            <select id="ag-recorrencia" onchange="toggleRecorrencia()">
+              <option value="">Sem recorrência (sessões únicas)</option>
+              <option value="semanal">Semanal (toda semana no mesmo dia)</option>
+              <option value="quinzenal">Quinzenal (a cada 2 semanas)</option>
+              <option value="mensal">Mensal (todo mês na mesma data)</option>
+              <option value="personalizado">Dias específicos da semana</option>
+            </select>
+          </div>
+          <div class="form-group full-width" id="ag-recorr-config" style="display:none">
+            <div id="ag-recorr-dias" style="display:none">
+              <label style="margin-bottom:6px;display:block">Dias da semana</label>
+              <div style="display:flex;gap:6px;flex-wrap:wrap">
+                <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" value="1" class="ag-dia-check"> Seg</label>
+                <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" value="2" class="ag-dia-check"> Ter</label>
+                <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" value="3" class="ag-dia-check"> Qua</label>
+                <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" value="4" class="ag-dia-check"> Qui</label>
+                <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" value="5" class="ag-dia-check"> Sex</label>
+                <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" value="6" class="ag-dia-check"> Sáb</label>
+                <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" value="0" class="ag-dia-check"> Dom</label>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:0.75rem;margin-top:0.5rem">
+              <div><label style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text-light);margin-bottom:4px;display:block">Data início</label>
+              <input type="date" id="ag-recorr-inicio" style="width:100%;padding:0.5rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none"></div>
+              <div><label style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text-light);margin-bottom:4px;display:block">Hora início</label>
+              <input type="time" id="ag-recorr-hora" style="width:100%;padding:0.5rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none"></div>
+              <div><label style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text-light);margin-bottom:4px;display:block">Hora fim</label>
+              <input type="time" id="ag-recorr-horafim" style="width:100%;padding:0.5rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none"></div>
+              <div><label style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text-light);margin-bottom:4px;display:block">Até quando</label>
+              <input type="date" id="ag-recorr-ate" style="width:100%;padding:0.5rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none"></div>
+            </div>
+          </div>
+        </div>
+        <!-- Campos de datas dinâmicos -->
+        <div id="ag-datas-wrap" style="display:none;margin-bottom:1rem">
+          <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-light);margin-bottom:0.5rem">Datas das Sessões</div>
+          <div id="ag-datas-campos" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:0.5rem"></div>
+        </div>
+        <div style="display:flex;gap:0.75rem">
+          <!-- Modelo de ficha (opcional) -->
+          <div class="form-group" style="margin-bottom:1rem">
+            <label style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-light)">📋 Modelo de Ficha de Anamnese <span style="font-weight:400;color:var(--text-light)">(opcional)</span></label>
+            <select id="ag-modelo-anamnese" style="width:100%;padding:0.65rem 0.9rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;color:var(--text-dark);background:var(--off-white);outline:none">
+              <option value="">— Nenhum (ficha padrão) —</option>
+            </select>
+          </div>
+          <button class="btn btn-primary" onclick="salvarAgendamento()">✓ Salvar Agendamento</button>
+          <button class="btn btn-secondary" onclick="limparFormAgenda()">Limpar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ICS Import -->
+    <div style="margin-bottom:1rem">
+      <label class="btn btn-secondary btn-sm" style="cursor:pointer">
+        &#128197; Importar Google Agenda (.ics)
+        <input type="file" accept=".ics" style="display:none" onchange="importarICS(event)">
+      </label>
+      <span style="font-size:11px;color:var(--text-light);margin-left:0.5rem">Google Agenda &#8594; Configura&#231;&#245;es &#8594; Exportar</span>
+    </div>
+
+    <!-- CALENDÁRIO -->
+    <div class="cal-wrap" id="calWrap">
+      <div class="cal-header">
+        <div class="cal-nav">
+          <button class="cal-nav-btn" onclick="calNavegar(-1)">&#8249;</button>
+          <div class="cal-title" id="calTitulo"></div>
+          <button class="cal-nav-btn" onclick="calNavegar(1)">&#8250;</button>
+        </div>
+        <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap">
+          <button class="cal-today-btn" onclick="calHoje()">Hoje</button>
+          <div class="cal-view-toggle">
+            <button class="cal-view-btn active" id="calBtnMes" onclick="calSetView('mes')">Mês</button>
+            <button class="cal-view-btn" id="calBtnSem" onclick="calSetView('semana')">Semana</button>
+          </div>
+        </div>
+      </div>
+      <div id="calGrid"></div>
+    </div>
+
+    <!-- Filtros abaixo do calendário -->
+    <div class="agenda-filtros" style="margin-bottom:0.75rem">
+      <button class="agenda-btn active" onclick="setAgendaFiltro('hoje',this)">Hoje</button>
+      <button class="agenda-btn" onclick="setAgendaFiltro('semana',this)">7 dias</button>
+      <button class="agenda-btn" onclick="setAgendaFiltro('mes',this)">Este mês</button>
+      <button class="agenda-btn" onclick="setAgendaFiltro('tudo',this)">Tudo</button>
+    </div>
+
+    <!-- Busca e filtros de data -->
+    <div style="display:flex;gap:0.75rem;margin-bottom:1rem;flex-wrap:wrap">
+      <input class="filter-input" type="text" id="agBuscaCliente" placeholder="🔍 Buscar cliente..."
+        oninput="renderAgenda()" style="min-width:200px">
+      <input class="filter-input" type="date" id="agBuscaData"
+        oninput="renderAgenda()" title="Data inicial (De)">
+      <input class="filter-input" type="date" id="agBuscaDataAte"
+        oninput="renderAgenda()" title="Data final (Até)">
+      <button class="btn btn-secondary btn-sm" onclick="limparFiltrosAgenda()">✕ Limpar filtros</button>
+    </div>
+
+    <!-- Lista de clientes agendados -->
+    <div id="agendaLista"></div>
+  </section>
+
+
+  <!-- ===== ANAMNESE ===== -->
+  <section class="section" id="sec-anamnese">
+    <div class="section-title">Anamnese Corporal</div>
+    <div class="section-sub">Fichas de avaliação das clientes</div>
+    <div class="divider"></div>
+
+    <!-- Import + New -->
+    <div style="display:flex;gap:0.75rem;margin-bottom:1rem;flex-wrap:wrap;align-items:center">
+      <button class="btn btn-primary" onclick="toggleColarTexto()">📋 Colar Ficha da Cliente</button>
+      <button class="btn btn-secondary" onclick="novaAnamnese()">+ Nova Ficha Manual</button>
+    </div>
+    <!-- Colar texto da ficha -->
+    <div id="colarTextoWrap" style="display:none;margin-bottom:1.5rem">
+      <div class="form-section">
+        <div class="form-header"><div class="form-header-title">📋 Cole aqui o texto enviado pela cliente</div></div>
+        <div class="form-body">
+          <div class="form-group">
+            <label>Texto da Ficha (cole o texto recebido pelo WhatsApp)</label>
+            <textarea id="textoFichaCliente" rows="10" placeholder="Cole aqui o texto da ficha enviado pela cliente..."></textarea>
+          </div>
+          <div style="display:flex;gap:0.75rem">
+            <button class="btn btn-primary" onclick="importarTextoFicha()">✓ Importar Ficha</button>
+            <button class="btn btn-secondary" onclick="toggleColarTexto()">Cancelar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filtros Anamnese -->
+    <div class="filters-bar" id="anamneseFiltrosBar">
+      <input class="filter-input" type="text" id="filtAnamNome" placeholder="🔍 Buscar cliente..." oninput="renderAnamnese()">
+      <input class="filter-input" type="date" id="filtAnamDe" oninput="renderAnamnese()" title="Data inicial">
+      <input class="filter-input" type="date" id="filtAnamAte" oninput="renderAnamnese()" title="Data final">
+      <button class="btn btn-secondary btn-sm" onclick="limparFiltrosAnamnese()">✕ Limpar</button>
+    </div>
+
+    <!-- Lista fichas -->
+    <div id="anamneseListaWrap">
+      <div class="panel">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Cliente</th><th>Data</th><th>Preenchimento</th><th></th></tr></thead>
+            <tbody id="tbodyAnamnese"></tbody>
+          </table>
+          <div id="pagAnamnese"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Formulário completo (oculto até abrir) -->
+    <div id="anamneseFormWrap" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+        <div class="section-title" style="margin:0">📋 Ficha de Anamnese</div>
+        <button class="btn btn-secondary btn-sm" onclick="fecharFormAnamnese()">← Voltar à lista</button>
+      </div>
+
+      <div class="form-section">
+        <div class="form-header"><div class="form-header-title">👤 Informações Pessoais</div></div>
+        <div class="form-body">
+          <div class="form-grid">
+            <div class="form-group"><label>Nome completo</label><input type="text" id="an-nome"></div>
+            <div class="form-group"><label>Idade</label><input type="number" id="an-idade"></div>
+            <div class="form-group"><label>Gênero</label>
+              <select id="an-genero"><option value="">Selecione...</option><option>Feminino</option><option>Masculino</option><option>Outro</option></select>
+            </div>
+            <div class="form-group"><label>Data de nascimento</label><input type="date" id="an-dataNasc"></div>
+            <div class="form-group"><label>Telefone</label><input type="text" id="an-telefone"></div>
+            <div class="form-group"><label>CPF</label><input type="text" id="an-cpf" placeholder="000.000.000-00" maxlength="14"></div>
+            <div class="form-group"><label>Tem filhos?</label>
+              <select id="an-filhos"><option value="">-</option><option>sim</option><option>não</option></select>
+            </div>
+            <div class="form-group"><label>Data (último parto)</label><input type="date" id="an-dataFilhos"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-header"><div class="form-header-title">🏥 Histórico de Saúde</div></div>
+        <div class="form-body">
+          <div class="form-grid">
+            <div class="form-group"><label>Doença diagnosticada?</label><select id="an-doenca"><option value="">-</option><option value="sim">sim</option><option value="não">não</option></select></div>
+            <div class="form-group"><label>Qual doença?</label><input type="text" id="an-doencaQual"></div>
+            <div class="form-group"><label>Medicação contínua?</label><select id="an-medicacao"><option value="">-</option><option value="sim">sim</option><option value="não">não</option></select></div>
+            <div class="form-group"><label>Qual medicação?</label><input type="text" id="an-medicacaoQual"></div>
+            <div class="form-group"><label>Produto injetado?</label><select id="an-injetado"><option value="">-</option><option value="sim">sim</option><option value="não">não</option></select></div>
+            <div class="form-group"><label>Qual produto?</label><input type="text" id="an-injetadoQual"></div>
+            <div class="form-group"><label>Cirurgia?</label><select id="an-cirurgia"><option value="">-</option><option value="sim">sim</option><option value="não">não</option></select></div>
+            <div class="form-group"><label>Qual/Quando?</label><input type="text" id="an-cirurgiaQual"></div>
+            <div class="form-group"><label>Alergia?</label><select id="an-alergia"><option value="">-</option><option value="sim">sim</option><option value="não">não</option></select></div>
+            <div class="form-group"><label>Qual alergia?</label><input type="text" id="an-alergiaQual"></div>
+            <div class="form-group"><label>Marcapasso/Prótese metálica?</label><select id="an-marcapasso"><option value="">-</option><option value="sim">sim</option><option value="não">não</option></select></div>
+            <div class="form-group"><label>Problemas circulatórios?</label><select id="an-circulatorio"><option value="">-</option><option value="sim">sim</option><option value="não">não</option></select></div>
+            <div class="form-group"><label>Hipertensão?</label><select id="an-hipertensao"><option value="">-</option><option value="sim">sim</option><option value="não">não</option></select></div>
+            <div class="form-group"><label>Diabetes?</label><select id="an-diabetes"><option value="">-</option><option value="sim">sim</option><option value="não">não</option></select></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-header"><div class="form-header-title">🌸 Hormonal</div></div>
+        <div class="form-body">
+          <div class="form-grid">
+            <div class="form-group"><label>Ciclo menstrual</label><select id="an-ciclo"><option value="">-</option><option>Regular</option><option>Irregular</option><option>Menopausa</option></select></div>
+            <div class="form-group"><label>Grávida/Amamentando?</label><select id="an-gravida"><option value="">-</option><option value="sim">sim</option><option value="não">não</option></select></div>
+            <div class="form-group"><label>Anticoncepcional?</label><select id="an-anti"><option value="">-</option><option value="sim">sim</option><option value="não">não</option></select></div>
+            <div class="form-group"><label>Qual anticoncepcional?</label><input type="text" id="an-antiQual"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-header"><div class="form-header-title">🥗 Hábitos</div></div>
+        <div class="form-body">
+          <div class="form-grid">
+            <div class="form-group"><label>Água (litros/dia)</label><input type="number" id="an-agua" step="0.5"></div>
+            <div class="form-group"><label>Alimentação</label><select id="an-alimentacao"><option value="">-</option><option>Saudável</option><option>Razoável</option><option>Desequilibrada</option></select></div>
+            <div class="form-group"><label>Atividade física?</label><select id="an-atividade"><option value="">-</option><option value="sim">sim</option><option value="não">não</option></select></div>
+            <div class="form-group"><label>Qual atividade?</label><input type="text" id="an-atividadeQual"></div>
+            <div class="form-group"><label>Frequência (vezes/semana)</label><input type="text" id="an-atividadeFreq"></div>
+            <div class="form-group"><label>Bebida alcoólica?</label><select id="an-alcool"><option value="">-</option><option value="sim">sim</option><option value="não">não</option></select></div>
+            <div class="form-group"><label>Fuma?</label><select id="an-fuma"><option value="">-</option><option value="sim">sim</option><option value="não">não</option></select></div>
+            <div class="form-group"><label>Cinta modeladora?</label><select id="an-cinta"><option value="">-</option><option value="sim">sim</option><option value="não">não</option></select></div>
+          </div>
+          <div class="form-group"><label>O que mais te incomoda?</label><textarea id="an-incomoda" rows="3"></textarea></div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:0.75rem;margin-top:1.5rem;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="salvarFichaAnamnese()">✓ Salvar Ficha</button>
+        <button class="btn btn-secondary" onclick="visualizarFicha()">👁 Visualizar para Assinar</button>
+        <button class="btn btn-secondary" onclick="fecharFormAnamnese()">Cancelar</button>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ===== ACOMPANHAMENTO ===== -->
+  <section class="section" id="sec-acomp">
+    <div class="section-title">Acompanhamento de Sessões</div>
+    <div class="section-sub">Ficha da cliente + sessões e serviços vinculados</div>
+    <div class="divider"></div>
+    <div class="filters-bar">
+      <input class="filter-input" type="text" id="filtAcompNome" placeholder="🔍 Buscar cliente..." oninput="_acompPagina=1;renderAcomp()">
+      <input class="filter-input" type="date" id="filtAcompDe" oninput="_acompPagina=1;renderAcomp()" title="Data inicial">
+      <input class="filter-input" type="date" id="filtAcompAte" oninput="_acompPagina=1;renderAcomp()" title="Data final">
+      <button class="btn btn-secondary btn-sm" onclick="limparFiltrosAcomp()">✕ Limpar</button>
+    </div>
+    <div id="acompLista"></div>
+  </section>
+</div><!-- /main -->
+
+<!-- TOAST -->
 <div class="toast" id="toast"></div>
 
-<script>
-var SUPA_URL = 'https://clxtlgkzsdzmqbvhkwft.supabase.co';
+<!-- LOG PANEL -->
+<div id="log-panel" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#1a0a10;color:#f0e4a8;font-family:monospace;font-size:12px;max-height:200px;overflow-y:auto;z-index:99999;border-top:2px solid #D4A0A8;padding:0.5rem 1rem">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.25rem">
+    <strong style="color:#D4A0A8">📋 Log do Sistema</strong>
+    <div style="display:flex;gap:0.5rem">
+      <button onclick="document.getElementById('log-entries').innerHTML=''" style="background:none;border:1px solid #D4A0A8;color:#D4A0A8;border-radius:4px;padding:2px 8px;cursor:pointer;font-size:11px">Limpar</button>
+      <button onclick="toggleLog()" style="background:none;border:none;color:#f0e4a8;font-size:16px;cursor:pointer">✕</button>
+    </div>
+  </div>
+  <div id="log-entries"></div>
+</div>
 
-// ── Carregar modelo customizado se vier na URL ──
-var _modeloCustom = null;
+  <!-- ===== MENSAGENS WHATSAPP ===== -->
+  <section class="section" id="sec-mensagens">
+    <div class="main">
+      <div class="section-title">WhatsApp</div>
+      <div class="section-sub">Personalize as mensagens enviadas pelo sistema</div>
+      <div class="divider"></div>
+      <div id="mensagensLista">
+        <div class="empty-state"><div class="empty-icon">⏳</div><p>Carregando...</p></div>
+      </div>
+    </div>
+  </section>
 
-async function _carregarModeloUrl() {
-  var params = new URLSearchParams(window.location.search);
-  var modeloId = params.get('id');
-  if (!modeloId) return;
-  try {
-    var resp = await fetch(SUPA_URL + '/rest/v1/modelos_anamnese?id=eq.' + modeloId, {
-      headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY }
-    });
-    if (resp.ok) {
-      var data = await resp.json();
-      if (data && data.length) {
-        _modeloCustom = data[0];
-        _renderizarCamposModelo(_modeloCustom);
-      }
-    }
-  } catch(e) {}
-}
+  <!-- Modelos de Ficha de Anamnese -->
+  <section class="section" id="sec-modelos">
+    <div class="main">
+      <div class="section-title">Modelos de Ficha</div>
+      <div class="section-sub">Crie fichas de anamnese personalizadas por tratamento</div>
+      <div class="divider"></div>
+      <div style="margin-bottom:1.5rem">
+        <button class="btn btn-primary" onclick="abrirEditorModelo(null)">+ Novo Modelo de Ficha</button>
+      </div>
+      <div id="modelosAnamneseList">
+        <div class="empty-state"><div class="empty-icon">📋</div><p>Carregando modelos...</p></div>
+      </div>
+    </div>
+  </section>
 
-function _renderizarCamposModelo(modelo) {
-  // Ocultar seções fixas — o modelo substitui essas perguntas
-  var fixas = document.getElementById('secoes-fixas-wrap');
-  if (fixas) fixas.style.display = 'none';
+<!-- MODAL ASSINATURA DIGITAL -->
+<div id="modalAssinatura" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.7);overflow-y:auto">
+  <div style="background:white;max-width:860px;margin:1rem auto;border-radius:12px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.3)">
+    <!-- Header -->
+    <div style="background:linear-gradient(135deg,#1C1C1E,#2C2C2E);padding:1rem 1.5rem;display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div style="color:#FAF0F2;font-size:11px;letter-spacing:2px;text-transform:uppercase">Liza Figueiredo Estética</div>
+        <div id="modalAnamTitulo" style="color:white;font-size:16px;font-weight:600;margin-top:2px"></div>
+      </div>
+      <button onclick="fecharModalAssinatura()" style="background:rgba(255,255,255,0.15);border:none;color:white;width:32px;height:32px;border-radius:50%;font-size:16px;cursor:pointer">✕</button>
+    </div>
+    <!-- Conteúdo da ficha -->
+    <div id="modalAnamConteudo" style="padding:1.5rem;font-size:13px;color:#1a1a1a;max-height:55vh;overflow-y:auto;border-bottom:1px solid #eee"></div>
+    <!-- Área de assinatura -->
+    <div style="padding:1.5rem">
+      <div style="font-size:11px;letter-spacing:2px;color:#888;text-transform:uppercase;margin-bottom:0.5rem">✍️ Assinatura da Cliente</div>
+      <div style="background:#FFFBF8;border:2px dashed #D4A0A8;border-radius:8px;position:relative">
+        <canvas id="canvasAssinatura" style="display:block;width:100%;touch-action:none;cursor:crosshair;border-radius:8px" height="160"></canvas>
+        <div id="canvasHint" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;color:#D4A0A8;font-size:13px;opacity:0.6">Assine aqui com o dedo ou Apple Pencil</div>
+      </div>
+      <div id="assinBloqueioBar" style="display:none;background:#F5F8E8;border-radius:6px;padding:0.5rem 0.75rem;font-size:12px;color:#5A6B04;margin-top:0.5rem">
+        🔒 Assinatura bloqueada. Para editar, informe a senha.
+        <button onclick="desbloquearAssinatura()" ontouchend="event.preventDefault();desbloquearAssinatura()" class="btn btn-secondary btn-sm" style="margin-left:0.5rem;font-size:11px">🔓 Desbloquear</button>
+      </div>
+      <div id="assinBotoes" style="display:flex;gap:0.75rem;margin-top:1rem;justify-content:flex-end;flex-wrap:wrap">
+        <button onclick="limparAssinatura()" ontouchend="event.preventDefault();limparAssinatura()" class="btn btn-secondary">🗑 Limpar</button>
+        <button onclick="salvarAssinatura()" ontouchend="event.preventDefault();salvarAssinatura()" class="btn btn-primary" style="padding:0.6rem 1.5rem">✅ Salvar Assinatura</button>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+</div>
 
-  var campos = modelo.campos || [];
-  if (!campos.length) return;
+<!-- =====================================================
+     JS MODULAR — Ordem de carregamento obrigatória
+     ===================================================== -->
+<!-- 1. Configuração global -->
+<script src="js/config.js"></script>
+<!-- 2. Utilitários -->
+<script src="js/utils.js"></script>
+<!-- 3. Supabase (depende de config.js e utils.js) -->
+<script src="js/supabase.js"></script>
+<!-- 4. Banco de dados local + loadData/saveData -->
+<script src="js/db.js"></script>
+<!-- 5. Autenticação e usuários -->
+<script src="js/auth.js"></script>
+<!-- 6. Dashboard -->
+<script src="js/dashboard.js"></script>
+<!-- 7. Atendimentos -->
+<script src="js/atendimentos.js"></script>
+<!-- 8. Serviços -->
+<script src="js/servicos.js"></script>
+<!-- 9. Materiais -->
+<script src="js/materiais.js"></script>
+<!-- 10. Financeiro (despesas, categorias, excluir) -->
+<script src="js/financeiro.js"></script>
+<!-- 11. WhatsApp + Agenda + ICS -->
+<script src="js/whatsapp.js"></script>
+<script src="js/agenda.js"></script>
+<!-- 12. Anamnese + Acompanhamento -->
+<script src="js/anamnese.js"></script>
+<!-- 13. Calendário -->
+<script src="js/calendario.js"></script>
+<!-- 14. IndexedDB + Fotos (Supabase Storage) -->
+<script src="js/idb.js"></script>
+<!-- 14b. Mensagens WhatsApp customizáveis -->
+<script src="js/mensagens.js"></script>
+<!-- 15. Solicitações de agendamento público -->
+<script src="js/solicitacoes.js"></script>
+<!-- 16. App — inicialização, boot, polling (último) -->
+<script src="js/app.js"></script>
 
-  // Adicionar seção de campos customizados antes do botão enviar
-  var btn = document.getElementById('btnEnviar');
-  if (!btn) return;
-
-  var secao = document.createElement('div');
-  secao.id = 'secao-modelo-custom';
-
-  var titulo = document.createElement('div');
-  titulo.className = 'section-title';
-  titulo.textContent = modelo.nome;
-  secao.appendChild(titulo);
-
-  campos.forEach(function(c, i) {
-    var block = document.createElement('div');
-    block.className = 'question-block';
-    var label = document.createElement('div');
-    label.className = 'question-label';
-    label.textContent = '• ' + c.label;
-    block.appendChild(label);
-
-    if (c.tipo === 'sim_nao' || c.tipo === 'sim_nao_qual') {
-      var rg = document.createElement('div');
-      rg.className = 'radio-group';
-      rg.innerHTML = '<label><input type="radio" name="custom_' + i + '" value="sim"> Sim</label>'
-        + '<label><input type="radio" name="custom_' + i + '" value="não"> Não</label>';
-      block.appendChild(rg);
-      if (c.tipo === 'sim_nao_qual') {
-        var qr = document.createElement('div');
-        qr.className = 'qual-row';
-        qr.innerHTML = '<span>Qual?</span><input type="text" id="custom_qual_' + i + '" placeholder="Descreva...">';
-        block.appendChild(qr);
-      }
-    } else if (c.tipo === 'texto') {
-      var ta = document.createElement('textarea');
-      ta.id = 'custom_texto_' + i;
-      ta.rows = 3;
-      ta.placeholder = 'Descreva...';
-      ta.style.cssText = 'margin-top:0.5rem;width:100%;padding:0.6rem 0.8rem;border:1px solid #F0D8E0;border-radius:8px;font-family:inherit;font-size:13px;outline:none;resize:vertical';
-      block.appendChild(ta);
-    } else if (c.tipo === 'numero') {
-      var ni = document.createElement('input');
-      ni.type = 'number'; ni.id = 'custom_num_' + i;
-      ni.style.cssText = 'margin-top:0.5rem;width:100%;padding:0.5rem 0.8rem;border:1px solid #F0D8E0;border-radius:8px;font-family:inherit;font-size:13px;outline:none';
-      block.appendChild(ni);
-    } else if (c.tipo === 'data') {
-      var di = document.createElement('input');
-      di.type = 'date'; di.id = 'custom_data_' + i;
-      di.style.cssText = 'margin-top:0.5rem;width:100%;padding:0.5rem 0.8rem;border:1px solid #F0D8E0;border-radius:8px;font-family:inherit;font-size:13px;outline:none';
-      block.appendChild(di);
-    } else if (c.tipo === 'multipla') {
-      var cg = document.createElement('div');
-      cg.className = 'check-group';
-      cg.style.marginTop = '0.5rem';
-      (c.opcoes||[]).forEach(function(op, oi) {
-        cg.innerHTML += '<label><input type="checkbox" id="custom_mult_' + i + '_' + oi + '" value="' + op + '"> ' + op + '</label>';
-      });
-      block.appendChild(cg);
-    }
-    secao.appendChild(block);
-  });
-
-  btn.parentNode.insertBefore(secao, btn);
-}
-
-function _coletarCamposModelo() {
-  if (!_modeloCustom) return {};
-  var campos = _modeloCustom.campos || [];
-  var respostas = {};
-  campos.forEach(function(c, i) {
-    if (c.tipo === 'sim_nao' || c.tipo === 'sim_nao_qual') {
-      var el = document.querySelector('input[name="custom_' + i + '"]:checked');
-      respostas[c.label] = el ? el.value : '';
-      if (c.tipo === 'sim_nao_qual') {
-        var qual = document.getElementById('custom_qual_' + i);
-        if (qual && qual.value) respostas[c.label + ' (detalhe)'] = qual.value;
-      }
-    } else if (c.tipo === 'texto') {
-      var t = document.getElementById('custom_texto_' + i);
-      respostas[c.label] = t ? t.value : '';
-    } else if (c.tipo === 'numero') {
-      var n = document.getElementById('custom_num_' + i);
-      respostas[c.label] = n ? n.value : '';
-    } else if (c.tipo === 'data') {
-      var d = document.getElementById('custom_data_' + i);
-      respostas[c.label] = d ? d.value : '';
-    } else if (c.tipo === 'multipla') {
-      var selecionados = [];
-      (c.opcoes||[]).forEach(function(op, oi) {
-        var cb = document.getElementById('custom_mult_' + i + '_' + oi);
-        if (cb && cb.checked) selecionados.push(op);
-      });
-      respostas[c.label] = selecionados.join(', ');
-    }
-  });
-  return respostas;
-}
-
-// Inicializar ao carregar
-window.addEventListener('DOMContentLoaded', function(){ _carregarModeloUrl(); });
-var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNseHRsZ2t6c2R6bXFidmhrd2Z0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5OTI4NTksImV4cCI6MjA5MzU2ODg1OX0.QqjhvC5Y9yp7RohU4oPo5L5lx4IIWnGa8OmIdyuD4Ag';
-
-function uid() { return Date.now().toString(36) + Math.random().toString(36).substr(2); }
-
-function getRadio(name) {
-  var el = document.querySelector('input[name="'+name+'"]:checked');
-  return el ? el.value : '';
-}
-function getVal(id) {
-  var el = document.getElementById(id);
-  return el ? el.value.trim() : '';
-}
-function getSel(id) {
-  var el = document.getElementById(id);
-  return el ? el.value : '';
-}
-function showToast(msg) {
-  var t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(function(){ t.classList.remove('show'); }, 4000);
-}
-function mascaraCpf(el) {
-  var v = el.value.replace(/\D/g,'').slice(0,11);
-  if (v.length > 9) v = v.replace(/(\d{3})(\d{3})(\d{3})(\d{0,2})/,'$1.$2.$3-$4');
-  else if (v.length > 6) v = v.replace(/(\d{3})(\d{3})(\d{0,3})/,'$1.$2.$3');
-  else if (v.length > 3) v = v.replace(/(\d{3})(\d{0,3})/,'$1.$2');
-  el.value = v;
-}
-function mascaraTel(el) {
-  var v = el.value.replace(/\D/g,'').substring(0,11);
-  if (v.length <= 10) v = v.replace(/(\d{2})(\d{4})(\d{0,4})/,'($1) $2-$3');
-  else v = v.replace(/(\d{2})(\d{5})(\d{0,4})/,'($1) $2-$3');
-  el.value = v;
-}
-
-async function enviarFicha() {
-  var nome = getVal('nome');
-  var telefone = getVal('telefone');
-
-  if (!nome) { showToast('⚠️ Por favor, preencha seu nome!'); return; }
-  if (!telefone) { showToast('⚠️ Por favor, preencha seu telefone!'); return; }
-
-  var btn = document.getElementById('btnEnviar');
-  btn.disabled = true;
-  btn.textContent = '⏳ Enviando...';
-
-  // Monta o objeto exatamente igual ao sistema da Liza (salvarFichaAnamnese)
-  var ficha = {
-    id: uid(),
-    data_cadastro: new Date().toLocaleDateString('pt-BR'),
-    pessoais: {
-      nome: nome,
-      idade: getVal('idade'),
-      genero: getSel('genero'),
-      dataNasc: getVal('dataNasc'),
-      telefone: telefone,
-      cpf: getVal('cpf'),
-      filhos: getSel('filhos'),
-      dataFilhos: getVal('dataFilhos')
-    },
-    // Seções fixas: só enviar se não houver modelo customizado
-    saude: _modeloCustom ? {} : {
-      doenca: getRadio('doenca'),
-      doencaQual: getVal('doencaQual'),
-      medicacao: getRadio('medicacao'),
-      medicacaoQual: getVal('medicacaoQual'),
-      injetado: getRadio('injetado'),
-      injetadoQual: getVal('injetadoQual'),
-      cirurgia: getRadio('cirurgia'),
-      cirurgiaQual: getVal('cirurgiaQual'),
-      alergia: getRadio('alergia'),
-      alergiaQual: getVal('alergiaQual'),
-      marcapasso: getRadio('marcapasso'),
-      circulatorio: getRadio('circulatorio'),
-      hipertensao: getRadio('hipertensao'),
-      diabetes: getRadio('diabetes')
-    },
-    hormonal: _modeloCustom ? {} : {
-      ciclo: getRadio('ciclo'),
-      gravida: getRadio('gravida'),
-      anti: getRadio('anticoncepcional'),
-      antiQual: getVal('antiQual')
-    },
-    habitos: _modeloCustom ? {} : {
-      agua: getVal('agua'),
-      alimentacao: getRadio('alimentacao'),
-      atividade: getRadio('atividade'),
-      atividadeQual: getVal('atividadeQual'),
-      atividadeFreq: getVal('atividadeFreq'),
-      alcool: getRadio('alcool'),
-      fuma: getRadio('fuma'),
-      cinta: getRadio('cinta')
-    },
-    incomoda: _modeloCustom ? '' : getVal('incomoda'),
-    av_fisica: {},
-    av_corporal: {},
-    modelo_id: _modeloCustom ? _modeloCustom.id : null,
-    modelo_nome: _modeloCustom ? _modeloCustom.nome : null,
-    modelo_respostas: _modeloCustom ? _coletarCamposModelo() : {},
-    atualizado_em: new Date().toISOString()
-  };
-
-  try {
-    var resp = await fetch(SUPA_URL + '/rest/v1/anamneses', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': SUPA_KEY,
-        'Authorization': 'Bearer ' + SUPA_KEY,
-        'Prefer': 'resolution=merge-duplicates,return=minimal'
-      },
-      body: JSON.stringify(ficha)
-    });
-
-    if (resp.ok) {
-      // Sucesso
-      document.getElementById('nomeSuccesso').textContent = nome.split(' ')[0];
-      document.getElementById('telaSuccesso').style.display = 'block';
-      btn.style.display = 'none';
-      document.getElementById('telaSuccesso').scrollIntoView({ behavior: 'smooth' });
-    } else {
-      var err = await resp.text();
-      console.error('Erro Supabase:', err);
-      showToast('❌ Erro ao enviar. Tente novamente.');
-      btn.disabled = false;
-      btn.textContent = '✅ Enviar Ficha para a Liza';
-    }
-  } catch(e) {
-    console.error('Erro de rede:', e);
-    showToast('❌ Sem conexão. Verifique sua internet e tente novamente.');
-    btn.disabled = false;
-    btn.textContent = '✅ Enviar Ficha para a Liza';
-  }
-}
-</script>
 </body>
 </html>
