@@ -179,7 +179,7 @@ function showSection(id) {
   // Render específico por seção
   if (id === 'agenda') renderAgenda();
   if (id === 'dashboard') renderDashboard();
-  if (id === 'atendimentos') { renderAtendimentos(); renderServiceChips(); }
+  if (id === 'atendimentos') { if(typeof renderAtendimentos==='function') renderAtendimentos(); if(typeof renderServiceChips==='function') renderServiceChips(); }
   if (id === 'servicos') renderServicos();
   if (id === 'materiais') renderMateriais();
   if (id === 'despAdm') renderDespAdm();
@@ -1210,6 +1210,7 @@ function renderClientes() {
       +'<div style="display:flex;align-items:center;gap:0.5rem">'
       +(p.telefone?'<button onclick="event.stopPropagation();var msg=_getMensagem(\'pos_atendimento\').replace(/{nome}/g,\''+c.nome.split(' ')[0]+'\').replace(/{servico}/g,\'\');window.open(\'https://wa.me/55'+((p.telefone||'').replace(/\D/g,''))+'?text=\'+encodeURIComponent(msg),\'_blank\')" style="background:#E7F7EE;border:1px solid #7DB87D;color:#276749;border-radius:8px;padding:5px 10px;font-size:11px;cursor:pointer">💬 WA</button>':'')
       +'<button onclick="event.stopPropagation();gerarLinkCliente(\''+nomeEsc+'\')" style="background:#EDF4FF;border:1px solid #90CAF9;color:#1565C0;border-radius:8px;padding:5px 10px;font-size:11px;cursor:pointer" title="Dashboard da cliente">🔗</button>'
+      +'<button onclick="event.stopPropagation();_excluirCliente(\''+nomeEsc+'\')" style="background:#FFEBEE;border:1px solid #FFCDD2;color:var(--danger);border-radius:8px;padding:5px 10px;font-size:11px;cursor:pointer" title="Excluir cliente">🗑</button>'
       +'<span class="expand-icon" id="icon-cli-'+key+'">▶</span>'
       +'</div></div>'
       +'<div class="agenda-sessoes-wrap" id="cli-body-'+key+'">'+_renderFichaCliente(c, key)+'</div>'
@@ -1266,8 +1267,31 @@ function _renderClienteAba(key, aba, c) {
   if (aba==='financeiro') {
     var atsF=c.atendimentos.slice().sort(function(a,b){return b.data.localeCompare(a.data);});
     var totalF=atsF.reduce(function(s,a){return s+(parseFloat(a.valor)||0);},0);
-    if(!atsF.length) return '<div class="empty-state" style="padding:2rem"><div class="empty-icon">💰</div><p>Nenhum lançamento</p></div>';
-    var html='<div style="margin-bottom:0.75rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem"><span style="font-size:12px;color:var(--text-light)">'+atsF.length+' lançamento(s)</span><span style="font-family:Cormorant Garamond,serif;font-size:20px;color:var(--gold-dark)">Total: '+fmtMoney(totalF)+'</span></div>';
+
+    // Resumo financeiro dos pacotes da cliente
+    var resumoPacote = '';
+    if (c.agenda.length > 0) {
+      c.agenda.forEach(function(ag) {
+        var saldo = _calcSaldoPacote(ag);
+        if (saldo.totalPacote > 0 || saldo.sinal > 0) {
+          resumoPacote += '<div style="background:linear-gradient(135deg,#FFF8F9,#FFF0F5);border:1px solid #D4A0A8;border-radius:10px;padding:0.75rem 1rem;margin-bottom:0.75rem">'
+            +'<div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--gold-dark);margin-bottom:0.5rem;font-weight:600">📦 '+_agServicos(ag)+'</div>'
+            +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:0.5rem">'
+            +'<div style="text-align:center;background:white;border-radius:8px;padding:0.5rem"><div style="font-size:9px;color:var(--text-light);text-transform:uppercase;letter-spacing:1px">Total Pacote</div><div style="font-family:Cormorant Garamond,serif;font-size:16px;color:var(--text-dark)">'+fmtMoney(saldo.totalPacote)+'</div></div>'
+            +'<div style="text-align:center;background:white;border-radius:8px;padding:0.5rem"><div style="font-size:9px;color:var(--text-light);text-transform:uppercase;letter-spacing:1px">Sinal</div><div style="font-family:Cormorant Garamond,serif;font-size:16px;color:#276749">'+fmtMoney(saldo.sinal)+'</div></div>'
+            +'<div style="text-align:center;background:white;border-radius:8px;padding:0.5rem"><div style="font-size:9px;color:var(--text-light);text-transform:uppercase;letter-spacing:1px">Já Pago</div><div style="font-family:Cormorant Garamond,serif;font-size:16px;color:#276749">'+fmtMoney(saldo.totalPago)+'</div></div>'
+            +'<div style="text-align:center;background:white;border-radius:8px;padding:0.5rem"><div style="font-size:9px;color:var(--text-light);text-transform:uppercase;letter-spacing:1px">Restante</div><div style="font-family:Cormorant Garamond,serif;font-size:16px;color:'+(saldo.saldo>0?'var(--danger)':'var(--success)')+'">'+fmtMoney(saldo.saldo)+'</div></div>'
+            +'</div></div>';
+        }
+      });
+    }
+
+    var html = resumoPacote;
+    if(!atsF.length) {
+      html += '<div class="empty-state" style="padding:2rem"><div class="empty-icon">💰</div><p>Nenhum atendimento registrado</p></div>';
+      return html;
+    }
+    html+='<div style="margin-bottom:0.75rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem"><span style="font-size:12px;color:var(--text-light)">'+atsF.length+' lançamento(s)</span><span style="font-family:Cormorant Garamond,serif;font-size:20px;color:var(--gold-dark)">Total pago: '+fmtMoney(totalF)+'</span></div>';
     html+='<div style="overflow-x:auto"><table style="width:100%;font-size:12px;border-collapse:collapse"><thead><tr>'
       +'<th style="text-align:left;padding:6px 8px;color:var(--text-light);font-size:10px;letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid var(--border)">Data</th>'
       +'<th style="text-align:left;padding:6px 8px;color:var(--text-light);font-size:10px;letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid var(--border)">Serviço</th>'
@@ -1535,3 +1559,17 @@ function exportCheckinsCsv(){
   var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='checkins-'+_hoje()+'.csv';a.click();
   showToast('✅ CSV exportado!');
 }
+
+// ── Excluir cliente ──
+function _excluirCliente(nome) {
+  if (!confirm('⚠️ Excluir todos os dados de "' + nome + '"?\n\nIsso remove anamneses e dados do cliente.\nAgenda e atendimentos NÃO são removidos.\n\nTem certeza?')) return;
+  // Remover anamneses
+  var antes = db.anamneses.length;
+  db.anamneses = db.anamneses.filter(function(a) {
+    return !a.pessoais || !a.pessoais.nome || a.pessoais.nome.toLowerCase().trim() !== nome.toLowerCase().trim();
+  });
+  saveData();
+  showToast('✅ Cliente "' + nome + '" removido (' + (antes - db.anamneses.length) + ' ficha(s) excluída(s))');
+  renderClientes();
+}
+
