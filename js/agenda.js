@@ -249,6 +249,7 @@ function salvarAgendamento() {
   }
 
   const tel = (document.getElementById('ag-tel')||{value:''}).value.trim();
+  const cpfAg = (document.getElementById('ag-cpf')||{value:''}).value.replace(/\D/g,'');
   const sinal = parseFloat((document.getElementById('ag-sinal')||{value:'0'}).value) || 0;
   const cor = (document.getElementById('ag-cor')||{value:'#D4A0A8'}).value || '#D4A0A8';
 
@@ -291,6 +292,7 @@ function salvarAgendamento() {
     id: uid(),
     cliente,
     tel,
+    cpf: cpfAg || '',
     sinal,
     sinalPago: sinal > 0,
     servicoId: '',
@@ -329,7 +331,7 @@ function limparFormAgenda() {
   if(corPadrao){ corPadrao.style.border='3px solid #B07880'; corPadrao.style.boxShadow='0 0 0 2px white, 0 0 0 4px #B07880'; }
   const recEl=document.getElementById('ag-recorrencia'); if(recEl) recEl.value='';
   const rcEl=document.getElementById('ag-recorr-config'); if(rcEl) rcEl.style.display='none';
-  ['ag-cliente','ag-qtd','ag-obs','ag-tel','ag-sinal'].forEach(id => {
+  ['ag-cliente','ag-qtd','ag-obs','ag-tel','ag-sinal','ag-cpf'].forEach(id => {
     const el = document.getElementById(id);
     if(el) el.value = '';
   });
