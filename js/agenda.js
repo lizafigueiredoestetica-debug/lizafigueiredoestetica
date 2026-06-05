@@ -559,15 +559,23 @@ function _calcSaldoPacote(ag) {
   // Sinal pago na entrada
   var sinal = parseFloat(ag.sinal) || 0;
 
-  // Total já pago via atendimentos registrados para esta cliente
-  var dataMin = ag.sessoes.map(function(s){ return s.data; }).filter(Boolean).sort()[0] || '';
+  // Total já pago via atendimentos — buscar dentro da janela do pacote
+  var _datas = ag.sessoes.map(function(s){ return s.data; }).filter(Boolean).sort();
+  var dataMin = _datas[0] || '';
+  var dataMax = _datas[_datas.length-1] || '';
+  // Margem de 30 dias antes da primeira sessão para capturar o sinal
+  var dataMinBusca = dataMin ? (function(){
+    var d = new Date(dataMin); d.setDate(d.getDate()-30);
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  })() : '';
   var totalPago = db.atendimentos
     .filter(function(a) {
       return a.cliente && a.cliente.toLowerCase().trim() === ag.cliente.toLowerCase().trim()
-        && (!dataMin || a.data >= dataMin);
+        && (!dataMinBusca || a.data >= dataMinBusca);
     })
     .reduce(function(sum, a) { return sum + (parseFloat(a.valor) || 0); }, 0);
 
+  // Saldo = total − sinal − atendimentos (sinal deduzido separado para exibição)
   var saldo = totalPacote - sinal - totalPago;
 
   return {
