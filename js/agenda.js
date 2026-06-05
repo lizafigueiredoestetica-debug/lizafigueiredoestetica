@@ -483,6 +483,7 @@ function renderAgenda() {
         <div class="agenda-cliente-badges"><span title="${ag.cor||'#D4A0A8'}" style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${ag.cor||'#D4A0A8'};flex-shrink:0"></span>
           ${temHoje ? '<span class="badge-hoje">Hoje</span>' : ''}
           ${ag.sinal > 0 ? '<span style="background:#E7F7EE;color:#276749;border-radius:12px;padding:2px 8px;font-size:10px;font-weight:500;letter-spacing:0.5px">💰 Sinal R$'+parseFloat(ag.sinal).toFixed(2).replace('.',',')+'</span>' : ''}
+          <button onclick="event.stopPropagation();_editarSinalRapido('${ag.id}')" style="background:#FFF8E7;border:1px solid #F6C94E;color:#7A5C00;border-radius:8px;padding:2px 8px;font-size:10px;cursor:pointer" title="Editar sinal">✏️ Sinal</button>
           ${(function(){ var _s=_calcSaldoPacote(ag); if(!_s.totalPacote) return ''; return '<span style="background:#EDF4FF;color:#1565C0;border-radius:12px;padding:2px 10px;font-size:10px;font-weight:500;letter-spacing:0.5px" title="Total: R$'+_s.totalPacote.toFixed(2)+' | Sinal: R$'+_s.sinal.toFixed(2)+' | Pago: R$'+_s.totalPago.toFixed(2)+'">💳 Restante: R$'+_s.saldo.toFixed(2).replace('.',',')+'</span>'; })()}
           <span class="badge-pill badge-ativo">${realizados}/${total} sessões</span>
           ${pendentes > 0 ? `<span class="badge-pendente">${pendentes} pendente${pendentes>1?'s':''}</span>` : '<span class="badge-realizado">Concluído</span>'}
@@ -1918,4 +1919,20 @@ function _gerarSessoesRecorrentes(sessoesBase, recorrencia) {
   }
 
   return sessoes.length > 0 ? sessoes : (sessoesBase && sessoesBase.length ? sessoesBase : []);
+}
+
+
+// ── Edição rápida do sinal ──
+function _editarSinalRapido(agId) {
+  var ag = db.agenda.find(function(x){ return x.id === agId; });
+  if (!ag) return;
+  var novoSinal = prompt('Editar sinal de ' + ag.cliente + ':\n(Valor atual: R$ ' + parseFloat(ag.sinal||0).toFixed(2) + ')', parseFloat(ag.sinal||0).toFixed(2));
+  if (novoSinal === null) return;
+  var val = parseFloat(novoSinal.replace(',','.'));
+  if (isNaN(val) || val < 0) { showToast('Valor inválido!'); return; }
+  ag.sinal = val;
+  saveData();
+  _salvarAgenda(ag);
+  renderAll();
+  showToast('✅ Sinal atualizado: R$ ' + val.toFixed(2).replace('.',','));
 }
