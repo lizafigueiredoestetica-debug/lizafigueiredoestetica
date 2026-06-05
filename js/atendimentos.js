@@ -279,3 +279,8 @@ function renderServicos() {
     </tr>`).join('');
 }
 
+
+// Registrar aliases para uso antes do carregamento completo
+if (typeof window !== 'undefined') {
+  window._renderAtendimentos = renderAtendimentos;
+}
