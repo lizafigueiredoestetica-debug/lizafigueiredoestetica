@@ -20,38 +20,26 @@ function salvarAtendimento() {
   // Build materiais array with qty for storage
   const materiaisUsados = Object.entries(selectedMateriais).map(([mid, qtd]) => ({id: mid, qtd}));
 
-  // Verificar se há sinal do pacote para incluir neste atendimento
   var _valorFinal = parseFloat(valor);
+  var _nomesCache = selectedServicos.map(function(id){ var sv=db.servicos.find(function(x){return x.id===id;}); return sv?sv.nome:''; }).filter(Boolean);
+
+  // Verificar sinal do pacote para incluir
   var _ag = db.agenda.find(function(ag) {
-    return ag.cliente && ag.cliente.toLowerCase().trim() === cliente.toLowerCase().trim()
-      && parseFloat(ag.sinal) > 0;
+    return ag.cliente && ag.cliente.toLowerCase().trim() === cliente.toLowerCase().trim() && parseFloat(ag.sinal) > 0;
   });
   if (_ag && parseFloat(_ag.sinal) > 0) {
-    // Verificar se o sinal já foi incluído em algum atendimento anterior
     var _sinalJaIncluido = db.atendimentos.some(function(a) {
-      return a.cliente && a.cliente.toLowerCase().trim() === cliente.toLowerCase().trim()
-        && a.pagto === 'sinal';
+      return a.cliente && a.cliente.toLowerCase().trim() === cliente.toLowerCase().trim() && a.pagto === 'sinal';
     });
     if (!_sinalJaIncluido) {
       var _sinalVal = parseFloat(_ag.sinal);
-      if (confirm('💰 Sinal de R$ ' + _sinalVal.toFixed(2).replace('.',',') + ' registrado para ' + cliente + '.
-
-Deseja incluir o sinal neste atendimento?')) {
-        _valorFinal += _sinalVal;
-        // Criar lançamento separado do sinal
-        var _atendSinal = {
-          id: uid(), data: data, cliente: cliente,
-          valor: _sinalVal, pagto: 'sinal',
-          servicoIds: [], servicoNomesCache: ['Sinal/Entrada'],
-          materiais: [], obs: 'Sinal de entrada'
-        };
+      if (confirm('Sinal de R$ ' + _sinalVal.toFixed(2).replace('.',',') + ' registrado para ' + cliente + '. Deseja incluir o sinal neste atendimento?')) {
+        var _atendSinal = { id: uid(), data: data, cliente: cliente, valor: _sinalVal, pagto: 'sinal', servicoIds: [], servicoNomesCache: ['Sinal/Entrada'], materiais: [], obs: 'Sinal de entrada' };
         db.atendimentos.push(_atendSinal);
         _salvarAtendimento(_atendSinal);
       }
     }
   }
-
-  var _nomesCache = selectedServicos.map(function(id){ var sv=db.servicos.find(function(x){return x.id===id;}); return sv?sv.nome:''; }).filter(Boolean);
 
   db.atendimentos.push({
     id: uid(), data, cliente, valor: _valorFinal,
@@ -280,7 +268,6 @@ function renderServicos() {
 }
 
 
-// Registrar aliases para uso antes do carregamento completo
-if (typeof window !== 'undefined') {
-  window._renderAtendimentos = renderAtendimentos;
-}
+
+// Alias para uso em utils.js
+if (typeof window !== 'undefined') { window._renderAtendimentos = renderAtendimentos; }
