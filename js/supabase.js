@@ -134,10 +134,7 @@ async function _salvarAnamnese(a) {
   return _supaUpsert('anamneses', { id: a.id, data_cadastro: a.dataCadastro, pessoais: a.pessoais, saude: a.saude, hormonal: a.hormonal, habitos: a.habitos, av_fisica: a.avFisica, av_corporal: a.avCorporal, incomoda: a.incomoda, assinatura: a.assinatura, data_assinatura: a.dataAssinatura, modelo_id: a.modelo_id || null, modelo_nome: a.modelo_nome || null, modelo_respostas: a.modelo_respostas || null, atualizado_em: new Date().toISOString() });
 }
 async function _salvarAtendimento(a) {
-  var nomesCache = (a.servicoNomesCache && a.servicoNomesCache.length)
-    ? a.servicoNomesCache
-    : (a.servicoIds||[]).map(function(id){ var sv=db.servicos.find(function(x){return x.id===id;}); return sv?sv.nome:''; }).filter(Boolean);
-  return _supaUpsert('atendimentos', { id: a.id, data: a.data, cliente: a.cliente, valor: a.valor, pagto: a.pagto, servico_ids: a.servicoIds || [], servico_nomes_cache: nomesCache, materiais: a.materiais || [], obs: a.obs, atualizado_em: new Date().toISOString() });
+  return _supaUpsert('atendimentos', { id: a.id, data: a.data, cliente: a.cliente, valor: a.valor, pagto: a.pagto, servico_ids: a.servicoIds || [], materiais: a.materiais || [], obs: a.obs, atualizado_em: new Date().toISOString() });
 }
 async function _salvarAgenda(ag) {
   await _supaUpsert('agenda', { id: ag.id, cliente: ag.cliente, tel: ag.tel, obs: ag.obs, sinal: ag.sinal, sinal_pago: ag.sinalPago, cor: ag.cor || '#D4A0A8', recorrencia: ag.recorrencia || '', atualizado_em: new Date().toISOString() });
@@ -208,9 +205,7 @@ async function _carregarDaNuvem() {
     db.atendimentos = (atendimentos || []).map(function(a) {
       return {
         id: a.id, data: a.data, cliente: a.cliente, valor: a.valor,
-        pagto: a.pagto, servicoIds: a.servico_ids || [],
-        servicoNomesCache: a.servico_nomes_cache || [],
-        materiais: a.materiais || [], obs: a.obs
+        pagto: a.pagto, servicoIds: a.servico_ids || [], materiais: a.materiais || [], obs: a.obs
       };
     });
     db.despAdm = (despAdm || []).map(function(d) {
@@ -250,8 +245,6 @@ async function _carregarDaNuvem() {
     localStorage.setItem('lizafig_lastsync', now);
     _atualizarStatusSync('ok', now);
     addLog('INFO', '☁️ Dados carregados — ' + db.atendimentos.length + ' atend, ' + db.agenda.length + ' agend, ' + db.anamneses.length + ' anam');
-    // Migrar nomes em background (só atendimentos sem cache)
-    setTimeout(migrarNomesAtendimentos, 2000);
     return true;
   } catch(e) {
     addLog('WARN', '⚠️ Erro ao carregar: ' + e.message);
@@ -340,6 +333,38 @@ async function _migrarParaNovaArquitetura() {
 // ── Polling: buscar apenas registros novos ──
 var _ultimoSync = new Date(0).toISOString();
 
+// ── Alerta de nova ficha recebida ──
+function _alertarNovaFicha(nomeCliente, tipoFicha) {
+  // Som de alerta (diferente do check-in)
+  try {
+    var ctx = new (window.AudioContext || window.webkitAudioContext)();
+    // Dois bipes suaves
+    [0, 0.3].forEach(function(delay) {
+      var osc = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = 880;
+      osc.type = 'sine';
+      gain.gain.setValueAtTime(0, ctx.currentTime + delay);
+      gain.gain.linearRampToValueAtTime(0.3, ctx.currentTime + delay + 0.05);
+      gain.gain.linearRampToValueAtTime(0, ctx.currentTime + delay + 0.25);
+      osc.start(ctx.currentTime + delay);
+      osc.stop(ctx.currentTime + delay + 0.3);
+    });
+  } catch(e) {}
+
+  // Toast de alerta na tela
+  var toast = document.createElement('div');
+  toast.style.cssText = 'position:fixed;top:1.5rem;right:1.5rem;background:linear-gradient(135deg,#1C1C1E,#2C2C2E);color:white;padding:1rem 1.5rem;border-radius:12px;z-index:99999;box-shadow:0 8px 30px rgba(0,0,0,0.4);border-left:4px solid #D4A0A8;max-width:320px;animation:slideIn 0.3s ease';
+  toast.innerHTML = '<div style="font-size:11px;color:#D4A0A8;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">📋 Nova ficha recebida</div>'
+    + '<div style="font-size:15px;font-weight:500;font-family:Cormorant Garamond,serif">' + nomeCliente + '</div>'
+    + '<div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:2px">' + tipoFicha + '</div>';
+  document.body.appendChild(toast);
+  setTimeout(function(){ toast.style.opacity='0'; toast.style.transition='opacity 0.5s'; setTimeout(function(){ toast.remove(); }, 500); }, 6000);
+  addLog('INFO', '📋 Nova ficha recebida — ' + nomeCliente + ' (' + tipoFicha + ')');
+}
+
 async function _pollingNovos() {
   if (_inicializando || _sincronizando) return;
   try {
@@ -361,7 +386,7 @@ async function _pollingNovos() {
     if (novosAtend && novosAtend.length) {
       novosAtend.forEach(function(a) {
         var idx = db.atendimentos.findIndex(function(x){ return x.id === a.id; });
-        var obj = { id: a.id, data: a.data, cliente: a.cliente, valor: a.valor, pagto: a.pagto, servicoIds: a.servico_ids || [], servicoNomesCache: a.servico_nomes_cache || [], materiais: a.materiais || [], obs: a.obs };
+        var obj = { id: a.id, data: a.data, cliente: a.cliente, valor: a.valor, pagto: a.pagto, servicoIds: a.servico_ids || [], materiais: a.materiais || [], obs: a.obs };
         if (idx >= 0) db.atendimentos[idx] = obj; else db.atendimentos.push(obj);
       });
       houveMudanca = true;
@@ -393,11 +418,22 @@ async function _pollingNovos() {
       houveMudanca = true;
     }
     if (novasAnam && novasAnam.length) {
+      var _novasRecebidas = [];
       novasAnam.forEach(function(a) {
         var idx = db.anamneses.findIndex(function(x){ return x.id === a.id; });
         var obj = { id: a.id, dataCadastro: a.data_cadastro, pessoais: a.pessoais || {}, saude: a.saude || {}, hormonal: a.hormonal || {}, habitos: a.habitos || {}, avFisica: a.av_fisica || {}, avCorporal: a.av_corporal || {}, incomoda: a.incomoda, assinatura: a.assinatura, dataAssinatura: a.data_assinatura, modelo_id: a.modelo_id || null, modelo_nome: a.modelo_nome || null, modelo_respostas: a.modelo_respostas || null };
+        // Se é nova (não existia antes), registrar para alerta
+        if (idx < 0) _novasRecebidas.push(obj);
         if (idx >= 0) db.anamneses[idx] = obj; else db.anamneses.push(obj);
       });
+      // Alertar sobre novas fichas recebidas
+      if (_novasRecebidas.length > 0) {
+        _novasRecebidas.forEach(function(a) {
+          var nomeCliente = (a.pessoais && a.pessoais.nome) ? a.pessoais.nome : 'Cliente';
+          var tipoFicha = a.modelo_nome ? a.modelo_nome : 'Anamnese';
+          _alertarNovaFicha(nomeCliente, tipoFicha);
+        });
+      }
       houveMudanca = true;
     }
     if (novaCat && novaCat.length) {
@@ -446,34 +482,6 @@ async function sincronizarAgora() {
   } catch(e) {
     if (btn) { btn.textContent = '🔄'; btn.disabled = false; }
   }
-}
-
-// ── Migrar nomes de serviços nos atendimentos existentes ──
-async function migrarNomesAtendimentos() {
-  var sem_cache = db.atendimentos.filter(function(a) {
-    return (!a.servicoNomesCache || !a.servicoNomesCache.length) && a.servicoIds && a.servicoIds.length;
-  });
-  if (!sem_cache.length) return;
-  addLog('INFO', '🔄 Migrando nomes de ' + sem_cache.length + ' atendimentos...');
-  for (var i = 0; i < sem_cache.length; i++) {
-    var a = sem_cache[i];
-    var nomes = a.servicoIds.map(function(id) {
-      var sv = db.servicos.find(function(x){ return x.id === id; });
-      return sv ? sv.nome : '';
-    }).filter(Boolean);
-    if (nomes.length) {
-      a.servicoNomesCache = nomes;
-      await _supaUpsert('atendimentos', {
-        id: a.id, data: a.data, cliente: a.cliente, valor: a.valor,
-        pagto: a.pagto, servico_ids: a.servicoIds,
-        servico_nomes_cache: nomes,
-        materiais: a.materiais || [], obs: a.obs,
-        atualizado_em: new Date().toISOString()
-      });
-    }
-  }
-  saveData();
-  addLog('INFO', '✅ Migração de nomes concluída!');
 }
 
 // ── Legados / stubs ──
