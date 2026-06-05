@@ -1,0 +1,25 @@
+{
+  "name": "Liza Figueiredo Estética",
+  "short_name": "Liza Estética",
+  "description": "Sistema de gestão — Liza Figueiredo Estética & Beleza",
+  "start_url": "/lizafigueiredoestetica/",
+  "scope": "/lizafigueiredoestetica/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#1C1C1E",
+  "theme_color": "#D4A0A8",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
