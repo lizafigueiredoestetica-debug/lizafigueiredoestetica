@@ -288,6 +288,13 @@ function _tocarSomCheckin() {
   } catch(e) {}
 }
 
+// Normalizar nome: remove acentos, lowercase, espaços extras
+function _normNome(s) {
+  return (s||'').toLowerCase().trim()
+    .normalize('NFD').replace(/[̀-ͯ]/g,'')
+    .replace(/\s+/g,' ');
+}
+
 async function fazerCheckin() {
   var cpf = (document.getElementById('checkinCpf')||{value:''}).value.replace(/\D/g,'');
   var msg = document.getElementById('checkinMsg');
@@ -326,20 +333,32 @@ async function fazerCheckin() {
   var hoje = _hoje();
   var sessaoEncontrada = null;
   var agEncontrado = null;
-  var nomeNorm = nome.toLowerCase().trim();
+  var nomeFicha = (ficha.pessoais||{}).nome || '';
+  var telFicha = ((ficha.pessoais||{}).telefone||'').replace(/\D/g,'');
+  var nomeNorm = _normNome(nomeFicha);
+
   for (var a = 0; a < db.agenda.length; a++) {
     var ag = db.agenda[a];
-    var agNome = (ag.cliente||'').toLowerCase().trim();
-    // Comparar nome exato OU nome contido (para variações de escrita)
-    var nomeOk = agNome === nomeNorm ||
-                 agNome.includes(nomeNorm) ||
-                 nomeNorm.includes(agNome) ||
-                 agNome.split(' ')[0] === nomeNorm.split(' ')[0];
-    if (!nomeOk) continue;
+
+    // Vínculo 1: CPF salvo na agenda (agendamentos novos)
+    var cpfAg = (ag.cpf||'').replace(/\D/g,'');
+    var vinculoCpf = cpfAg && cpfAg === cpf;
+
+    // Vínculo 2: Telefone (anamnese vs agenda)
+    var telAg = (ag.tel||'').replace(/\D/g,'');
+    var vinculoTel = telFicha && telAg && telFicha === telAg;
+
+    // Vínculo 3: Nome normalizado (sem acento, sem maiúsculas)
+    var agNome = _normNome(ag.cliente);
+    var vinculoNome = agNome === nomeNorm ||
+                      agNome.includes(nomeNorm) ||
+                      nomeNorm.includes(agNome);
+
+    if (!vinculoCpf && !vinculoTel && !vinculoNome) continue;
+
     for (var s = 0; s < ag.sessoes.length; s++) {
       var sData = ag.sessoes[s].data;
       var sStatus = ag.sessoes[s].status;
-      // Aceitar sessão de hoje ou de ontem (UTC-3 às vezes pega ontem)
       var eHoje = sData === hoje;
       if (eHoje && sStatus !== 'realizado') {
         sessaoEncontrada = ag.sessoes[s];
