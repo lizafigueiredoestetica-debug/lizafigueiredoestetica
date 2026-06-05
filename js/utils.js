@@ -204,7 +204,7 @@ function renderAll() {
   renderDashboard();
   renderServicos();
   renderMateriais();
-  renderAtendimentos();
+  if (typeof renderAtendimentos === 'function') renderAtendimentos();
   if (typeof renderServiceChips === 'function') renderServiceChips();
   renderAgenda();
   renderCategorias();
