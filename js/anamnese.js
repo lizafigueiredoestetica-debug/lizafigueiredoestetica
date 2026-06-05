@@ -228,7 +228,10 @@ function renderAnamnese() {
 
   var lista = db.anamneses.filter(function(a) {
     // Fichas customizadas ficam só na aba "Fichas Custom"
-    if (a.modelo_respostas && Object.keys(a.modelo_respostas).length > 0) return false;
+    // Mas o modelo padrão "Anamnese" fica aqui
+    var isCustom = a.modelo_respostas && Object.keys(a.modelo_respostas).length > 0;
+    var isModeloPadrao = !a.modelo_nome || a.modelo_nome === 'Anamnese' || a.modelo_id === 'modelo-anamnese-padrao';
+    if (isCustom && !isModeloPadrao) return false;
     var nome = (a.pessoais && a.pessoais.nome)||'';
     if(busca && nome.toLowerCase().indexOf(busca) < 0) return false;
     if(de || ate) {
