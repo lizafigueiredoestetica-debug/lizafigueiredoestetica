@@ -61,6 +61,14 @@
           <span>👥</span><span>Clientes</span>
           <span class="badge" id="badgeClientes">0</span>
         </button>
+        <button class="nav-tab" onclick="fecharDrawer();showSection('aniversariantes')" data-label="Aniversariantes">
+          <span>🎂</span><span>Aniversariantes</span>
+          <span class="badge" id="badgeAniv">0</span>
+        </button>
+        <button class="nav-tab" onclick="fecharDrawer();showSection('checkins')" data-label="Check-ins">
+          <span>✅</span><span>Check-ins</span>
+          <span class="badge" id="badgeCheckins">0</span>
+        </button>
         <button class="nav-tab" onclick="showSection('mensagens')" data-label="WhatsApp">
           <span>💬</span><span>WhatsApp</span>
         </button>
@@ -1062,6 +1070,72 @@
   </section>
 
   <!-- Modelos de Ficha de Anamnese -->
+  <!-- ===== ANIVERSARIANTES ===== -->
+  <section class="section" id="sec-aniversariantes">
+    <div class="main">
+      <div class="section-title">Aniversariantes</div>
+      <div class="section-sub">Clientes aniversariantes por mês</div>
+      <div class="divider"></div>
+      <div id="anivMesNav" style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1.5rem;flex-wrap:wrap">
+        <button onclick="anivMesAnterior()" class="btn btn-secondary btn-sm">‹</button>
+        <span id="anivMesTitulo" style="font-family:'Cormorant Garamond',serif;font-size:20px;min-width:160px;text-align:center"></span>
+        <button onclick="anivMesProximo()" class="btn btn-secondary btn-sm">›</button>
+        <button onclick="anivMesAtual()" class="btn btn-secondary btn-sm" style="margin-left:0.5rem">Mês atual</button>
+        <span id="anivContador" style="font-size:11px;color:var(--text-light);margin-left:0.5rem"></span>
+      </div>
+      <div id="anivListaCompleta">
+        <div class="empty-state"><div class="empty-icon">🎂</div><p>Nenhum aniversariante</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== CHECK-INS ===== -->
+  <section class="section" id="sec-checkins">
+    <div class="main">
+      <div class="section-title">Histórico de Check-ins</div>
+      <div class="section-sub">Registro de presença das clientes</div>
+      <div class="divider"></div>
+      <div class="filters-bar" style="margin-bottom:1.5rem">
+        <input class="filter-input" type="text" id="filtCheckinNome" placeholder="🔍 Buscar cliente..." oninput="renderCheckins()">
+        <input class="filter-input" type="date" id="filtCheckinDe" oninput="renderCheckins()" title="Data inicial">
+        <input class="filter-input" type="date" id="filtCheckinAte" oninput="renderCheckins()" title="Data final">
+        <button class="btn btn-secondary btn-sm" onclick="document.getElementById('filtCheckinNome').value='';document.getElementById('filtCheckinDe').value='';document.getElementById('filtCheckinAte').value='';renderCheckins()">✕ Limpar</button>
+        <button class="btn btn-secondary btn-sm" onclick="exportCheckinsCsv()" style="margin-left:auto">⬇ Exportar CSV</button>
+      </div>
+      <div id="checkinResumo" style="margin-bottom:1rem"></div>
+      <div class="panel">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Data</th><th>Hora</th><th>Cliente</th><th>Serviço</th><th>Sessão</th><th>Status</th></tr></thead>
+            <tbody id="tbodyCheckins"></tbody>
+          </table>
+        </div>
+        <div id="pagCheckins"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== ACOMPANHAMENTO FICHAS CUSTOM ===== -->
+  <section class="section" id="sec-acomp-custom">
+    <div class="main">
+      <div class="section-title">Acompanhamento Custom</div>
+      <div class="section-sub">Evolução das fichas customizadas por cliente e modelo</div>
+      <div class="divider"></div>
+      <div class="filters-bar">
+        <input class="filter-input" type="text" id="filtAcompCustomNome" placeholder="🔍 Buscar cliente..." oninput="_acompCustomPagina=1;renderAcompFichasCustom()">
+        <select class="filter-input" id="filtAcompCustomModelo" onchange="_acompCustomPagina=1;renderAcompFichasCustom()">
+          <option value="">Todos os modelos</option>
+        </select>
+        <input class="filter-input" type="date" id="filtAcompCustomDe" oninput="_acompCustomPagina=1;renderAcompFichasCustom()" title="Data inicial">
+        <input class="filter-input" type="date" id="filtAcompCustomAte" oninput="_acompCustomPagina=1;renderAcompFichasCustom()" title="Data final">
+        <button class="btn btn-secondary btn-sm" onclick="document.getElementById('filtAcompCustomNome').value='';document.getElementById('filtAcompCustomModelo').value='';document.getElementById('filtAcompCustomDe').value='';document.getElementById('filtAcompCustomAte').value='';_acompCustomPagina=1;renderAcompFichasCustom()">✕ Limpar</button>
+      </div>
+      <div id="acompCustomLista">
+        <div class="empty-state"><div class="empty-icon">📊</div><p>Carregando...</p></div>
+      </div>
+    </div>
+  </section>
+
   <section class="section" id="sec-modelos">
     <div class="main">
       <div class="section-title">Modelos de Ficha</div>
