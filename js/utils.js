@@ -4,6 +4,10 @@
    mascaras, helpers gerais
    ===================================================== */
 
+// Wrappers seguros para funções que podem ser chamadas antes de carregar
+function renderAtendimentos() { if(typeof window._renderAtendimentos==='function') window._renderAtendimentos(); }
+function salvarAtendimento() { if(typeof window._salvarAtendimento_form==='function') window._salvarAtendimento_form(); }
+
 function uid() { return Date.now().toString(36) + Math.random().toString(36).substr(2); }
 
 function _hoje() {
