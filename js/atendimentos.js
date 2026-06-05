@@ -104,7 +104,15 @@ function renderAtendimentos() {
     // Support both old (servicoId) and new (servicoIds) formats
     const servicoIds = a.servicoIds || (a.servicoId ? [a.servicoId] : []);
     const s = db.servicos.find(x=>x.id===servicoIds[0]); // first for table display
-    const servNomes = servicoIds.map(sid=>{const sv=db.servicos.find(x=>x.id===sid);return sv?sv.nome:'?'}).join(' + ')||'—';
+    const _cache = a.servicoNomesCache || [];
+    const servNomes = servicoIds.length
+      ? servicoIds.map((sid,idx)=>{
+          const sv=db.servicos.find(x=>x.id===sid);
+          if(sv) return sv.nome;
+          if(sid && (sid.indexOf(' ')>=0 || sid.length<8)) return sid;
+          return _cache[idx] || sid || '?';
+        }).join(' + ')
+      : (_cache.length ? _cache.join(' + ') : (a.servicoNome||'—'));
     const matsNomes = (a.materiais && typeof a.materiais === 'object' && !Array.isArray(a.materiais))
       ? Object.keys(a.materiais).map(mid=>{ const m=db.materiais.find(x=>x.id===mid); return m?m.nome+(a.materiais[mid]>1?' ×'+a.materiais[mid]:''):'?'; }).join(', ')||'Nenhum'
       : (a.materiais||[]).map(item=>{ const mid=typeof item==='object'?item.id:item; const m=db.materiais.find(x=>x.id===mid); return m?m.nome:'?'; }).join(', ')||'Nenhum';
