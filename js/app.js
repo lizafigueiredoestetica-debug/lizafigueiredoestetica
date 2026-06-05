@@ -467,14 +467,18 @@ var _urlAnamnese = localStorage.getItem('lizafig_url_anamnese') || 'https://liza
 function waEnviarAnamnese(cliente, tel, modeloId) {
   var primeiroNome = (cliente||'').split(' ')[0];
   var msg = _getMensagem('anamnese').replace(/{nome}/g, primeiroNome);
-  // Se houver modelo selecionado, adicionar parâmetro na URL da ficha
-  if (modeloId) {
+  // Só passar modelo na URL se for um modelo CUSTOM (não o padrão Anamnese)
+  var isModeloPadrao = !modeloId || modeloId === 'modelo-anamnese-padrao';
+  if (modeloId && !isModeloPadrao) {
     var modelo = _modelosAnamnese.find(function(m){ return m.id === modeloId; });
-    var nomeModelo = modelo ? encodeURIComponent(modelo.nome.toLowerCase().replace(/\s+/g,'-')) : modeloId;
-    msg = msg.replace(
-      /https:\/\/[^\s]+\/anamnese\//,
-      _urlAnamnese + '?modelo=' + nomeModelo + '&id=' + modeloId + ' '
-    );
+    var isAnamnese = modelo && (modelo.nome === 'Anamnese' || modelo.nome === 'Anamnese Corporal');
+    if (!isAnamnese) {
+      var nomeModelo = modelo ? encodeURIComponent(modelo.nome.toLowerCase().replace(/\s+/g,'-')) : modeloId;
+      msg = msg.replace(
+        /https:\/\/[^\s]+\/anamnese\//,
+        _urlAnamnese + '?modelo=' + nomeModelo + '&id=' + modeloId + ' '
+      );
+    }
   }
   var telFmt = tel ? '55' + tel.replace(/\D/g,'') : '';
   window.open('https://wa.me/' + telFmt + '?text=' + encodeURIComponent(msg), '_blank');
@@ -891,15 +895,8 @@ function _popularSelectModelos() {
     var sel = document.getElementById(id);
     if (!sel) return;
     var val = sel.value;
-    sel.innerHTML = '<option value="">— Nenhum —</option>';
-    // Anamnese padrão sempre como primeira opção
-    var optPadrao = document.createElement('option');
-    optPadrao.value = 'modelo-anamnese-padrao';
-    optPadrao.textContent = '📋 Anamnese Corporal (padrão)';
-    if (val === 'modelo-anamnese-padrao') optPadrao.selected = true;
-    sel.appendChild(optPadrao);
-    // Demais modelos custom ativos (exceto o padrão que já foi adicionado)
-    _modelosAnamnese.filter(function(m){ return m.ativo && m.id !== 'modelo-anamnese-padrao' && m.nome !== 'Anamnese'; }).forEach(function(m) {
+    sel.innerHTML = '<option value="">— Nenhum (ficha padrão) —</option>';
+    _modelosAnamnese.filter(function(m){ return m.ativo; }).forEach(function(m) {
       var opt = document.createElement('option');
       opt.value = m.id;
       opt.textContent = m.nome;
