@@ -83,7 +83,15 @@ function renderDashboard() {
   document.getElementById('ultimosAtend').innerHTML = ultimos.length ? `<table style="width:100%"><thead><tr><th>Data</th><th>Cliente</th><th>Serviço</th><th>Valor</th></tr></thead><tbody>` +
     ultimos.map(a => {
       const ids2 = a.servicoIds || (a.servicoId ? [a.servicoId] : []);
-      const sNomes = ids2.map(sid=>{const sv=db.servicos.find(x=>x.id===sid);return sv?sv.nome:'?'}).join(' + ')||'—';
+      const _cache2 = a.servicoNomesCache || [];
+      const sNomes = ids2.length
+        ? ids2.map((sid,idx)=>{
+            const sv=db.servicos.find(x=>x.id===sid);
+            if(sv) return sv.nome;
+            if(sid && (sid.indexOf(' ')>=0 || sid.length<8)) return sid;
+            return _cache2[idx] || sid || '?';
+          }).join(' + ')
+        : (_cache2.length ? _cache2.join(' + ') : (a.servicoNome||'—'));
       return `<tr class="data-row" style="cursor:default"><td>${fmtDate(a.data)}</td><td>${a.cliente}</td><td>${sNomes}</td><td>${fmtMoney(a.valor)}</td></tr>`;
     }).join('') + '</tbody></table>'
   : '<div class="empty-state" style="padding:2rem"><div class="empty-icon">📋</div><p>Nenhum atendimento</p></div>';
