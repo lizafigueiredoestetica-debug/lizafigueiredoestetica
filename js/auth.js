@@ -117,7 +117,7 @@ function gerenciarUsuarios() {
       +'<td style="padding:8px">'+nivelBadge+'</td>'
       +'<td style="padding:8px">'+permsTexto+'</td>'
       +'<td style="padding:8px">'
-      +(u.id!=='u1'?'<button onclick="editarUsuario(\''+u.id+'\')" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:13px;margin-right:4px">✏️</button>':'')
+      +'<button onclick="editarUsuario(\''+u.id+'\')" style="background:none;border:none;color:var(--rose);cursor:pointer;font-size:13px;margin-right:4px">✏️</button>'
       +(u.id!=='u1'?'<button onclick="excluirUsuario(\''+u.id+'\')" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:13px">✕</button>':'')
       +'</td></tr>';
   }).join('');
@@ -191,10 +191,10 @@ function editarUsuario(id) {
     +'<input id="eu-user" value="'+u.usuario+'" style="width:100%;padding:0.5rem 0.75rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none;box-sizing:border-box"></div>'
     +'<div><label style="font-size:10px;letter-spacing:1px;color:var(--text-light);text-transform:uppercase">Senha</label>'
     +'<input id="eu-pass" value="'+u.senha+'" style="width:100%;padding:0.5rem 0.75rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none;box-sizing:border-box"></div>'
-    +'<div><label style="font-size:10px;letter-spacing:1px;color:var(--text-light);text-transform:uppercase">Nível</label>'
-    +'<select id="eu-nivel" style="width:100%;padding:0.5rem 0.75rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none;background:white;box-sizing:border-box">'
-    +'<option value="operador"'+(u.nivel==='operador'?' selected':'')+'>Operador</option>'
-    +'<option value="admin"'+(u.nivel==='admin'?' selected':'')+'>Admin</option></select></div>'
+    +(u.id==='u1'
+      ? '<div><label style="font-size:10px;letter-spacing:1px;color:var(--text-light);text-transform:uppercase">Nível</label><input value="Admin" disabled style="width:100%;padding:0.5rem 0.75rem;border:1px solid var(--border);border-radius:8px;font-size:13px;background:#f5f5f5;box-sizing:border-box"><input type="hidden" id="eu-nivel" value="admin"></div>'
+      : '<div><label style="font-size:10px;letter-spacing:1px;color:var(--text-light);text-transform:uppercase">Nível</label><select id="eu-nivel" style="width:100%;padding:0.5rem 0.75rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none;background:white;box-sizing:border-box"><option value="operador"'+(u.nivel==='operador'?' selected':'')+'>Operador</option><option value="admin"'+(u.nivel==='admin'?' selected':'')+'>Admin</option></select></div>'
+    )
     +'</div>'
     +'<div style="margin-bottom:1rem">'
     +'<div style="font-size:10px;letter-spacing:1px;color:var(--text-light);margin-bottom:0.5rem;text-transform:uppercase">Permissões de acesso</div>'
@@ -288,13 +288,6 @@ function _tocarSomCheckin() {
   } catch(e) {}
 }
 
-// Normalizar nome: remove acentos, lowercase, espaços extras
-function _normNome(s) {
-  return (s||'').toLowerCase().trim()
-    .normalize('NFD').replace(/[̀-ͯ]/g,'')
-    .replace(/\s+/g,' ');
-}
-
 async function fazerCheckin() {
   var cpf = (document.getElementById('checkinCpf')||{value:''}).value.replace(/\D/g,'');
   var msg = document.getElementById('checkinMsg');
@@ -333,32 +326,20 @@ async function fazerCheckin() {
   var hoje = _hoje();
   var sessaoEncontrada = null;
   var agEncontrado = null;
-  var nomeFicha = (ficha.pessoais||{}).nome || '';
-  var telFicha = ((ficha.pessoais||{}).telefone||'').replace(/\D/g,'');
-  var nomeNorm = _normNome(nomeFicha);
-
+  var nomeNorm = nome.toLowerCase().trim();
   for (var a = 0; a < db.agenda.length; a++) {
     var ag = db.agenda[a];
-
-    // Vínculo 1: CPF salvo na agenda (agendamentos novos)
-    var cpfAg = (ag.cpf||'').replace(/\D/g,'');
-    var vinculoCpf = cpfAg && cpfAg === cpf;
-
-    // Vínculo 2: Telefone (anamnese vs agenda)
-    var telAg = (ag.tel||'').replace(/\D/g,'');
-    var vinculoTel = telFicha && telAg && telFicha === telAg;
-
-    // Vínculo 3: Nome normalizado (sem acento, sem maiúsculas)
-    var agNome = _normNome(ag.cliente);
-    var vinculoNome = agNome === nomeNorm ||
-                      agNome.includes(nomeNorm) ||
-                      nomeNorm.includes(agNome);
-
-    if (!vinculoCpf && !vinculoTel && !vinculoNome) continue;
-
+    var agNome = (ag.cliente||'').toLowerCase().trim();
+    // Comparar nome exato OU nome contido (para variações de escrita)
+    var nomeOk = agNome === nomeNorm ||
+                 agNome.includes(nomeNorm) ||
+                 nomeNorm.includes(agNome) ||
+                 agNome.split(' ')[0] === nomeNorm.split(' ')[0];
+    if (!nomeOk) continue;
     for (var s = 0; s < ag.sessoes.length; s++) {
       var sData = ag.sessoes[s].data;
       var sStatus = ag.sessoes[s].status;
+      // Aceitar sessão de hoje ou de ontem (UTC-3 às vezes pega ontem)
       var eHoje = sData === hoje;
       if (eHoje && sStatus !== 'realizado') {
         sessaoEncontrada = ag.sessoes[s];
