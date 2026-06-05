@@ -262,7 +262,9 @@ function salvarEditAtend(id) {
     a.materiais = mats;
   }
 
-  saveData(); renderAll(); showToast('Atendimento atualizado!');
+  saveData(); renderAll();
+  if (typeof _salvarAtendimento === 'function') _salvarAtendimento(a);
+  showToast('Atendimento atualizado!');
 }
 
 function salvarEditServ(id) {
