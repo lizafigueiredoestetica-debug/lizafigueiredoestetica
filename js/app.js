@@ -484,6 +484,19 @@ function waEnviarAnamnese(cliente, tel, modeloId) {
   window.open('https://wa.me/' + telFmt + '?text=' + encodeURIComponent(msg), '_blank');
 }
 
+// Enviar link da ficha de anamnese corporal padrão (independente de modelos custom)
+function waEnviarAnamnesePadrao() {
+  var cliente = (document.getElementById('ag-cliente')||{value:''}).value.trim();
+  var tel = _waTelefone(cliente) || (document.getElementById('ag-tel')||{value:''}).value.replace(/\D/g,'');
+  var primeiroNome = cliente ? cliente.split(' ')[0] : '';
+  var msg = _getMensagem('anamnese').replace(/{nome}/g, primeiroNome);
+  // Garantir que o link aponta para a anamnese padrão sem parâmetros de modelo
+  var urlPadrao = 'https://lizafigueiredoestetica-debug.github.io/anamnese/';
+  msg = msg.replace(/https:\/\/[^\s]+\/anamnese\/[^\s]*/g, urlPadrao);
+  var telFmt = tel ? '55' + tel : '';
+  window.open('https://wa.me/' + telFmt + '?text=' + encodeURIComponent(msg), '_blank');
+}
+
 // 2. Pós-ciclo completo
 function waPosCirclo(agId) {
   var ag = db.agenda.find(function(x){ return x.id === agId; });
