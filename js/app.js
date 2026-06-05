@@ -891,8 +891,15 @@ function _popularSelectModelos() {
     var sel = document.getElementById(id);
     if (!sel) return;
     var val = sel.value;
-    sel.innerHTML = '<option value="">— Nenhum (ficha padrão) —</option>';
-    _modelosAnamnese.filter(function(m){ return m.ativo; }).forEach(function(m) {
+    sel.innerHTML = '<option value="">— Nenhum —</option>';
+    // Anamnese padrão sempre como primeira opção
+    var optPadrao = document.createElement('option');
+    optPadrao.value = 'modelo-anamnese-padrao';
+    optPadrao.textContent = '📋 Anamnese Corporal (padrão)';
+    if (val === 'modelo-anamnese-padrao') optPadrao.selected = true;
+    sel.appendChild(optPadrao);
+    // Demais modelos custom ativos (exceto o padrão que já foi adicionado)
+    _modelosAnamnese.filter(function(m){ return m.ativo && m.id !== 'modelo-anamnese-padrao' && m.nome !== 'Anamnese'; }).forEach(function(m) {
       var opt = document.createElement('option');
       opt.value = m.id;
       opt.textContent = m.nome;
