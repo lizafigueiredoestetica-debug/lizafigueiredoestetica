@@ -20,11 +20,41 @@ function salvarAtendimento() {
   // Build materiais array with qty for storage
   const materiaisUsados = Object.entries(selectedMateriais).map(([mid, qtd]) => ({id: mid, qtd}));
 
-  // Cache dos nomes dos serviços para exibição mesmo se deletados futuramente
-  const _nomesCache = selectedServicos.map(function(id){ const sv=db.servicos.find(function(x){return x.id===id;}); return sv?sv.nome:''; }).filter(Boolean);
+  // Verificar se há sinal do pacote para incluir neste atendimento
+  var _valorFinal = parseFloat(valor);
+  var _ag = db.agenda.find(function(ag) {
+    return ag.cliente && ag.cliente.toLowerCase().trim() === cliente.toLowerCase().trim()
+      && parseFloat(ag.sinal) > 0;
+  });
+  if (_ag && parseFloat(_ag.sinal) > 0) {
+    // Verificar se o sinal já foi incluído em algum atendimento anterior
+    var _sinalJaIncluido = db.atendimentos.some(function(a) {
+      return a.cliente && a.cliente.toLowerCase().trim() === cliente.toLowerCase().trim()
+        && a.pagto === 'sinal';
+    });
+    if (!_sinalJaIncluido) {
+      var _sinalVal = parseFloat(_ag.sinal);
+      if (confirm('💰 Sinal de R$ ' + _sinalVal.toFixed(2).replace('.',',') + ' registrado para ' + cliente + '.
+
+Deseja incluir o sinal neste atendimento?')) {
+        _valorFinal += _sinalVal;
+        // Criar lançamento separado do sinal
+        var _atendSinal = {
+          id: uid(), data: data, cliente: cliente,
+          valor: _sinalVal, pagto: 'sinal',
+          servicoIds: [], servicoNomesCache: ['Sinal/Entrada'],
+          materiais: [], obs: 'Sinal de entrada'
+        };
+        db.atendimentos.push(_atendSinal);
+        _salvarAtendimento(_atendSinal);
+      }
+    }
+  }
+
+  var _nomesCache = selectedServicos.map(function(id){ var sv=db.servicos.find(function(x){return x.id===id;}); return sv?sv.nome:''; }).filter(Boolean);
 
   db.atendimentos.push({
-    id: uid(), data, cliente, valor: parseFloat(valor),
+    id: uid(), data, cliente, valor: _valorFinal,
     pagto,
     servicoIds: [...selectedServicos],
     servicoNomesCache: _nomesCache,
@@ -86,18 +116,7 @@ function renderAtendimentos() {
     // Support both old (servicoId) and new (servicoIds) formats
     const servicoIds = a.servicoIds || (a.servicoId ? [a.servicoId] : []);
     const s = db.servicos.find(x=>x.id===servicoIds[0]); // first for table display
-    // Resolver nomes: tenta por ID; se não achar, usa o valor como nome legado
-    const _nomesCache = a.servicoNomesCache || [];
-    const servNomes = servicoIds.length
-      ? servicoIds.map(function(sid, idx) {
-          if (!sid) return _nomesCache[idx] || '?';
-          const sv = db.servicos.find(function(x){ return x.id === sid; });
-          if (sv) return sv.nome;
-          // Valor já é um nome (formato legado) — usar direto
-          if (sid.indexOf(' ') >= 0 || sid.length < 8) return sid;
-          return _nomesCache[idx] || sid;
-        }).join(' + ')
-      : (_nomesCache.length ? _nomesCache.join(' + ') : (a.servicoNome || '—'));
+    const servNomes = servicoIds.map(sid=>{const sv=db.servicos.find(x=>x.id===sid);return sv?sv.nome:'?'}).join(' + ')||'—';
     const matsNomes = (a.materiais && typeof a.materiais === 'object' && !Array.isArray(a.materiais))
       ? Object.keys(a.materiais).map(mid=>{ const m=db.materiais.find(x=>x.id===mid); return m?m.nome+(a.materiais[mid]>1?' ×'+a.materiais[mid]:''):'?'; }).join(', ')||'Nenhum'
       : (a.materiais||[]).map(item=>{ const mid=typeof item==='object'?item.id:item; const m=db.materiais.find(x=>x.id===mid); return m?m.nome:'?'; }).join(', ')||'Nenhum';
