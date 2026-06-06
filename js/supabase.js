@@ -240,6 +240,21 @@ async function _carregarDaNuvem() {
     if(!db.acomp) db.acomp = [];
     if(!db.entradaEstoque) db.entradaEstoque = [];
 
+    // ── Carregar clientesExcluidos da tabela configuracoes ──
+    try {
+      var respCE = await fetch(SUPA_URL + '/rest/v1/configuracoes?id=eq.clientes_excluidos&select=valor', {
+        headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY }
+      });
+      if (respCE.ok) {
+        var rowsCE = await respCE.json();
+        if (rowsCE && rowsCE.length && rowsCE[0].valor) {
+          db.clientesExcluidos = JSON.parse(rowsCE[0].valor);
+        } else {
+          db.clientesExcluidos = [];
+        }
+      }
+    } catch(e) { db.clientesExcluidos = db.clientesExcluidos || []; }
+
     localStorage.setItem('lizafig_db', JSON.stringify(db));
     var now = new Date().toLocaleString('pt-BR');
     localStorage.setItem('lizafig_lastsync', now);
@@ -481,6 +496,25 @@ async function sincronizarAgora() {
     }
   } catch(e) {
     if (btn) { btn.textContent = '🔄'; btn.disabled = false; }
+  }
+}
+
+// ── Salvar lista de clientes excluídos na nuvem ──
+async function _salvarClientesExcluidos() {
+  try {
+    var lista = db.clientesExcluidos || [];
+    await fetch(SUPA_URL + '/rest/v1/configuracoes', {
+      method: 'POST',
+      headers: {
+        'apikey': SUPA_KEY,
+        'Authorization': 'Bearer ' + SUPA_KEY,
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates,return=minimal'
+      },
+      body: JSON.stringify({ id: 'clientes_excluidos', valor: JSON.stringify(lista) })
+    });
+  } catch(e) {
+    addLog('WARN', '⚠️ Erro ao salvar clientesExcluidos: ' + e.message);
   }
 }
 
