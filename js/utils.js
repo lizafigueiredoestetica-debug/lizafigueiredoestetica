@@ -1590,6 +1590,8 @@ function _excluirCliente(nome) {
   var nomeNorm = nome.toLowerCase().trim();
   if (db.clientesExcluidos.indexOf(nomeNorm) < 0) db.clientesExcluidos.push(nomeNorm);
   saveData();
+  // Persistir exclusão na nuvem para sincronizar com outros dispositivos
+  if (typeof _salvarClientesExcluidos === 'function') _salvarClientesExcluidos();
   showToast('✅ Cliente "' + nome + '" removido (' + (antes - db.anamneses.length) + ' ficha(s) excluída(s))');
   renderClientes();
 }
