@@ -568,7 +568,10 @@ function _consolidarClientes() {
     mapa[key].atendimentos.push(a);
   });
 
-  return Object.values(mapa).sort(function(a, b) { return a.nome.localeCompare(b.nome); });
+  var _excl = db.clientesExcluidos || [];
+  return Object.values(mapa).filter(function(c) {
+    return _excl.indexOf(c.nome.toLowerCase().trim()) < 0;
+  }).sort(function(a, b) { return a.nome.localeCompare(b.nome); });
 }
 
 var _clientePag = 1;
@@ -1173,7 +1176,10 @@ function _consolidarClientes() {
     if (!mapa[key]) mapa[key] = { nome: a.cliente, pessoais: {}, anamneses: [], fichasCustom: [], agenda: [], atendimentos: [] };
     mapa[key].atendimentos.push(a);
   });
-  return Object.values(mapa).sort(function(a, b) { return a.nome.localeCompare(b.nome); });
+  var _excl2 = db.clientesExcluidos || [];
+  return Object.values(mapa).filter(function(c) {
+    return _excl2.indexOf(c.nome.toLowerCase().trim()) < 0;
+  }).sort(function(a, b) { return a.nome.localeCompare(b.nome); });
 }
 
 function renderClientes() {
@@ -1579,6 +1585,10 @@ function _excluirCliente(nome) {
   db.anamneses = db.anamneses.filter(function(a) {
     return !a.pessoais || !a.pessoais.nome || a.pessoais.nome.toLowerCase().trim() !== nome.toLowerCase().trim();
   });
+  // Ocultar da aba Clientes mesmo que ainda exista na agenda/atendimentos
+  if (!db.clientesExcluidos) db.clientesExcluidos = [];
+  var nomeNorm = nome.toLowerCase().trim();
+  if (db.clientesExcluidos.indexOf(nomeNorm) < 0) db.clientesExcluidos.push(nomeNorm);
   saveData();
   showToast('✅ Cliente "' + nome + '" removido (' + (antes - db.anamneses.length) + ' ficha(s) excluída(s))');
   renderClientes();
