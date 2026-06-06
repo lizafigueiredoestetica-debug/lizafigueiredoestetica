@@ -8,6 +8,13 @@
 function renderAtendimentos() { if(typeof window._renderAtendimentos==='function') window._renderAtendimentos(); }
 function salvarAtendimento() { if(typeof window._salvarAtendimento_form==='function') window._salvarAtendimento_form(); }
 
+// Normalizar nome para comparações sem acento/maiúsculas
+function _normNome(s) {
+  return (s||'').toLowerCase().trim()
+    .normalize('NFD').replace(/[̀-ͯ]/g,'')
+    .replace(/\s+/g,' ');
+}
+
 function uid() { return Date.now().toString(36) + Math.random().toString(36).substr(2); }
 
 function _hoje() {
@@ -527,7 +534,7 @@ function _consolidarClientes() {
   db.anamneses.forEach(function(a) {
     var p = a.pessoais || {};
     if (!p.nome) return;
-    var key = p.nome.toLowerCase().trim();
+    var key = _normNome(p.nome);
     if (!mapa[key]) mapa[key] = { nome: p.nome, pessoais: {}, anamneses: [], fichasCustom: [], agenda: [], atendimentos: [] };
     // Mesclar dados pessoais (prioriza o mais completo)
     var cur = mapa[key].pessoais;
@@ -546,7 +553,7 @@ function _consolidarClientes() {
   // Fonte 2: agenda
   db.agenda.forEach(function(ag) {
     if (!ag.cliente) return;
-    var key = ag.cliente.toLowerCase().trim();
+    var key = _normNome(ag.cliente);
     if (!mapa[key]) mapa[key] = { nome: ag.cliente, pessoais: {}, anamneses: [], fichasCustom: [], agenda: [], atendimentos: [] };
     mapa[key].agenda.push(ag);
     // Telefone da agenda
@@ -556,7 +563,7 @@ function _consolidarClientes() {
   // Fonte 3: atendimentos
   db.atendimentos.forEach(function(a) {
     if (!a.cliente) return;
-    var key = a.cliente.toLowerCase().trim();
+    var key = _normNome(a.cliente);
     if (!mapa[key]) mapa[key] = { nome: a.cliente, pessoais: {}, anamneses: [], fichasCustom: [], agenda: [], atendimentos: [] };
     mapa[key].atendimentos.push(a);
   });
@@ -1155,14 +1162,14 @@ function _consolidarClientes() {
   });
   db.agenda.forEach(function(ag) {
     if (!ag.cliente) return;
-    var key = ag.cliente.toLowerCase().trim();
+    var key = _normNome(ag.cliente);
     if (!mapa[key]) mapa[key] = { nome: ag.cliente, pessoais: {}, anamneses: [], fichasCustom: [], agenda: [], atendimentos: [] };
     mapa[key].agenda.push(ag);
     if (!mapa[key].pessoais.telefone && ag.tel) mapa[key].pessoais.telefone = ag.tel;
   });
   db.atendimentos.forEach(function(a) {
     if (!a.cliente) return;
-    var key = a.cliente.toLowerCase().trim();
+    var key = _normNome(a.cliente);
     if (!mapa[key]) mapa[key] = { nome: a.cliente, pessoais: {}, anamneses: [], fichasCustom: [], agenda: [], atendimentos: [] };
     mapa[key].atendimentos.push(a);
   });
@@ -1214,7 +1221,7 @@ function renderClientes() {
       +'<div style="display:flex;align-items:center;gap:0.5rem">'
       +(p.telefone?'<button onclick="event.stopPropagation();var msg=_getMensagem(\'pos_atendimento\').replace(/{nome}/g,\''+c.nome.split(' ')[0]+'\').replace(/{servico}/g,\'\');window.open(\'https://wa.me/55'+((p.telefone||'').replace(/\D/g,''))+'?text=\'+encodeURIComponent(msg),\'_blank\')" style="background:#E7F7EE;border:1px solid #7DB87D;color:#276749;border-radius:8px;padding:5px 10px;font-size:11px;cursor:pointer">💬 WA</button>':'')
       +'<button onclick="event.stopPropagation();gerarLinkCliente(\''+nomeEsc+'\')" style="background:#EDF4FF;border:1px solid #90CAF9;color:#1565C0;border-radius:8px;padding:5px 10px;font-size:11px;cursor:pointer" title="Dashboard da cliente">🔗</button>'
-      +'<button onclick="event.stopPropagation();_excluirCliente(\''+nomeEsc+'\')" style="background:#FFEBEE;border:1px solid #FFCDD2;color:var(--danger);border-radius:8px;padding:5px 10px;font-size:11px;cursor:pointer" title="Excluir cliente">🗑</button>'
+      +'<button onclick="event.stopPropagation();_excluirCliente(this.dataset.nome)" data-nome="'+c.nome.replace(/"/g,'&quot;')+'" style="background:#FFEBEE;border:1px solid #FFCDD2;color:var(--danger);border-radius:8px;padding:5px 10px;font-size:11px;cursor:pointer" title="Excluir cliente">🗑</button>'
       +'<span class="expand-icon" id="icon-cli-'+key+'">▶</span>'
       +'</div></div>'
       +'<div class="agenda-sessoes-wrap" id="cli-body-'+key+'">'+_renderFichaCliente(c, key)+'</div>'
