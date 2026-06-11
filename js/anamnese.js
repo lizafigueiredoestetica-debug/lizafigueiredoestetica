@@ -539,6 +539,7 @@ function _buildAnamHtml(ag, anamnese) {
         ['Gênero', sel('genero', p.genero, generos)],
         ['Nascimento', inp('dataNasc', p.dataNasc, 'AAAA-MM-DD')],
         ['Telefone', inp('telefone', p.telefone)],
+        ['CPF', inp('cpf', p.cpf)],
         ['Filhos?', sel('filhos', p.filhos, simNao)]
       ])
     + sec('🏥 Histórico de Saúde')
@@ -656,7 +657,7 @@ function salvarFichaAcomp(pid, clienteNome, anamId, agCpf) {
   function g(k) { var el=document.getElementById('ac_'+pid+'_'+k); return el ? el.value.trim() : ''; }
   function gc(k) { var el=document.getElementById('ac_'+pid+'_'+k); return el ? el.checked : false; }
 
-  var dadosPessoais = { nome:g('nome'), idade:g('idade'), genero:g('genero'), dataNasc:g('dataNasc'), telefone:g('telefone'), filhos:g('filhos') };
+  var dadosPessoais = { nome:g('nome'), idade:g('idade'), genero:g('genero'), dataNasc:g('dataNasc'), telefone:g('telefone'), cpf:g('cpf'), filhos:g('filhos') };
   var saude = { doenca:g('doenca'), doencaQual:g('doencaQual'), medicacao:g('medicacao'), medicacaoQual:g('medicacaoQual'),
     injetado:g('injetado'), injetadoQual:g('injetadoQual'), cirurgia:g('cirurgia'), cirurgiaQual:g('cirurgiaQual'),
     alergia:g('alergia'), alergiaQual:g('alergiaQual'), marcapasso:g('marcapasso'), circulatorio:g('circulatorio'),
