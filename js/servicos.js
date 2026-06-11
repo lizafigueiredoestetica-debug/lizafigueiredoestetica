@@ -156,3 +156,102 @@ function renderMateriais(){
     </tr>`}).join('');
 }
 
+
+// ===================== PROTOCOLOS PERSONALIZADOS =====================
+function mostrarSubAba(aba) {
+  document.getElementById('sub-aba-servicos').style.display = aba === 'servicos' ? '' : 'none';
+  document.getElementById('sub-aba-protocolos').style.display = aba === 'protocolos' ? '' : 'none';
+  document.getElementById('sub-btn-servicos').classList.toggle('active', aba === 'servicos');
+  document.getElementById('sub-btn-protocolos').classList.toggle('active', aba === 'protocolos');
+  if (aba === 'protocolos') renderProtocolos();
+}
+
+function _renderChipsProtocolo(selecionados) {
+  var ativos = db.servicos.filter(function(s){ return s.status === 'ativo'; });
+  return ativos.map(function(s) {
+    var sel = (selecionados || []).indexOf(s.id) >= 0;
+    return '<span class="service-chip' + (sel ? ' selected' : '') + '" style="font-size:12px" onclick="toggleChipProtocolo(this,\'' + s.id + '\')">' + s.nome + '</span>';
+  }).join('');
+}
+
+function toggleChipProtocolo(el, id) {
+  el.classList.toggle('selected');
+}
+
+function _getSelecionadosProtocolo(containerId) {
+  var ids = [];
+  document.querySelectorAll('#' + containerId + ' .service-chip.selected').forEach(function(el) {
+    ids.push(el.getAttribute('onclick').match(/'([^']+)'\)/)[1]);
+  });
+  return ids;
+}
+
+function salvarProtocolo() {
+  var nome = document.getElementById('prot-nome').value.trim();
+  var descricao = document.getElementById('prot-descricao').value.trim();
+  var valor = parseFloat(document.getElementById('prot-valor').value);
+  var servicoIds = _getSelecionadosProtocolo('prot-chips');
+  if (!nome) { showToast('Preencha o nome do protocolo!'); return; }
+  if (isNaN(valor) || valor <= 0) { showToast('Preencha um valor válido!'); return; }
+  if (!servicoIds.length) { showToast('Selecione pelo menos um serviço!'); return; }
+  var novo = { id: uid(), nome: nome, descricao: descricao, valor: valor, servicoIds: servicoIds, status: 'ativo' };
+  db.protocolos.push(novo);
+  saveData();
+  _salvarProtocolo(novo);
+  renderProtocolos();
+  renderServiceChips();
+  // Limpar form
+  document.getElementById('prot-nome').value = '';
+  document.getElementById('prot-descricao').value = '';
+  document.getElementById('prot-valor').value = '';
+  document.querySelectorAll('#prot-chips .service-chip.selected').forEach(function(el){ el.classList.remove('selected'); });
+  showToast('✅ Protocolo salvo!');
+}
+
+function excluirProtocolo(id) {
+  if (!confirm('Excluir este protocolo?')) return;
+  db.protocolos = db.protocolos.filter(function(p){ return p.id !== id; });
+  saveData();
+  _excluirProtocolo(id);
+  renderProtocolos();
+  renderServiceChips();
+  showToast('Protocolo excluído.');
+}
+
+function renderProtocolos() {
+  var el = document.getElementById('lista-protocolos');
+  if (!el) return;
+  // Repopular chips do form
+  var chipsEl = document.getElementById('prot-chips');
+  if (chipsEl) chipsEl.innerHTML = _renderChipsProtocolo([]);
+
+  if (!db.protocolos || !db.protocolos.length) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">📦</div><p>Nenhum protocolo cadastrado</p></div>';
+    return;
+  }
+  el.innerHTML = db.protocolos.map(function(p) {
+    var nomesSvs = (p.servicoIds || []).map(function(id) {
+      var sv = db.servicos.find(function(x){ return x.id === id; });
+      return sv ? sv.nome : '';
+    }).filter(Boolean).join(' + ');
+    var valorNormal = (p.servicoIds || []).reduce(function(s, id) {
+      var sv = db.servicos.find(function(x){ return x.id === id; });
+      return s + (sv ? parseFloat(sv.preco) || 0 : 0);
+    }, 0);
+    var economia = valorNormal > p.valor ? valorNormal - p.valor : 0;
+    return '<div class="panel" style="margin-bottom:1rem">'
+      + '<div class="panel-header">'
+      + '<div><div class="panel-title">📦 ' + p.nome + '</div>'
+      + (p.descricao ? '<div style="font-size:12px;color:var(--text-light);margin-top:2px">' + p.descricao + '</div>' : '')
+      + '</div>'
+      + '<div style="display:flex;align-items:center;gap:0.75rem">'
+      + '<div style="text-align:right"><div style="font-family:Cormorant Garamond,serif;font-size:22px;color:var(--gold-dark);font-weight:500">' + fmtMoney(p.valor) + '</div>'
+      + (economia > 0 ? '<div style="font-size:11px;color:var(--success)">Economia: ' + fmtMoney(economia) + '</div>' : '')
+      + '</div>'
+      + '<button class="btn btn-danger" onclick="excluirProtocolo(\'' + p.id + '\')">✕</button>'
+      + '</div></div>'
+      + '<div style="padding:0.75rem 1.5rem;font-size:12px;color:var(--text-mid)">'
+      + '<strong>Serviços:</strong> ' + (nomesSvs || '—')
+      + '</div></div>';
+  }).join('');
+}
