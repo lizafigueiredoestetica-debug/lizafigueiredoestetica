@@ -319,13 +319,13 @@ var _ACOMP_POR_PAG = 5;
 // ── Match anamnese → agenda: CPF primeiro, fallback por nome ──
 function _matchAnamnese(agCpf, agCliente) {
   var cpf = (agCpf || '').replace(/\D/g, '');
-  return db.anamneses.find(function(a) {
+  var matches = db.anamneses.filter(function(a) {
     if (!a.pessoais) return false;
     var aCpf = (a.pessoais.cpf || '').replace(/\D/g, '');
     if (cpf && aCpf && cpf === aCpf) return true;
-    // fallback: nome idêntico (case-insensitive)
     return a.pessoais.nome && a.pessoais.nome.toLowerCase() === agCliente.toLowerCase();
   });
+  return matches.length ? matches[matches.length - 1] : undefined;
 }
 
 function renderAcomp() {
