@@ -359,6 +359,13 @@ function _agServicos(ag) {
 }
 
 function renderAgenda() {
+  // Popular autocomplete de clientes
+  var dl = document.getElementById('ag-cliente-list');
+  if (dl) {
+    var nomes = {};
+    db.agenda.forEach(function(ag){ if(ag.cliente) nomes[ag.cliente] = true; });
+    dl.innerHTML = Object.keys(nomes).sort().map(function(n){ return '<option value="' + n + '">'; }).join('');
+  }
   populateAgendaServico();
   renderCalendario();
 
