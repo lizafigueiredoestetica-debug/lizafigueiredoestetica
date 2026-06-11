@@ -13,7 +13,8 @@ let db = {
   categorias: [],
   agenda: [],
   anamneses: [],
-  acomp: []
+  acomp: [],
+  protocolos: []
 };
 
 let currentPeriod = 'hoje';
@@ -30,6 +31,7 @@ async function loadData() {
   if(!db.agenda) db.agenda = [];
   if(!db.anamneses) db.anamneses = [];
   if(!db.acomp) db.acomp = [];
+  if(!db.protocolos) db.protocolos = [];
   if(!db.entradaEstoque) db.entradaEstoque = [];
 
   var carregouNuvem = await _carregarDaNuvem();
