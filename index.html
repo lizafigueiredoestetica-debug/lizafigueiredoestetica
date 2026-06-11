@@ -366,8 +366,17 @@
   <!-- ===== SERVIÇOS ===== -->
   <section class="section" id="sec-servicos">
     <div class="section-title">Serviços</div>
-    <div class="section-sub">Catálogo de serviços da clínica</div>
+    <div class="section-sub">Catálogo de serviços e protocolos personalizados</div>
     <div class="divider"></div>
+
+    <!-- Sub-abas -->
+    <div style="display:flex;gap:0.5rem;margin-bottom:1.5rem">
+      <button id="sub-btn-servicos" class="agenda-btn active" onclick="mostrarSubAba('servicos')">💆 Serviços</button>
+      <button id="sub-btn-protocolos" class="agenda-btn" onclick="mostrarSubAba('protocolos')">📦 Protocolos Personalizados</button>
+    </div>
+
+    <!-- SUB-ABA SERVIÇOS -->
+    <div id="sub-aba-servicos">
 
     <div class="form-section">
       <div class="form-header">
@@ -430,6 +439,41 @@
         </table>
       </div>
     </div>
+  </div><!-- fim sub-aba-servicos -->
+
+  <!-- SUB-ABA PROTOCOLOS -->
+  <div id="sub-aba-protocolos" style="display:none">
+    <div class="form-section">
+      <div class="form-header">
+        <div class="form-header-title">📦 Novo Protocolo Personalizado</div>
+      </div>
+      <div class="form-body">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Nome do Protocolo</label>
+            <input type="text" id="prot-nome" placeholder="Ex: Protocolo Slim Verão">
+          </div>
+          <div class="form-group">
+            <label>Valor Promocional (R$)</label>
+            <input type="number" id="prot-valor" placeholder="0,00" step="0.01" min="0">
+          </div>
+          <div class="form-group" style="grid-column:1/-1">
+            <label>Descrição (opcional)</label>
+            <input type="text" id="prot-descricao" placeholder="Ex: Pacote completo de redução de medidas">
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:1rem">
+          <label>Serviços Vinculados (clique para selecionar)</label>
+          <div id="prot-chips" class="atend-service-select" style="max-height:180px"></div>
+        </div>
+        <div style="display:flex;gap:0.75rem">
+          <button class="btn btn-primary" onclick="salvarProtocolo()">✓ Salvar Protocolo</button>
+        </div>
+      </div>
+    </div>
+    <div id="lista-protocolos"></div>
+  </div><!-- fim sub-aba-protocolos -->
+
   </section>
 
   <!-- ===== MATERIAIS ===== -->
@@ -704,8 +748,7 @@
         <div class="form-grid">
           <div class="form-group">
             <label>Nome do Cliente</label>
-            <input type="text" id="ag-cliente" placeholder="Nome completo da cliente" list="ag-cliente-list" autocomplete="off">
-            <datalist id="ag-cliente-list"></datalist>
+            <input type="text" id="ag-cliente" placeholder="Nome completo da cliente">
           </div>
           <div class="form-group">
             <label>Qtd de Sessões</label>
