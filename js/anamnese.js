@@ -316,6 +316,18 @@ function limparFiltrosCheckin() {
 var _acompPagina = 1;
 var _ACOMP_POR_PAG = 5;
 
+// ── Match anamnese → agenda: CPF primeiro, fallback por nome ──
+function _matchAnamnese(agCpf, agCliente) {
+  var cpf = (agCpf || '').replace(/\D/g, '');
+  return db.anamneses.find(function(a) {
+    if (!a.pessoais) return false;
+    var aCpf = (a.pessoais.cpf || '').replace(/\D/g, '');
+    if (cpf && aCpf && cpf === aCpf) return true;
+    // fallback: nome idêntico (case-insensitive)
+    return a.pessoais.nome && a.pessoais.nome.toLowerCase() === agCliente.toLowerCase();
+  });
+}
+
 function renderAcomp() {
   var el = document.getElementById('acompLista');
   if (!el) return;
@@ -355,9 +367,7 @@ function renderAcomp() {
   var paginados = pacotes.slice(inicio, inicio + _ACOMP_POR_PAG);
 
   el.innerHTML = paginados.map(function(ag) {
-    var anamnese = db.anamneses.find(function(a) {
-      return a.pessoais && a.pessoais.nome && a.pessoais.nome.toLowerCase() === ag.cliente.toLowerCase();
-    });
+    var anamnese = _matchAnamnese(ag.cpf, ag.cliente);
     var realizadas = ag.sessoes.filter(function(s){ return s.status==='realizado'; }).length;
     var total = ag.sessoes.length;
     var pct = total ? Math.round((realizadas/total)*100) : 0;
@@ -624,8 +634,8 @@ function _buildAnamHtml(ag, anamnese) {
         ['% Gordura', inp('gorduraPerc', md.gorduraPerc)]
       ])
     + '<div style="margin-top:1rem;display:flex;gap:0.75rem;flex-wrap:wrap;justify-content:flex-end">'
-      + '<button class="btn btn-primary" onclick="salvarFichaAcomp(\''+pid+'\',\''+ag.cliente+'\',\''+aid+'\')" style="padding:0.5rem 1.5rem">💾 Salvar Ficha</button>'
-      + '<button class="btn btn-secondary" onclick="visualizarFichaAcomp(\''+pid+'\',\''+ag.cliente+'\',\''+aid+'\')">👁 Visualizar para Assinar</button>'
+      + '<button class="btn btn-primary" onclick="salvarFichaAcomp(\''+pid+'\',\''+ag.cliente+'\',\''+aid+'\',\''+(ag.cpf||'')+'\''+')" style="padding:0.5rem 1.5rem">💾 Salvar Ficha</button>'
+      + '<button class="btn btn-secondary" onclick="visualizarFichaAcomp(\''+pid+'\',\''+ag.cliente+'\',\''+aid+'\',\''+(ag.cpf||'')+'\''+')" >👁 Visualizar para Assinar</button>'
       + '<button class="btn btn-secondary" onclick="renderAcomp()">Cancelar</button>'
       + '</div>'
     + '</div>';
@@ -633,16 +643,16 @@ function _buildAnamHtml(ag, anamnese) {
   return html;
 }
 
-function visualizarFichaAcomp(pid, clienteNome, anamId) {
-  salvarFichaAcomp(pid, clienteNome, anamId);
+function visualizarFichaAcomp(pid, clienteNome, anamId, agCpf) {
+  salvarFichaAcomp(pid, clienteNome, anamId, agCpf);
   var ficha = anamId
     ? db.anamneses.find(function(a){ return a.id===anamId; })
-    : db.anamneses.find(function(a){ return a.pessoais && a.pessoais.nome && a.pessoais.nome.toLowerCase()===clienteNome.toLowerCase(); });
+    : _matchAnamnese(agCpf, clienteNome);
   if (!ficha) { showToast('Salve a ficha primeiro!'); return; }
   abrirModalAssinatura(ficha, 'acomp');
 }
 
-function salvarFichaAcomp(pid, clienteNome, anamId) {
+function salvarFichaAcomp(pid, clienteNome, anamId, agCpf) {
   function g(k) { var el=document.getElementById('ac_'+pid+'_'+k); return el ? el.value.trim() : ''; }
   function gc(k) { var el=document.getElementById('ac_'+pid+'_'+k); return el ? el.checked : false; }
 
@@ -687,7 +697,7 @@ function salvarFichaAcomp(pid, clienteNome, anamId) {
   renderAnamnese();
   renderAcomp();
   showToast('✅ Ficha de ' + clienteNome + ' salva!');
-  var _fichaAtual = anamId ? db.anamneses.find(function(a){return a.id===anamId;}) : db.anamneses.find(function(a){return a.pessoais&&a.pessoais.nome&&a.pessoais.nome.toLowerCase()===clienteNome.toLowerCase();});
+  var _fichaAtual = anamId ? db.anamneses.find(function(a){return a.id===anamId;}) : _matchAnamnese(agCpf, clienteNome);
   if (_fichaAtual) _salvarAnamnese(_fichaAtual);
 }
 
