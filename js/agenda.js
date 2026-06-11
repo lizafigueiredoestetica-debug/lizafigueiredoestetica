@@ -175,6 +175,44 @@ function gerarCamposDatas() {
       chipsWrap.appendChild(chip);
     });
 
+    // ── Chips de protocolo ──
+    if (db.protocolos && db.protocolos.length) {
+      var sepProt = document.createElement('div');
+      sepProt.style.cssText = 'width:100%;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin:6px 0 2px;font-weight:500';
+      sepProt.textContent = '📦 Protocolos';
+      chipsWrap.appendChild(sepProt);
+      db.protocolos.filter(function(p){ return p.status === 'ativo'; }).forEach(function(p) {
+        var chip = document.createElement('span');
+        chip.className = 'service-chip';
+        chip.id = 'agprot_' + i + '_' + p.id;
+        chip.textContent = '📦 ' + p.nome + ' — ' + fmtMoney(p.valor);
+        chip.style.cssText = 'font-size:11px;padding:2px 8px;cursor:pointer;border-color:var(--gold-dark)';
+        chip.setAttribute('data-protocolo-id', p.id);
+        chip.onclick = (function(prot, idx) {
+          return function() {
+            var wasSelected = this.classList.contains('selected');
+            // Desmarcar todos os outros protocolos desta sessão
+            chipsWrap.querySelectorAll('[data-protocolo-id]').forEach(function(c){ c.classList.remove('selected'); });
+            if (!wasSelected) {
+              this.classList.add('selected');
+              // Selecionar automaticamente os serviços do protocolo
+              prot.servicoIds.forEach(function(sid) {
+                var sc = document.getElementById('agchip_' + idx + '_' + sid);
+                if (sc) sc.classList.add('selected');
+              });
+            } else {
+              // Desmarcar os serviços do protocolo
+              prot.servicoIds.forEach(function(sid) {
+                var sc = document.getElementById('agchip_' + idx + '_' + sid);
+                if (sc) sc.classList.remove('selected');
+              });
+            }
+          };
+        })(p, i);
+        chipsWrap.appendChild(chip);
+      });
+    }
+
     div.appendChild(linha1);
     div.appendChild(chipsWrap);
     campos.appendChild(div);
@@ -228,7 +266,19 @@ function salvarAgendamento() {
         const el = document.getElementById('agchip_'+i+'_'+s.id);
         return el && el.classList.contains('selected');
       }).map(function(s){ return s.id; });
-      sessoes.push({ data: dataEl.value, hora: horaEl ? horaEl.value : '', horaFim: horaFimEl ? horaFimEl.value : '', status: 'pendente', atendimentoId: null, servicoIds: srvIds, servico: srvIds.map(function(id){ const sv=db.servicos.find(function(x){return x.id===id;}); return sv?sv.nome:''; }).join(' + ') });
+      // Capturar protocolo selecionado para esta sessão
+      var protSel = null;
+      var protChipSel = document.querySelector('#agprot_' + i + '_\\w*');
+      // buscar via querySelectorAll
+      var allProtChips = document.querySelectorAll('[id^="agprot_' + i + '_"].selected');
+      if (allProtChips.length) {
+        var pid = allProtChips[0].getAttribute('data-protocolo-id');
+        var pObj = db.protocolos.find(function(p){ return p.id === pid; });
+        if (pObj) protSel = { id: pObj.id, nome: pObj.nome, valor: pObj.valor };
+      }
+      var sessaoObj = { data: dataEl.value, hora: horaEl ? horaEl.value : '', horaFim: horaFimEl ? horaFimEl.value : '', status: 'pendente', atendimentoId: null, servicoIds: srvIds, servico: srvIds.map(function(id){ const sv=db.servicos.find(function(x){return x.id===id;}); return sv?sv.nome:''; }).join(' + ') };
+      if (protSel) { sessaoObj.protocoloId = protSel.id; sessaoObj.protocoloNome = protSel.nome; sessaoObj.protocoloValor = protSel.valor; }
+      sessoes.push(sessaoObj);
     }
   }
 
@@ -639,8 +689,9 @@ function realizarSessao(agId, sessaoIdx) {
   selectedServicos = [...srvIds];
   renderServiceChips();
 
-  // Calcular valor total dos serviços selecionados
-  const total = srvIds.reduce(function(sum, id) {
+  // Calcular valor total — usar protocolo se existir, senão soma dos serviços
+  var totalProtocolo = sessao.protocoloValor ? parseFloat(sessao.protocoloValor) : 0;
+  const total = totalProtocolo > 0 ? totalProtocolo : srvIds.reduce(function(sum, id) {
     const sv = db.servicos.find(x => x.id === id);
     return sum + (sv ? parseFloat(sv.preco) || 0 : 0);
   }, 0);
