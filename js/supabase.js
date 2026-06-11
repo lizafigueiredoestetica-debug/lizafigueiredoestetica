@@ -124,6 +124,12 @@ async function _salvarSessoes(agId, sessoes) {
 async function _salvarServico(s) {
   return _supaUpsert('servicos', { id: s.id, nome: s.nome, categoria: s.categoria, duracao: s.duracao, preco: s.preco, status: s.status, atualizado_em: new Date().toISOString() });
 }
+async function _salvarProtocolo(p) {
+  return _supaUpsert('protocolos', { id: p.id, nome: p.nome, descricao: p.descricao || '', valor: p.valor, servico_ids: p.servicoIds || [], status: p.status || 'ativo', atualizado_em: new Date().toISOString() });
+}
+async function _excluirProtocolo(id) {
+  return _supaDelete('protocolos', id);
+}
 async function _salvarCategoria(c) {
   return _supaUpsert('categorias', { id: c.id, nome: c.nome });
 }
@@ -166,7 +172,7 @@ async function _carregarDaNuvem() {
     _atualizarStatusSync('carregando');
     var [
       servicos, categorias, materiais, anamneses,
-      agenda, sessoes, atendimentos, despAdm, despExtra
+      agenda, sessoes, atendimentos, despAdm, despExtra, protocolos
     ] = await Promise.all([
       _supaGetAll('servicos'),
       _supaGetAll('categorias'),
@@ -176,7 +182,8 @@ async function _carregarDaNuvem() {
       _supaGetAll('sessoes'),
       _supaGetAll('atendimentos'),
       _supaGetAll('desp_adm'),
-      _supaGetAll('desp_extra')
+      _supaGetAll('desp_extra'),
+      _supaGetAll('protocolos')
     ]);
 
     if (!servicos && !agenda && !atendimentos) {
@@ -191,6 +198,9 @@ async function _carregarDaNuvem() {
     });
     db.materiais = (materiais || []).map(function(m) {
       return { id: m.id, nome: m.nome, fornecedor: m.fornecedor, custo: m.custo, qtd: m.qtd, min: m.min, unidade: m.unidade };
+    });
+    db.protocolos = (protocolos || []).map(function(p) {
+      return { id: p.id, nome: p.nome, descricao: p.descricao || '', valor: p.valor, servicoIds: p.servico_ids || [], status: p.status || 'ativo' };
     });
     db.anamneses = (anamneses || []).map(function(a) {
       return {
