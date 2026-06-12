@@ -569,7 +569,7 @@ function renderAgenda() {
           return `
           <div class="agenda-sessao-row ${cls}" style="${s.cor ? 'border-left:3px solid '+s.cor+';' : ''}">
             <div class="agenda-sessao-data">${fmtDate(s.data)}${s.hora?' &middot; '+s.hora+(s.horaFim?' – '+s.horaFim:''):''}</div>
-            <div class="agenda-sessao-servico">${(function(s,ag){ var ids=s.servicoIds||[]; if(ids.length){ var nomes=ids.map(function(id){ var sv=db.servicos.find(function(x){return x.id===id;}); return sv?sv.nome:id; }); return nomes.join(' + '); } return s.servico||_agServicos(ag); })(s,ag)} · Sessão ${i+1}</div>
+            <div class="agenda-sessao-servico">${(function(s,ag){ var ids=s.servicoIds||[]; if(ids.length){ var nomes=ids.map(function(id){ var sv=db.servicos.find(function(x){return x.id===id;}); return sv?sv.nome:id; }); return nomes.join(' + '); } return s.servico||_agServicos(ag); })(s,ag)} · Sessão ${i+1}${s.protocoloNome ? ' <span style="background:#EDD5D8;color:#B07880;padding:1px 7px;border-radius:10px;font-size:10px;font-weight:600;margin-left:4px">📦 '+s.protocoloNome+' — '+fmtMoney(s.protocoloValor)+'</span>' : ''}</div>
             <div class="agenda-sessao-status" style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap">
               ${badge}
               ${(s.status !== 'realizado' && s.status !== 'falta') ? `<button class="btn btn-primary btn-sm" onclick="realizarSessao('${ag.id}',${i})" style="font-size:11px;padding:4px 10px">✓ Realizar</button>` : ''}
