@@ -268,8 +268,6 @@ function salvarAgendamento() {
       }).map(function(s){ return s.id; });
       // Capturar protocolo selecionado para esta sessão
       var protSel = null;
-      var protChipSel = document.querySelector('#agprot_' + i + '_\\w*');
-      // buscar via querySelectorAll
       var allProtChips = document.querySelectorAll('[id^="agprot_' + i + '_"].selected');
       if (allProtChips.length) {
         var pid = allProtChips[0].getAttribute('data-protocolo-id');
