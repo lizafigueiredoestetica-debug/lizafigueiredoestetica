@@ -98,6 +98,9 @@ async function _salvarSessoes(agId, sessoes) {
       checkin_hora: s.checkinHora || null,
       checkin_nome: s.checkinNome || null,
       cor: s.cor || null,
+      protocolo_id: s.protocoloId || null,
+      protocolo_nome: s.protocoloNome || null,
+      protocolo_valor: s.protocoloValor || null,
       atualizado_em: new Date().toISOString()
     });
   }
@@ -241,7 +244,8 @@ async function _carregarDaNuvem() {
             servicoIds: s.servico_ids || [], servico: s.servico || '',
             checkinData: s.checkin_data, checkinHora: s.checkin_hora,
             checkinNome: s.checkin_nome, atendimentoId: s.atendimento_id,
-            cor: s.cor || null
+            cor: s.cor || null,
+            protocoloId: s.protocolo_id || null, protocoloNome: s.protocolo_nome || null, protocoloValor: s.protocolo_valor || null
           };
         })
       };
@@ -420,7 +424,7 @@ async function _pollingNovos() {
       novasSessoes.forEach(function(s) {
         var ag = db.agenda.find(function(x){ return x.id === s.agenda_id; });
         if (ag) {
-          var obj = { data: s.data, hora: s.hora || '', horaFim: s.hora_fim || '', status: s.status, servicoIds: s.servico_ids || [], servico: s.servico || '', checkinData: s.checkin_data, checkinHora: s.checkin_hora, checkinNome: s.checkin_nome, atendimentoId: s.atendimento_id };
+          var obj = { data: s.data, hora: s.hora || '', horaFim: s.hora_fim || '', status: s.status, servicoIds: s.servico_ids || [], servico: s.servico || '', checkinData: s.checkin_data, checkinHora: s.checkin_hora, checkinNome: s.checkin_nome, atendimentoId: s.atendimento_id, protocoloId: s.protocolo_id || null, protocoloNome: s.protocolo_nome || null, protocoloValor: s.protocolo_valor || null };
           ag.sessoes[s.indice] = obj;
         }
       });
