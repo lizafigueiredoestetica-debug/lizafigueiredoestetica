@@ -604,15 +604,21 @@ function toggleAgendaCliente(agId) {
 
 // ── Calcular saldo financeiro do pacote ──
 function _calcSaldoPacote(ag) {
-  // Total do pacote: soma dos preços de todos os serviços de todas as sessões
+  // Se alguma sessão tem protocolo, usar o valor do protocolo como total fixo
+  var sessaoComProtocolo = ag.sessoes.find(function(s){ return s.protocoloValor; });
   var totalPacote = 0;
-  ag.sessoes.forEach(function(s) {
-    var ids = s.servicoIds || [];
-    ids.forEach(function(id) {
-      var sv = db.servicos.find(function(x){ return x.id === id; });
-      if (sv && sv.preco) totalPacote += parseFloat(sv.preco) || 0;
+  if (sessaoComProtocolo) {
+    totalPacote = parseFloat(sessaoComProtocolo.protocoloValor) || 0;
+  } else {
+    // Sem protocolo: soma dos preços individuais dos serviços de todas as sessões
+    ag.sessoes.forEach(function(s) {
+      var ids = s.servicoIds || [];
+      ids.forEach(function(id) {
+        var sv = db.servicos.find(function(x){ return x.id === id; });
+        if (sv && sv.preco) totalPacote += parseFloat(sv.preco) || 0;
+      });
     });
-  });
+  }
 
   // Sinal pago na entrada
   var sinal = parseFloat(ag.sinal) || 0;
