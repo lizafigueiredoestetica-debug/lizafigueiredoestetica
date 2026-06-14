@@ -966,21 +966,6 @@ function desbloquearAssinatura() {
   }
 }
 
-function _ncToggleProt(el) {
-  document.querySelectorAll('#nc-prot-chips .service-chip').forEach(function(c){
-    c.classList.remove('selected');
-    c.style.background = '#FFF8F0';
-    c.style.color = '#7A5C00';
-    c.removeAttribute('data-sel');
-  });
-  if (!el.getAttribute('data-sel')) {
-    el.classList.add('selected');
-    el.style.background = '#C9A84C';
-    el.style.color = 'white';
-    el.setAttribute('data-sel','1');
-  }
-}
-
 function novoCiclo(agId) {
   const ag = db.agenda.find(x => x.id === agId);
   if (!ag) return;
@@ -989,22 +974,6 @@ function novoCiclo(agId) {
   modal.id = 'novo-ciclo-modal';
   modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(44,26,34,0.65);z-index:9997;display:flex;align-items:center;justify-content:center;padding:1rem';
 
-  // Chips de protocolos
-  var protocolosAtivos = (db.protocolos || []).filter(function(p){ return p.status === 'ativo'; });
-  var protHtml = '';
-  if (protocolosAtivos.length) {
-    var _pChips = protocolosAtivos.map(function(p){
-      return '<span class="service-chip" style="font-size:12px;cursor:pointer;background:#FFF8F0;border-color:#F0C87A;color:#7A5C00" '
-        + 'data-prot-id="' + p.id + '" data-prot-nome="' + p.nome + '" data-prot-valor="' + p.valor + '" '
-        + 'onclick="_ncToggleProt(this)">'
-        + p.nome + ' — R$ ' + parseFloat(p.valor).toFixed(2).replace('.',',')
-        + '</span>';
-    }).join('');
-    protHtml = '<div style="margin-bottom:1rem">'
-      + '<div style="font-size:10px;letter-spacing:2px;color:var(--text-light);margin-bottom:8px">PROTOCOLOS (OPCIONAL)</div>'
-      + '<div style="display:flex;flex-wrap:wrap;gap:6px" id="nc-prot-chips">' + _pChips + '</div>'
-      + '</div>';
-  }
   modal.innerHTML = `
     <div style="background:white;border-radius:16px;max-width:520px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
       <div style="padding:1.2rem 1.5rem;background:linear-gradient(135deg,#1C1C1E,#2C2C2E);border-radius:16px 16px 0 0;display:flex;justify-content:space-between;align-items:center">
@@ -1038,7 +1007,6 @@ function novoCiclo(agId) {
               style="width:100%;padding:0.5rem 0.75rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none">
           </div>
         </div>
-        ${protHtml}
         <div id="nc-sessoes" style="margin-bottom:1rem"></div>
         <div style="display:flex;gap:0.75rem">
           <button class="btn btn-primary" onclick="salvarNovoCiclo('${agId}')">✓ Adicionar Sessões</button>
@@ -1055,22 +1023,91 @@ function gerarCamposNovoCiclo(agId) {
   const container = document.getElementById('nc-sessoes');
   if (!container) return;
   container.innerHTML = '';
+
   for (let i = 0; i < qtd; i++) {
-    const chipsHtml = db.servicos.filter(s=>s.status==='ativo').map(s =>
-      `<span class="service-chip" style="font-size:11px;padding:2px 8px;cursor:pointer" id="ncchip_${i}_${s.id}" onclick="this.classList.toggle('selected')">${s.nome}</span>`
-    ).join('');
-    const div = document.createElement('div');
-    div.style.cssText = 'display:flex;align-items:center;gap:0.5rem;margin-bottom:8px;flex-wrap:wrap';
-    div.innerHTML = `
-      <span style="font-size:11px;color:var(--text-light);min-width:60px">Sessão ${i+1}</span>
-      <input type="date" id="nc-data-${i}" style="padding:0.4rem 0.6rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none">
-      <input type="time" id="nc-hora-${i}" placeholder="Início" title="Horário de início" style="width:90px;padding:0.4rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none">
-      <span style="font-size:11px;color:var(--text-light)">até</span>
-      <input type="time" id="nc-horafim-${i}" placeholder="Fim" title="Horário de término" style="width:90px;padding:0.4rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none">
-      <div style="display:flex;flex-wrap:wrap;gap:4px">
-        <input type="text" placeholder="🔍 Filtrar serviços..." oninput="(function(el){var v=el.value.toLowerCase();el.parentElement.querySelectorAll('.service-chip').forEach(function(c){c.style.display=c.textContent.toLowerCase().includes(v)?'':'none';});})(this)" style="width:100%;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px;font-family:Jost,sans-serif;outline:none;margin-bottom:4px">
-        ${chipsHtml}
-      </div>`;
+    var div = document.createElement('div');
+    div.style.cssText = 'margin-bottom:12px;border:1px solid var(--border);border-radius:10px;padding:10px';
+
+    // Linha de data/hora
+    var linha1 = document.createElement('div');
+    linha1.style.cssText = 'display:flex;align-items:center;gap:0.5rem;margin-bottom:8px;flex-wrap:wrap';
+    linha1.innerHTML = '<span style="font-size:11px;color:var(--text-light);min-width:60px">Sessão '+(i+1)+'</span>'
+      + '<input type="date" id="nc-data-'+i+'" style="padding:0.4rem 0.6rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none">'
+      + '<input type="time" id="nc-hora-'+i+'" title="Horário de início" style="width:90px;padding:0.4rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none">'
+      + '<span style="font-size:11px;color:var(--text-light)">até</span>'
+      + '<input type="time" id="nc-horafim-'+i+'" title="Horário de término" style="width:90px;padding:0.4rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none">';
+
+    // Wrap de chips (serviços + protocolos) — igual à agenda
+    var chipsWrap = document.createElement('div');
+    chipsWrap.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px;margin-top:6px';
+
+    // Filtro
+    var filtro = document.createElement('input');
+    filtro.type = 'text';
+    filtro.placeholder = '🔍 Filtrar serviços...';
+    filtro.style.cssText = 'width:100%;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px;font-family:Jost,sans-serif;outline:none;margin-bottom:4px';
+    filtro.oninput = (function(wrap) {
+      return function() {
+        var v = this.value.toLowerCase();
+        wrap.querySelectorAll('.service-chip').forEach(function(c) {
+          c.style.display = c.textContent.toLowerCase().includes(v) ? '' : 'none';
+        });
+      };
+    })(chipsWrap);
+    chipsWrap.appendChild(filtro);
+
+    // Chips de serviços
+    db.servicos.filter(function(s){ return s.status === 'ativo'; }).forEach(function(s) {
+      var chip = document.createElement('span');
+      chip.className = 'service-chip';
+      chip.id = 'ncchip_' + i + '_' + s.id;
+      chip.textContent = s.nome;
+      chip.style.cssText = 'font-size:11px;padding:2px 8px;cursor:pointer';
+      chip.onclick = function() { this.classList.toggle('selected'); };
+      chipsWrap.appendChild(chip);
+    });
+
+    // Chips de protocolos — igual à agenda
+    if (db.protocolos && db.protocolos.length) {
+      var sepProt = document.createElement('div');
+      sepProt.style.cssText = 'width:100%;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin:6px 0 2px;font-weight:500';
+      sepProt.textContent = '📦 Protocolos';
+      chipsWrap.appendChild(sepProt);
+
+      db.protocolos.filter(function(p){ return p.status === 'ativo'; }).forEach(function(p) {
+        var chip = document.createElement('span');
+        chip.className = 'service-chip';
+        chip.id = 'ncprot_' + i + '_' + p.id;
+        chip.textContent = '📦 ' + p.nome + ' — ' + fmtMoney(p.valor);
+        chip.style.cssText = 'font-size:11px;padding:2px 8px;cursor:pointer;border-color:var(--gold-dark)';
+        chip.setAttribute('data-protocolo-id', p.id);
+        chip.onclick = (function(prot, idx) {
+          return function() {
+            var wasSelected = this.classList.contains('selected');
+            // Desmarcar todos os protocolos desta sessão
+            chipsWrap.querySelectorAll('[data-protocolo-id]').forEach(function(c){ c.classList.remove('selected'); });
+            if (!wasSelected) {
+              this.classList.add('selected');
+              // Selecionar automaticamente os serviços do protocolo
+              prot.servicoIds.forEach(function(sid) {
+                var sc = document.getElementById('ncchip_' + idx + '_' + sid);
+                if (sc) sc.classList.add('selected');
+              });
+            } else {
+              // Desmarcar serviços do protocolo
+              prot.servicoIds.forEach(function(sid) {
+                var sc = document.getElementById('ncchip_' + idx + '_' + sid);
+                if (sc) sc.classList.remove('selected');
+              });
+            }
+          };
+        })(p, i);
+        chipsWrap.appendChild(chip);
+      });
+    }
+
+    div.appendChild(linha1);
+    div.appendChild(chipsWrap);
     container.appendChild(div);
   }
 }
@@ -1081,37 +1118,30 @@ function salvarNovoCiclo(agId) {
   const qtd = parseInt(document.getElementById('nc-qtd').value) || 1;
   const obs = document.getElementById('nc-obs').value;
 
-  // Verificar protocolo selecionado
-  var protSel = null;
-  var protChipSel = document.querySelector('#nc-prot-chips .service-chip.selected');
-  if (protChipSel) {
-    protSel = {
-      id:    protChipSel.getAttribute('data-prot-id'),
-      nome:  protChipSel.getAttribute('data-prot-nome'),
-      valor: parseFloat(protChipSel.getAttribute('data-prot-valor')) || 0
-    };
-  }
-
   const novasSessoes = [];
   for (let i = 0; i < qtd; i++) {
     const dataEl = document.getElementById('nc-data-'+i);
-    if (!dataEl || !dataEl.value) { showToast(`Preencha a data da sessão ${i+1}!`); return; }
+    if (!dataEl || !dataEl.value) { showToast('Preencha a data da sessão '+(i+1)+'!'); return; }
     const horaEl = document.getElementById('nc-hora-'+i);
     const horaFimEl = document.getElementById('nc-horafim-'+i);
-    var srvIds = [];
-    var srvNome = '';
-    if (protSel) {
-      // Com protocolo: usar serviços do protocolo
-      var prot = db.protocolos && db.protocolos.find(function(p){ return p.id === protSel.id; });
-      srvIds = prot ? (prot.servicoIds || []) : [];
-      srvNome = protSel.nome;
-    } else {
-      srvIds = db.servicos.filter(function(s){
-        const el = document.getElementById('ncchip_'+i+'_'+s.id);
-        return el && el.classList.contains('selected');
-      }).map(s => s.id);
-      srvNome = srvIds.map(id=>{ const sv=db.servicos.find(x=>x.id===id); return sv?sv.nome:''; }).join(' + ');
+
+    // Serviços selecionados
+    var srvIds = db.servicos.filter(function(s){
+      var el = document.getElementById('ncchip_'+i+'_'+s.id);
+      return el && el.classList.contains('selected');
+    }).map(function(s){ return s.id; });
+
+    // Protocolo selecionado para esta sessão
+    var protSel = null;
+    var protChipSel = document.querySelector('#ncprot_'+i+'_~ .service-chip.selected[data-protocolo-id]');
+    // Buscar de forma mais robusta
+    if (db.protocolos) {
+      db.protocolos.forEach(function(p) {
+        var el = document.getElementById('ncprot_'+i+'_'+p.id);
+        if (el && el.classList.contains('selected')) protSel = p;
+      });
     }
+
     var sessao = {
       data: dataEl.value,
       hora: horaEl ? horaEl.value : '',
@@ -1119,7 +1149,7 @@ function salvarNovoCiclo(agId) {
       status: 'pendente',
       atendimentoId: null,
       servicoIds: srvIds,
-      servico: srvNome
+      servico: srvIds.map(function(id){ var sv=db.servicos.find(function(x){return x.id===id;}); return sv?sv.nome:''; }).join(' + ')
     };
     if (protSel) {
       sessao.protocoloId    = protSel.id;
@@ -1129,7 +1159,7 @@ function salvarNovoCiclo(agId) {
     novasSessoes.push(sessao);
   }
 
-  novasSessoes.sort((a,b) => a.data.localeCompare(b.data));
+  novasSessoes.sort(function(a,b){ return a.data.localeCompare(b.data); });
 
   // Validação de conflito de horário
   var conflitosNC = [];
