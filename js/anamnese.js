@@ -974,9 +974,25 @@ function novoCiclo(agId) {
   modal.id = 'novo-ciclo-modal';
   modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(44,26,34,0.65);z-index:9997;display:flex;align-items:center;justify-content:center;padding:1rem';
 
-  const chipsHtml = db.servicos.filter(s=>s.status==='ativo').map(s =>
-    `<span class="service-chip" style="font-size:12px;cursor:pointer" onclick="this.classList.toggle('selected')">${s.nome}</span>`
-  ).join('');
+  // Chips de protocolos
+  var protocolosAtivos = db.protocolos && db.protocolos.filter(function(p){ return p.status === 'ativo'; }) || [];
+  var protHtml = '';
+  if (protocolosAtivos.length) {
+    protHtml = '<div style="margin-bottom:1rem">'
+      + '<div style="font-size:10px;letter-spacing:2px;color:var(--text-light);margin-bottom:8px">PROTOCOLOS (OPCIONAL)</div>'
+      + '<div style="display:flex;flex-wrap:wrap;gap:6px" id="nc-prot-chips">'
+      + protocolosAtivos.map(function(p){
+          return '<span class="service-chip" style="font-size:12px;cursor:pointer;background:#FFF8F0;border-color:#F0C87A;color:#7A5C00" '
+            + 'data-prot-id="'+p.id+'" data-prot-nome="'+p.nome+'" data-prot-valor="'+p.valor+'" '
+            + 'onclick="(function(el){'
+            + 'document.querySelectorAll('#nc-prot-chips .service-chip').forEach(function(c){c.classList.remove('selected');c.style.background='#FFF8F0';c.style.color='#7A5C00';});'
+            + 'if(!el.classList.contains('_was_selected')){el.classList.add('selected');el.style.background='#C9A84C';el.style.color='white';el.classList.add('_was_selected');}else{el.classList.remove('_was_selected');}'
+            + '})(this)">'
+            + p.nome + ' — R$ ' + parseFloat(p.valor).toFixed(2).replace('.',',')
+            + '</span>';
+        }).join('')
+      + '</div></div>';
+  }
 
   modal.innerHTML = `
     <div style="background:white;border-radius:16px;max-width:520px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
@@ -1011,6 +1027,7 @@ function novoCiclo(agId) {
               style="width:100%;padding:0.5rem 0.75rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none">
           </div>
         </div>
+        ${protHtml}
         <div id="nc-sessoes" style="margin-bottom:1rem"></div>
         <div style="display:flex;gap:0.75rem">
           <button class="btn btn-primary" onclick="salvarNovoCiclo('${agId}')">✓ Adicionar Sessões</button>
@@ -1053,25 +1070,52 @@ function salvarNovoCiclo(agId) {
   const qtd = parseInt(document.getElementById('nc-qtd').value) || 1;
   const obs = document.getElementById('nc-obs').value;
 
+  // Verificar protocolo selecionado
+  var protSel = null;
+  var protChipSel = document.querySelector('#nc-prot-chips .service-chip.selected');
+  if (protChipSel) {
+    protSel = {
+      id:    protChipSel.getAttribute('data-prot-id'),
+      nome:  protChipSel.getAttribute('data-prot-nome'),
+      valor: parseFloat(protChipSel.getAttribute('data-prot-valor')) || 0
+    };
+  }
+
   const novasSessoes = [];
   for (let i = 0; i < qtd; i++) {
     const dataEl = document.getElementById('nc-data-'+i);
     if (!dataEl || !dataEl.value) { showToast(`Preencha a data da sessão ${i+1}!`); return; }
     const horaEl = document.getElementById('nc-hora-'+i);
-    const srvIds = db.servicos.filter(function(s){
-      const el = document.getElementById('ncchip_'+i+'_'+s.id);
-      return el && el.classList.contains('selected');
-    }).map(s => s.id);
     const horaFimEl = document.getElementById('nc-horafim-'+i);
-    novasSessoes.push({
+    var srvIds = [];
+    var srvNome = '';
+    if (protSel) {
+      // Com protocolo: usar serviços do protocolo
+      var prot = db.protocolos && db.protocolos.find(function(p){ return p.id === protSel.id; });
+      srvIds = prot ? (prot.servicoIds || []) : [];
+      srvNome = protSel.nome;
+    } else {
+      srvIds = db.servicos.filter(function(s){
+        const el = document.getElementById('ncchip_'+i+'_'+s.id);
+        return el && el.classList.contains('selected');
+      }).map(s => s.id);
+      srvNome = srvIds.map(id=>{ const sv=db.servicos.find(x=>x.id===id); return sv?sv.nome:''; }).join(' + ');
+    }
+    var sessao = {
       data: dataEl.value,
       hora: horaEl ? horaEl.value : '',
       horaFim: horaFimEl ? horaFimEl.value : '',
       status: 'pendente',
       atendimentoId: null,
       servicoIds: srvIds,
-      servico: srvIds.map(id=>{ const sv=db.servicos.find(x=>x.id===id); return sv?sv.nome:''; }).join(' + ')
-    });
+      servico: srvNome
+    };
+    if (protSel) {
+      sessao.protocoloId    = protSel.id;
+      sessao.protocoloNome  = protSel.nome;
+      sessao.protocoloValor = protSel.valor;
+    }
+    novasSessoes.push(sessao);
   }
 
   novasSessoes.sort((a,b) => a.data.localeCompare(b.data));
@@ -1104,10 +1148,8 @@ function salvarNovoCiclo(agId) {
   const ncCor = (document.getElementById('nc-cor')||{value:''}).value || ag.cor || '#D4A0A8';
   const ncSinal = parseFloat((document.getElementById('nc-sinal')||{value:'0'}).value) || 0;
 
-  // Salvar cor do ciclo em cada nova sessão individualmente — não toca em ag.cor
   novasSessoes.forEach(function(s){ s.cor = ncCor; });
 
-  // Concatenar novas sessões no agendamento existente, preservando histórico e cor original
   ag.sessoes = ag.sessoes.concat(novasSessoes);
   if (obs) ag.obs = obs;
   if (ncSinal > 0) { ag.sinal = ncSinal; ag.sinalPago = true; }
@@ -1117,10 +1159,6 @@ function salvarNovoCiclo(agId) {
   _salvarAgenda(ag);
 }
 
-
-// ══════════════════════════════════════════════════════
-//  FICHAS CUSTOMIZADAS — aba separada, sem tocar na anamnese
-// ══════════════════════════════════════════════════════
 
 function renderFichasCustom() {
   var tbody = document.getElementById('tbodyFichasCustom');
