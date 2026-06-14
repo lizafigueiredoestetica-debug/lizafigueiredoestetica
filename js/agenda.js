@@ -623,20 +623,16 @@ function _calcSaldoPacote(ag) {
   // Sinal pago na entrada
   var sinal = parseFloat(ag.sinal) || 0;
 
-  // Total já pago via atendimentos — buscar dentro da janela do pacote
+  // Total já pago via atendimentos — buscar dentro da janela exata do pacote
   var _datas = ag.sessoes.map(function(s){ return s.data; }).filter(Boolean).sort();
   var dataMin = _datas[0] || '';
   var dataMax = _datas[_datas.length-1] || '';
-  // Margem de 30 dias antes da primeira sessão para capturar o sinal
-  var dataMinBusca = dataMin ? (function(){
-    var d = new Date(dataMin); d.setDate(d.getDate()-30);
-    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-  })() : '';
   var totalPago = db.atendimentos
     .filter(function(a) {
       return a.cliente && a.cliente.toLowerCase().trim() === ag.cliente.toLowerCase().trim()
-        && (!dataMinBusca || a.data >= dataMinBusca)
-        && a.pagto !== 'sinal';
+        && a.pagto !== 'sinal'
+        && (!dataMin || a.data >= dataMin)
+        && (!dataMax || a.data <= dataMax);
     })
     .reduce(function(sum, a) { return sum + (parseFloat(a.valor) || 0); }, 0);
 
