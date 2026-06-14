@@ -635,7 +635,8 @@ function _calcSaldoPacote(ag) {
   var totalPago = db.atendimentos
     .filter(function(a) {
       return a.cliente && a.cliente.toLowerCase().trim() === ag.cliente.toLowerCase().trim()
-        && (!dataMinBusca || a.data >= dataMinBusca);
+        && (!dataMinBusca || a.data >= dataMinBusca)
+        && a.pagto !== 'sinal';
     })
     .reduce(function(sum, a) { return sum + (parseFloat(a.valor) || 0); }, 0);
 
