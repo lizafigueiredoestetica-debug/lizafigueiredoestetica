@@ -966,6 +966,21 @@ function desbloquearAssinatura() {
   }
 }
 
+function _ncToggleProt(el) {
+  document.querySelectorAll('#nc-prot-chips .service-chip').forEach(function(c){
+    c.classList.remove('selected');
+    c.style.background = '#FFF8F0';
+    c.style.color = '#7A5C00';
+    c.removeAttribute('data-sel');
+  });
+  if (!el.getAttribute('data-sel')) {
+    el.classList.add('selected');
+    el.style.background = '#C9A84C';
+    el.style.color = 'white';
+    el.setAttribute('data-sel','1');
+  }
+}
+
 function novoCiclo(agId) {
   const ag = db.agenda.find(x => x.id === agId);
   if (!ag) return;
@@ -975,25 +990,21 @@ function novoCiclo(agId) {
   modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(44,26,34,0.65);z-index:9997;display:flex;align-items:center;justify-content:center;padding:1rem';
 
   // Chips de protocolos
-  var protocolosAtivos = db.protocolos && db.protocolos.filter(function(p){ return p.status === 'ativo'; }) || [];
+  var protocolosAtivos = (db.protocolos || []).filter(function(p){ return p.status === 'ativo'; });
   var protHtml = '';
   if (protocolosAtivos.length) {
+    var _pChips = protocolosAtivos.map(function(p){
+      return '<span class="service-chip" style="font-size:12px;cursor:pointer;background:#FFF8F0;border-color:#F0C87A;color:#7A5C00" '
+        + 'data-prot-id="' + p.id + '" data-prot-nome="' + p.nome + '" data-prot-valor="' + p.valor + '" '
+        + 'onclick="_ncToggleProt(this)">'
+        + p.nome + ' — R$ ' + parseFloat(p.valor).toFixed(2).replace('.',',')
+        + '</span>';
+    }).join('');
     protHtml = '<div style="margin-bottom:1rem">'
       + '<div style="font-size:10px;letter-spacing:2px;color:var(--text-light);margin-bottom:8px">PROTOCOLOS (OPCIONAL)</div>'
-      + '<div style="display:flex;flex-wrap:wrap;gap:6px" id="nc-prot-chips">'
-      + protocolosAtivos.map(function(p){
-          return '<span class="service-chip" style="font-size:12px;cursor:pointer;background:#FFF8F0;border-color:#F0C87A;color:#7A5C00" '
-            + 'data-prot-id="'+p.id+'" data-prot-nome="'+p.nome+'" data-prot-valor="'+p.valor+'" '
-            + 'onclick="(function(el){'
-            + 'document.querySelectorAll('#nc-prot-chips .service-chip').forEach(function(c){c.classList.remove('selected');c.style.background='#FFF8F0';c.style.color='#7A5C00';});'
-            + 'if(!el.classList.contains('_was_selected')){el.classList.add('selected');el.style.background='#C9A84C';el.style.color='white';el.classList.add('_was_selected');}else{el.classList.remove('_was_selected');}'
-            + '})(this)">'
-            + p.nome + ' — R$ ' + parseFloat(p.valor).toFixed(2).replace('.',',')
-            + '</span>';
-        }).join('')
-      + '</div></div>';
+      + '<div style="display:flex;flex-wrap:wrap;gap:6px" id="nc-prot-chips">' + _pChips + '</div>'
+      + '</div>';
   }
-
   modal.innerHTML = `
     <div style="background:white;border-radius:16px;max-width:520px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
       <div style="padding:1.2rem 1.5rem;background:linear-gradient(135deg,#1C1C1E,#2C2C2E);border-radius:16px 16px 0 0;display:flex;justify-content:space-between;align-items:center">
