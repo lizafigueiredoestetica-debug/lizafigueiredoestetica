@@ -950,6 +950,86 @@ async function excluirModeloAnamnese(id) {
 }
 
 // ── Renderizar seção de modelos ──
+function mostrarSubAbaModelos(aba) {
+  var modelos = document.getElementById('sub-aba-modelos-lista');
+  var fichas = document.getElementById('sub-aba-fichas-preenchidas');
+  var btnM = document.getElementById('sub-btn-modelos');
+  var btnF = document.getElementById('sub-btn-fichas-preenchidas');
+  if (!modelos || !fichas) return;
+  modelos.style.display = aba === 'modelos' ? '' : 'none';
+  fichas.style.display = aba === 'fichas' ? '' : 'none';
+  if (btnM) btnM.classList.toggle('active', aba === 'modelos');
+  if (btnF) btnF.classList.toggle('active', aba === 'fichas');
+  if (aba === 'fichas') renderFichasCustomSubAba();
+}
+
+function renderFichasCustomSubAba() {
+  var tbody = document.getElementById('tbodyFichasCustom2');
+  if (!tbody) return;
+  var busca = (document.getElementById('filtFichaCustomNome2')||{value:''}).value.toLowerCase().trim();
+  var de = (document.getElementById('filtFichaCustomDe2')||{value:''}).value;
+  var ate = (document.getElementById('filtFichaCustomAte2')||{value:''}).value;
+
+  var lista = db.anamneses.filter(function(a) {
+    if (!a.modelo_respostas || Object.keys(a.modelo_respostas).length === 0) return false;
+    var nome = (a.pessoais && a.pessoais.nome) || '';
+    if (busca && nome.toLowerCase().indexOf(busca) < 0) return false;
+    if (de || ate) {
+      var dataBr = a.dataCadastro || '';
+      var partes = dataBr.split('/');
+      var dataComp = partes.length === 3 ? partes[2] + '-' + partes[1] + '-' + partes[0] : '';
+      if (de && dataComp && dataComp < de) return false;
+      if (ate && dataComp && dataComp > ate) return false;
+    }
+    return true;
+  });
+
+  if (!lista.length) {
+    tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">📝</div><p>Nenhuma ficha preenchida</p></div></td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = lista.map(function(a) {
+    var nome = (a.pessoais && a.pessoais.nome) || '—';
+    var modelo = a.modelo_nome || '—';
+    var data = a.dataCadastro || '—';
+    var assinatura = a.assinatura
+      ? '<span class="badge-pill" style="background:#E8F5E9;color:#2E7D32;font-size:11px">✍️ Assinada</span>'
+      : '<span class="badge-pill badge-pendente" style="font-size:11px">Pendente</span>';
+    var temLiza = a.respostas_liza && Object.keys(a.respostas_liza).length > 0;
+    var lizaBadge = temLiza
+      ? '<span class="badge-pill" style="background:#E8F5E9;color:#276749;font-size:11px">✅ Preenchida</span>'
+      : '<span class="badge-pill badge-pendente" style="font-size:11px">Pendente</span>';
+    return '<tr>'
+      + '<td><strong>' + nome + '</strong></td>'
+      + '<td><span style="background:#EDD5D8;color:#B07880;padding:2px 8px;border-radius:12px;font-size:11px">' + modelo + '</span></td>'
+      + '<td>' + data + '</td>'
+      + '<td>' + assinatura + '</td>'
+      + '<td>' + lizaBadge + '</td>'
+      + '<td style="display:flex;gap:4px"><button class="btn btn-edit btn-sm" onclick="editarFichaCustom(\'' + a.id + '\')" style="font-size:11px">✏️</button><button class="btn btn-primary btn-sm" onclick="verFichaCustom(\'' + a.id + '\')" style="font-size:11px;padding:4px 8px">👁 Ver</button></td>'
+      + '</tr>';
+  }).join('');
+}
+
+function renderFichasCustom() {
+  renderFichasCustomSubAba();
+  // Manter compatibilidade com tbody antigo se existir
+  var tbody = document.getElementById('tbodyFichasCustom');
+  if (tbody) {
+    var busca = (document.getElementById('filtFichaCustomNome')||{value:''}).value.toLowerCase().trim();
+    var de = (document.getElementById('filtFichaCustomDe')||{value:''}).value;
+    var ate = (document.getElementById('filtFichaCustomAte')||{value:''}).value;
+    var lista = db.anamneses.filter(function(a) {
+      if (!a.modelo_respostas || Object.keys(a.modelo_respostas).length === 0) return false;
+      var nome = (a.pessoais && a.pessoais.nome) || '';
+      if (busca && nome.toLowerCase().indexOf(busca) < 0) return false;
+      return true;
+    });
+    var badge = document.getElementById('badgeFichasCustom');
+    if (badge) badge.textContent = lista.length;
+  }
+}
+
 function renderModelosAnamnese() {
   var el = document.getElementById('modelosAnamneseList');
   if (!el) return;
@@ -978,6 +1058,7 @@ function renderModelosAnamnese() {
 function abrirEditorModelo(id) {
   var modelo = id ? _modelosAnamnese.find(function(m){ return m.id === id; }) : null;
   var campos = modelo ? JSON.parse(JSON.stringify(modelo.campos || [])) : [];
+  var camposLiza = modelo ? JSON.parse(JSON.stringify(modelo.campos_liza || [])) : [];
   var isNovo = !id;
 
   var old = document.getElementById('modal-editor-modelo');
@@ -1020,6 +1101,34 @@ function abrirEditorModelo(id) {
   window._removerCampo   = function(i) { campos.splice(i, 1); rebuild(); };
   window._adicionarCampo = function() { campos.push({ label:'', tipo:'sim_nao' }); rebuild(); };
 
+  // ── Funções para campos da Liza ──
+  function renderCamposLiza() {
+    return camposLiza.map(function(c, i) {
+      var tiposOpts = ['sim_nao','sim_nao_qual','texto','multipla','numero','data'];
+      var tiposLabels = {sim_nao:'Sim/Não', sim_nao_qual:'Sim/Não + Detalhe', texto:'Texto livre', multipla:'Múltipla escolha', numero:'Número', data:'Data'};
+      return '<div style="background:#F5F8E8;border-radius:8px;padding:0.75rem 1rem;margin-bottom:0.5rem;display:flex;gap:0.75rem;align-items:flex-start">'
+        + '<div style="flex:1">'
+        + '<input type="text" value="' + (c.label||'').replace(/"/g,'&quot;') + '" placeholder="Campo da esteticista..." '
+        + 'onchange="window._editCampoLizaLabel(' + i + ',this.value)" '
+        + 'style="width:100%;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:13px;margin-bottom:6px">'
+        + '<select onchange="window._editCampoLizaTipo(' + i + ',this.value)" style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:12px">'
+        + tiposOpts.map(function(t){ return '<option value="' + t + '" ' + (c.tipo===t?'selected':'') + '>' + tiposLabels[t] + '</option>'; }).join('')
+        + '</select>'
+        + (c.tipo==='multipla' ? '<input type="text" value="' + (c.opcoes||[]).join(', ') + '" placeholder="Opções separadas por vírgula..." '
+          + 'onchange="window._editCampoLizaOpcoes(' + i + ',this.value)" '
+          + 'style="width:100%;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:12px;margin-top:6px">' : '')
+        + '</div>'
+        + '<button onclick="window._removerCampoLiza(' + i + ')" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:16px;padding:4px">✕</button>'
+        + '</div>';
+    }).join('');
+  }
+  function rebuildLiza() { var el=document.getElementById('editor-campos-liza-wrap'); if(el) el.innerHTML=renderCamposLiza(); }
+  window._editCampoLizaLabel = function(i,v){ camposLiza[i].label=v; };
+  window._editCampoLizaTipo  = function(i,v){ camposLiza[i].tipo=v; rebuildLiza(); };
+  window._editCampoLizaOpcoes= function(i,v){ camposLiza[i].opcoes=v.split(',').map(function(x){return x.trim();}); };
+  window._removerCampoLiza   = function(i){ camposLiza.splice(i,1); rebuildLiza(); };
+  window._adicionarCampoLiza = function(){ camposLiza.push({label:'',tipo:'texto'}); rebuildLiza(); };
+
   modal.innerHTML = '<div style="background:white;border-radius:16px;max-width:600px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3)">'
     + '<div style="padding:1.2rem 1.5rem;background:linear-gradient(135deg,#1C1C1E,#2C2C2E);border-radius:16px 16px 0 0;display:flex;justify-content:space-between;align-items:center">'
     + '<div style="font-family:Cormorant Garamond,serif;font-size:18px;color:#FAF0F2;letter-spacing:2px">📋 ' + (isNovo ? 'Novo Modelo' : 'Editar Modelo') + '</div>'
@@ -1027,14 +1136,19 @@ function abrirEditorModelo(id) {
     + '</div>'
     + '<div style="padding:1.5rem">'
     + '<div class="form-group" style="margin-bottom:1rem"><label>Nome do Modelo</label>'
-    + '<input type="text" id="editor-modelo-nome" value="' + (modelo?modelo.nome:'').replace(/"/g,'&quot;') + '" placeholder="Ex: Hidrolipoclasia, Drenagem Linfática..." style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:14px"></div>'
+    + '<input type="text" id="editor-modelo-nome" value="' + (modelo?modelo.nome:'').replace(/"/g,'&quot;') + '" placeholder="Ex: Hidrolipoclasia..." style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:14px"></div>'
     + '<div class="form-group" style="margin-bottom:1rem"><label>Descrição (opcional)</label>'
     + '<input type="text" id="editor-modelo-desc" value="' + (modelo&&modelo.descricao?modelo.descricao:'').replace(/"/g,'&quot;') + '" placeholder="Ex: Para procedimentos corporais com agulha" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px"></div>'
-    + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem">'
-    + '<div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--text-light)">Campos da ficha</div>'
-    + '<button onclick="window._adicionarCampo()" class="btn btn-primary btn-sm">+ Adicionar Campo</button>'
+    + '<div style="background:#EDD5D8;border-radius:8px;padding:0.5rem 1rem;margin-bottom:0.75rem;display:flex;align-items:center;justify-content:space-between">'
+    + '<div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#B07880;font-weight:600">👤 Campos da Cliente</div>'
+    + '<button onclick="window._adicionarCampo()" class="btn btn-primary btn-sm">+ Campo</button>'
     + '</div>'
     + '<div id="editor-campos-wrap">' + renderCampos() + '</div>'
+    + '<div style="background:#E8F5E9;border-radius:8px;padding:0.5rem 1rem;margin:1rem 0 0.75rem;display:flex;align-items:center;justify-content:space-between">'
+    + '<div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#2E7D32;font-weight:600">✍️ Campos da Esteticista</div>'
+    + '<button onclick="window._adicionarCampoLiza()" class="btn btn-sm" style="background:#E8F5E9;border:1px solid #7DB87D;color:#276749">+ Campo</button>'
+    + '</div>'
+    + '<div id="editor-campos-liza-wrap">' + renderCamposLiza() + '</div>'
     + '<div style="display:flex;gap:0.75rem;margin-top:1.25rem;flex-wrap:wrap">'
     + '<button class="btn btn-primary" onclick="salvarModeloAnamnese(\'' + (id||'') + '\')">💾 Salvar Modelo</button>'
     + '<button class="btn btn-secondary" onclick="document.getElementById(\'modal-editor-modelo\').remove()">Cancelar</button>'
@@ -1043,9 +1157,10 @@ function abrirEditorModelo(id) {
   document.body.appendChild(modal);
   modal.addEventListener('click', function(e){ if(e.target===modal) modal.remove(); });
 
-  // Atualizar referência de campos ao salvar
   window._getCamposEditor = function() { return campos; };
+  window._getCamposLizaEditor = function() { return camposLiza; };
 }
+
 
 // ── Salvar modelo ao fechar editor ──
 async function salvarModeloAnamnese(id) {
@@ -1053,12 +1168,15 @@ async function salvarModeloAnamnese(id) {
   if (!nome) { showToast('Informe o nome do modelo!'); return; }
   var campos = window._getCamposEditor ? window._getCamposEditor() : [];
   var camposValidos = campos.filter(function(c){ return c.label && c.label.trim(); });
+  var camposLiza = window._getCamposLizaEditor ? window._getCamposLizaEditor() : [];
+  var camposLizaValidos = camposLiza.filter(function(c){ return c.label && c.label.trim(); });
 
   var modelo = {
     id: id || uid(),
     nome: nome,
     descricao: (document.getElementById('editor-modelo-desc')||{value:''}).value.trim(),
     campos: camposValidos,
+    campos_liza: camposLizaValidos,
     ativo: true,
     atualizado_em: new Date().toISOString()
   };
