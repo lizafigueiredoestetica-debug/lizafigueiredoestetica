@@ -685,6 +685,16 @@ function realizarSessao(agId, sessaoIdx) {
 
   const clienteEl = document.getElementById('atend-cliente');
   if(clienteEl) clienteEl.value = ag.cliente;
+  // Gravar agendaId para que salvarAtendimento saiba a qual agenda pertence
+  var _agIdInput = document.getElementById('atend-agenda-id');
+  if (!_agIdInput) {
+    _agIdInput = document.createElement('input');
+    _agIdInput.type = 'hidden';
+    _agIdInput.id = 'atend-agenda-id';
+    var _formBody = document.querySelector('#sec-atendimentos .form-body');
+    if (_formBody) _formBody.appendChild(_agIdInput);
+  }
+  if (_agIdInput) _agIdInput.value = agId;
 
   const dataEl = document.getElementById('atend-data');
   if(dataEl) dataEl.value = sessao.data;
@@ -726,29 +736,6 @@ function realizarSessao(agId, sessaoIdx) {
           + ' &nbsp;|&nbsp; <strong>Sinal:</strong> R$ ' + _saldo.sinal.toFixed(2).replace('.',',')
           + ' &nbsp;|&nbsp; <strong>Já pago:</strong> R$ ' + _saldo.totalPago.toFixed(2).replace('.',',')
           + ' &nbsp;|&nbsp; <strong style="color:#C62828">Restante: R$ ' + _saldo.saldo.toFixed(2).replace('.',',') + '</strong>';
-      }
-    }
-  }
-
-  // Verificar sinal não lançado e perguntar se quer incluir na receita
-  var _sinalAg = parseFloat(ag.sinal) || 0;
-  if (_sinalAg > 0) {
-    // Verificar por agendamento: sinal já lançado para ESTE agId especificamente
-    var _sinalJaLancado = db.atendimentos.some(function(a) {
-      return a.agendaId === agId && a.pagto === 'sinal';
-    });
-    if (!_sinalJaLancado) {
-      if (confirm('Sinal de R$ ' + _sinalAg.toFixed(2).replace('.',',') + ' registrado para ' + ag.cliente + '. Deseja incluir o sinal neste atendimento?')) {
-        var _atendSinal = {
-          id: uid(), data: sessao.data, cliente: ag.cliente,
-          valor: _sinalAg, pagto: 'sinal',
-          agendaId: agId,
-          servicoIds: [], servicoNomesCache: ['Sinal/Entrada'],
-          materiais: [], obs: 'Sinal de entrada'
-        };
-        db.atendimentos.push(_atendSinal);
-        saveData();
-        if (typeof _salvarAtendimento === 'function') _salvarAtendimento(_atendSinal);
       }
     }
   }
