@@ -23,23 +23,23 @@ function salvarAtendimento() {
   var _valorFinal = parseFloat(valor);
   var _nomesCache = selectedServicos.map(function(id){ var sv=db.servicos.find(function(x){return x.id===id;}); return sv?sv.nome:''; }).filter(Boolean);
 
-  // Verificar sinal do pacote para incluir
-  var _ag = db.agenda.find(function(ag) {
+  // Verificar sinal do pacote para incluir — verificar por agendamento (agendaId)
+  var _agsComSinal = db.agenda.filter(function(ag) {
     return ag.cliente && ag.cliente.toLowerCase().trim() === cliente.toLowerCase().trim() && parseFloat(ag.sinal) > 0;
   });
-  if (_ag && parseFloat(_ag.sinal) > 0) {
+  _agsComSinal.forEach(function(_ag) {
     var _sinalJaIncluido = db.atendimentos.some(function(a) {
-      return a.cliente && a.cliente.toLowerCase().trim() === cliente.toLowerCase().trim() && a.pagto === 'sinal';
+      return a.agendaId === _ag.id && a.pagto === 'sinal';
     });
     if (!_sinalJaIncluido) {
       var _sinalVal = parseFloat(_ag.sinal);
       if (confirm('Sinal de R$ ' + _sinalVal.toFixed(2).replace('.',',') + ' registrado para ' + cliente + '. Deseja incluir o sinal neste atendimento?')) {
-        var _atendSinal = { id: uid(), data: data, cliente: cliente, valor: _sinalVal, pagto: 'sinal', servicoIds: [], servicoNomesCache: ['Sinal/Entrada'], materiais: [], obs: 'Sinal de entrada' };
+        var _atendSinal = { id: uid(), data: data, cliente: cliente, valor: _sinalVal, pagto: 'sinal', agendaId: _ag.id, servicoIds: [], servicoNomesCache: ['Sinal/Entrada'], materiais: [], obs: 'Sinal de entrada' };
         db.atendimentos.push(_atendSinal);
         _salvarAtendimento(_atendSinal);
       }
     }
-  }
+  });
 
   db.atendimentos.push({
     id: uid(), data, cliente, valor: _valorFinal,
