@@ -23,11 +23,20 @@ function salvarAtendimento() {
   var _valorFinal = parseFloat(valor);
   var _nomesCache = selectedServicos.map(function(id){ var sv=db.servicos.find(function(x){return x.id===id;}); return sv?sv.nome:''; }).filter(Boolean);
 
-  // Verificar sinal do pacote para incluir — verificar por agendamento (agendaId)
-  var _agsComSinal = db.agenda.filter(function(ag) {
-    return ag.cliente && ag.cliente.toLowerCase().trim() === cliente.toLowerCase().trim() && parseFloat(ag.sinal) > 0;
-  });
-  _agsComSinal.forEach(function(_ag) {
+  // Verificar sinal do pacote para incluir — por agendaId específico se veio do realizarSessao
+  var _agIdVinculado = (document.getElementById('atend-agenda-id')||{value:''}).value || '';
+  var _agsParaVerificar = [];
+  if (_agIdVinculado) {
+    // Veio do realizarSessao: verificar só o agendamento específico
+    var _agVinc = db.agenda.find(function(ag){ return ag.id === _agIdVinculado; });
+    if (_agVinc && parseFloat(_agVinc.sinal) > 0) _agsParaVerificar = [_agVinc];
+  } else {
+    // Lançamento manual: verificar todos agendamentos do cliente com sinal
+    _agsParaVerificar = db.agenda.filter(function(ag) {
+      return ag.cliente && ag.cliente.toLowerCase().trim() === cliente.toLowerCase().trim() && parseFloat(ag.sinal) > 0;
+    });
+  }
+  _agsParaVerificar.forEach(function(_ag) {
     var _sinalJaIncluido = db.atendimentos.some(function(a) {
       return a.agendaId === _ag.id && a.pagto === 'sinal';
     });
@@ -40,6 +49,9 @@ function salvarAtendimento() {
       }
     }
   });
+  // Limpar agendaId vinculado após uso
+  var _agIdEl = document.getElementById('atend-agenda-id');
+  if (_agIdEl) _agIdEl.value = '';
 
   db.atendimentos.push({
     id: uid(), data, cliente, valor: _valorFinal,
