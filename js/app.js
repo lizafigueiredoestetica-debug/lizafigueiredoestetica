@@ -963,6 +963,15 @@ function mostrarSubAbaModelos(aba) {
   if (aba === 'fichas') renderFichasCustomSubAba();
 }
 
+function excluirFichaCustomSub(id) {
+  if (!confirm('Excluir esta ficha preenchida? Esta ação não pode ser desfeita.')) return;
+  db.anamneses = db.anamneses.filter(function(a){ return a.id !== id; });
+  saveData();
+  _deletarAnamnese(id);
+  renderFichasCustomSubAba();
+  showToast('Ficha excluída.');
+}
+
 function renderFichasCustomSubAba() {
   var tbody = document.getElementById('tbodyFichasCustom2');
   if (!tbody) return;
@@ -1006,7 +1015,7 @@ function renderFichasCustomSubAba() {
       + '<td>' + data + '</td>'
       + '<td>' + assinatura + '</td>'
       + '<td>' + lizaBadge + '</td>'
-      + '<td style="display:flex;gap:4px"><button class="btn btn-edit btn-sm" onclick="editarFichaCustom(\'' + a.id + '\')" style="font-size:11px">✏️</button><button class="btn btn-primary btn-sm" onclick="verFichaCustom(\'' + a.id + '\')" style="font-size:11px;padding:4px 8px">👁 Ver</button></td>'
+      + '<td style="display:flex;gap:4px"><button class="btn btn-edit btn-sm" onclick="editarFichaCustom(\'' + a.id + '\')" style="font-size:11px">✏️</button><button class="btn btn-primary btn-sm" onclick="verFichaCustom(\'' + a.id + '\')" style="font-size:11px;padding:4px 8px">👁 Ver</button><button class="btn btn-danger btn-sm" onclick="excluirFichaCustomSub(\'' + a.id + '\')" style="font-size:11px">✕</button></td>'
       + '</tr>';
   }).join('');
 }
