@@ -733,15 +733,16 @@ function realizarSessao(agId, sessaoIdx) {
   // Verificar sinal não lançado e perguntar se quer incluir na receita
   var _sinalAg = parseFloat(ag.sinal) || 0;
   if (_sinalAg > 0) {
+    // Verificar por agendamento: sinal já lançado para ESTE agId especificamente
     var _sinalJaLancado = db.atendimentos.some(function(a) {
-      return a.cliente && a.cliente.toLowerCase().trim() === ag.cliente.toLowerCase().trim()
-        && a.pagto === 'sinal';
+      return a.agendaId === agId && a.pagto === 'sinal';
     });
     if (!_sinalJaLancado) {
       if (confirm('Sinal de R$ ' + _sinalAg.toFixed(2).replace('.',',') + ' registrado para ' + ag.cliente + '. Deseja incluir o sinal neste atendimento?')) {
         var _atendSinal = {
           id: uid(), data: sessao.data, cliente: ag.cliente,
           valor: _sinalAg, pagto: 'sinal',
+          agendaId: agId,
           servicoIds: [], servicoNomesCache: ['Sinal/Entrada'],
           materiais: [], obs: 'Sinal de entrada'
         };
