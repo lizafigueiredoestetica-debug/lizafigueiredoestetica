@@ -857,13 +857,22 @@ function _toggleClienteCard(key) {
 
 async function gerarLinkCliente(nomeCliente) {
   var token = Math.random().toString(36).substr(2,9) + Math.random().toString(36).substr(2,9);
+  // Buscar CPF e todos os nomes vinculados ao cliente para gravar no link
+  var todos = _consolidarClientes();
+  var cli = todos.find(function(c){ return _normNome(c.nome) === _normNome(nomeCliente); });
+  var cpfLink = cli && cli.pessoais && cli.pessoais.cpf ? cli.pessoais.cpf.replace(/\D/g,'') : '';
+  var nomesLink = [nomeCliente];
+  if (cli) {
+    cli.agenda.forEach(function(ag){ if(ag.cliente && nomesLink.indexOf(ag.cliente)<0) nomesLink.push(ag.cliente); });
+    cli.atendimentos.forEach(function(a){ if(a.cliente && nomesLink.indexOf(a.cliente)<0) nomesLink.push(a.cliente); });
+  }
   var resp = await fetch(SUPA_URL + '/rest/v1/links_clientes', {
     method: 'POST',
     headers: {
       'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY,
       'Content-Type': 'application/json', 'Prefer': 'return=representation'
     },
-    body: JSON.stringify({ id: token, nome_cliente: nomeCliente, ativo: true })
+    body: JSON.stringify({ id: token, nome_cliente: nomeCliente, cpf_cliente: cpfLink, nomes_alternativos: nomesLink, ativo: true })
   });
   if (!resp.ok) { showToast('Erro ao gerar link.'); return; }
   var link = 'https://lizafigueiredoestetica-debug.github.io/cliente/cliente.html?id=' + token;
@@ -1511,7 +1520,15 @@ function _finSalvarAtend(id) {
 // ── Gerar link dashboard cliente ──
 async function gerarLinkCliente(nomeCliente) {
   var token = Math.random().toString(36).substr(2,9)+Math.random().toString(36).substr(2,9);
-  var resp = await fetch(SUPA_URL+'/rest/v1/links_clientes',{method:'POST',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':'return=representation'},body:JSON.stringify({id:token,nome_cliente:nomeCliente,ativo:true})});
+  var todos = _consolidarClientes();
+  var cli = todos.find(function(c){ return _normNome(c.nome) === _normNome(nomeCliente); });
+  var cpfLink = cli && cli.pessoais && cli.pessoais.cpf ? cli.pessoais.cpf.replace(/\D/g,'') : '';
+  var nomesLink = [nomeCliente];
+  if (cli) {
+    cli.agenda.forEach(function(ag){ if(ag.cliente && nomesLink.indexOf(ag.cliente)<0) nomesLink.push(ag.cliente); });
+    cli.atendimentos.forEach(function(a){ if(a.cliente && nomesLink.indexOf(a.cliente)<0) nomesLink.push(a.cliente); });
+  }
+  var resp = await fetch(SUPA_URL+'/rest/v1/links_clientes',{method:'POST',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':'return=representation'},body:JSON.stringify({id:token,nome_cliente:nomeCliente,cpf_cliente:cpfLink,nomes_alternativos:nomesLink,ativo:true})});
   if(!resp.ok){showToast('Erro ao gerar link.');return;}
   var link='https://lizafigueiredoestetica-debug.github.io/cliente/cliente.html?id='+token;
   try{await navigator.clipboard.writeText(link);showToast('✅ Link copiado!');}catch(e){}
