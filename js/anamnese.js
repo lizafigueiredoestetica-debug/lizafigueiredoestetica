@@ -1293,6 +1293,7 @@ function _abrirModalFichaCustom(ficha) {
     + '</div>'
     // Campos do modelo
     + '<div id="fc-campos-wrap"></div>'
+    + '<div id="fc-campos-liza-wrap"></div>'
     + '<div style="display:flex;gap:0.75rem;margin-top:1.25rem">'
     + '<button class="btn btn-primary" onclick="salvarFichaCustom()">💾 Salvar Ficha</button>'
     + '<button class="btn btn-secondary" onclick="document.getElementById(\'modal-ficha-custom\').remove()">Cancelar</button>'
@@ -1304,10 +1305,20 @@ function _abrirModalFichaCustom(ficha) {
 
   // Guardar respostas existentes para preencher depois
   window._fcRespostasExistentes = mr;
+  window._fcRespostasLizaExistentes = ficha ? (ficha.respostas_liza || {}) : {};
 
   // Se já tem modelo selecionado, carregar campos
   if (modeloAtual) {
-    setTimeout(_carregarCamposModelo, 100);
+    // Tentar carregar imediatamente, e se _modelosAnamnese não tiver campos_liza, recarregar do Supabase
+    setTimeout(function() {
+      var m = (_modelosAnamnese || []).find(function(x){ return x.id === modeloAtual; });
+      if (m && m.campos_liza === undefined) {
+        // Modelo antigo sem campos_liza — recarregar do Supabase
+        _carregarModelosAnamnese().then(function(){ _carregarCamposModelo(); });
+      } else {
+        _carregarCamposModelo();
+      }
+    }, 150);
   }
 }
 
@@ -1363,6 +1374,51 @@ function _carregarCamposModelo() {
   wrap.dataset.modeloNome = modelo.nome;
   wrap.dataset.totalCampos = campos.length;
   window._fcCamposAtual = campos;
+
+  // ── Seção de campos da Liza (esteticista) ──
+  var camposLiza = modelo.campos_liza || [];
+  var rliza = window._fcRespostasLizaExistentes || {};
+  var wrapLiza = document.getElementById('fc-campos-liza-wrap');
+  if (wrapLiza) {
+    if (!camposLiza.length) {
+      wrapLiza.innerHTML = '';
+    } else {
+      var htmlLiza = '<div style="background:#E8F5E9;border-radius:8px;padding:0.5rem 1rem;margin:1rem 0 0.75rem">'
+        + '<div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#2E7D32;font-weight:600">✍️ Avaliação da Esteticista</div>'
+        + '</div>';
+      camposLiza.forEach(function(c, i) {
+        var val = rliza[c.label] || '';
+        var detalhe = rliza[c.label + ' (detalhe)'] || '';
+        htmlLiza += '<div style="background:#F5F8E8;border-radius:8px;padding:0.75rem 1rem;margin-bottom:0.5rem">'
+          + '<div style="font-size:13px;font-weight:500;margin-bottom:0.5rem;color:#276749">• ' + c.label + '</div>';
+        if (c.tipo === 'sim_nao' || c.tipo === 'sim_nao_qual') {
+          htmlLiza += '<div style="display:flex;gap:1rem">'
+            + '<label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="radio" name="fcl_' + i + '" value="sim" ' + (val==='sim'?'checked':'') + '> Sim</label>'
+            + '<label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="radio" name="fcl_' + i + '" value="não" ' + (val==='não'?'checked':'') + '> Não</label>'
+            + '</div>';
+          if (c.tipo === 'sim_nao_qual') {
+            htmlLiza += '<div style="margin-top:0.5rem"><input type="text" id="fcl_qual_' + i + '" value="' + detalhe.replace(/"/g,'&quot;') + '" placeholder="Qual?" style="width:100%;padding:6px 10px;border:1px solid #7DB87D;border-radius:6px;font-family:inherit;font-size:13px"></div>';
+          }
+        } else if (c.tipo === 'texto') {
+          htmlLiza += '<textarea id="fcl_texto_' + i + '" rows="3" placeholder="Observações..." style="width:100%;padding:6px 10px;border:1px solid #7DB87D;border-radius:6px;font-family:inherit;font-size:13px;resize:vertical">' + val + '</textarea>';
+        } else if (c.tipo === 'numero') {
+          htmlLiza += '<input type="number" id="fcl_num_' + i + '" value="' + val + '" style="width:100%;padding:6px 10px;border:1px solid #7DB87D;border-radius:6px;font-family:inherit;font-size:13px">';
+        } else if (c.tipo === 'data') {
+          htmlLiza += '<input type="date" id="fcl_data_' + i + '" value="' + val + '" style="width:100%;padding:6px 10px;border:1px solid #7DB87D;border-radius:6px;font-family:inherit;font-size:13px">';
+        } else if (c.tipo === 'multipla') {
+          var selecionados = val ? val.split(', ') : [];
+          htmlLiza += '<div style="display:flex;flex-wrap:wrap;gap:0.5rem">';
+          (c.opcoes||[]).forEach(function(op, oi) {
+            htmlLiza += '<label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="fcl_mult_' + i + '_' + oi + '" value="' + op + '" ' + (selecionados.indexOf(op)>=0?'checked':'') + '> ' + op + '</label>';
+          });
+          htmlLiza += '</div>';
+        }
+        htmlLiza += '</div>';
+      });
+      wrapLiza.innerHTML = htmlLiza;
+    }
+    window._fcCamposLizaAtual = camposLiza;
+  }
 }
 
 function salvarFichaCustom() {
@@ -1407,6 +1463,36 @@ function salvarFichaCustom() {
 
   var modelo = (_modelosAnamnese||[]).find(function(m){ return m.id === modeloId; });
 
+  // Capturar respostas da Liza
+  var camposLiza = window._fcCamposLizaAtual || [];
+  var respostasLiza = {};
+  camposLiza.forEach(function(c, i) {
+    if (c.tipo === 'sim_nao' || c.tipo === 'sim_nao_qual') {
+      var el = document.querySelector('input[name="fcl_' + i + '"]:checked');
+      respostasLiza[c.label] = el ? el.value : '';
+      if (c.tipo === 'sim_nao_qual') {
+        var qual = document.getElementById('fcl_qual_' + i);
+        if (qual && qual.value) respostasLiza[c.label + ' (detalhe)'] = qual.value;
+      }
+    } else if (c.tipo === 'texto') {
+      var t = document.getElementById('fcl_texto_' + i);
+      respostasLiza[c.label] = t ? t.value : '';
+    } else if (c.tipo === 'numero') {
+      var n = document.getElementById('fcl_num_' + i);
+      respostasLiza[c.label] = n ? n.value : '';
+    } else if (c.tipo === 'data') {
+      var d = document.getElementById('fcl_data_' + i);
+      respostasLiza[c.label] = d ? d.value : '';
+    } else if (c.tipo === 'multipla') {
+      var sel = [];
+      (c.opcoes||[]).forEach(function(op, oi) {
+        var cb = document.getElementById('fcl_mult_' + i + '_' + oi);
+        if (cb && cb.checked) sel.push(op);
+      });
+      respostasLiza[c.label] = sel.join(', ');
+    }
+  });
+
   var ficha = {
     id: _fichaCustomEditId || uid(),
     dataCadastro: new Date().toLocaleDateString('pt-BR'),
@@ -1424,6 +1510,7 @@ function salvarFichaCustom() {
     modelo_id: modeloId,
     modelo_nome: modelo ? modelo.nome : '',
     modelo_respostas: respostas,
+    respostas_liza: respostasLiza,
     atualizado_em: new Date().toISOString()
   };
 
