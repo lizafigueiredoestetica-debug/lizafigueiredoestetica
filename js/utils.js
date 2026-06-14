@@ -568,6 +568,41 @@ function _consolidarClientes() {
     mapa[key].atendimentos.push(a);
   });
 
+
+  // ── Mesclar registros com mesmo CPF (nomes divergentes) ──
+  var _cpfMapa = {};
+  Object.keys(mapa).forEach(function(key) {
+    var cpf = (mapa[key].pessoais.cpf || '').replace(/\D/g,'');
+    if (!cpf) {
+      // Tentar pegar CPF da agenda vinculada
+      mapa[key].agenda.forEach(function(ag) {
+        if (!cpf && ag.cpf) cpf = ag.cpf.replace(/\D/g,'');
+      });
+    }
+    if (cpf) {
+      if (!_cpfMapa[cpf]) { _cpfMapa[cpf] = key; }
+      else {
+        // Já existe outro registro com mesmo CPF — mesclar no de nome mais longo
+        var existKey = _cpfMapa[cpf];
+        var masterKey = mapa[existKey].nome.length >= mapa[key].nome.length ? existKey : key;
+        var dupeKey   = masterKey === existKey ? key : existKey;
+        if (masterKey !== dupeKey && mapa[masterKey] && mapa[dupeKey]) {
+          var m = mapa[masterKey], d = mapa[dupeKey];
+          if (!m.pessoais.telefone && d.pessoais.telefone) m.pessoais.telefone = d.pessoais.telefone;
+          if (!m.pessoais.cpf && d.pessoais.cpf) m.pessoais.cpf = d.pessoais.cpf;
+          if (!m.pessoais.idade && d.pessoais.idade) m.pessoais.idade = d.pessoais.idade;
+          if (!m.pessoais.dataNasc && d.pessoais.dataNasc) m.pessoais.dataNasc = d.pessoais.dataNasc;
+          if (!m.pessoais.genero && d.pessoais.genero) m.pessoais.genero = d.pessoais.genero;
+          m.anamneses   = m.anamneses.concat(d.anamneses);
+          m.fichasCustom= m.fichasCustom.concat(d.fichasCustom);
+          m.agenda      = m.agenda.concat(d.agenda);
+          m.atendimentos= m.atendimentos.concat(d.atendimentos);
+          delete mapa[dupeKey];
+          _cpfMapa[cpf] = masterKey;
+        }
+      }
+    }
+  });
   var _excl = db.clientesExcluidos || [];
   return Object.values(mapa).filter(function(c) {
     return _excl.indexOf(c.nome.toLowerCase().trim()) < 0;
@@ -1175,6 +1210,41 @@ function _consolidarClientes() {
     var key = _normNome(a.cliente);
     if (!mapa[key]) mapa[key] = { nome: a.cliente, pessoais: {}, anamneses: [], fichasCustom: [], agenda: [], atendimentos: [] };
     mapa[key].atendimentos.push(a);
+  });
+
+  // ── Mesclar registros com mesmo CPF (nomes divergentes) ──
+  var _cpfMapa2 = {};
+  Object.keys(mapa).forEach(function(key) {
+    var cpf = (mapa[key].pessoais.cpf || '').replace(/\D/g,'');
+    if (!cpf) {
+      // Tentar pegar CPF da agenda vinculada
+      mapa[key].agenda.forEach(function(ag) {
+        if (!cpf && ag.cpf) cpf = ag.cpf.replace(/\D/g,'');
+      });
+    }
+    if (cpf) {
+      if (!_cpfMapa2[cpf]) { _cpfMapa2[cpf] = key; }
+      else {
+        // Já existe outro registro com mesmo CPF — mesclar no de nome mais longo
+        var existKey = _cpfMapa2[cpf];
+        var masterKey = mapa[existKey].nome.length >= mapa[key].nome.length ? existKey : key;
+        var dupeKey   = masterKey === existKey ? key : existKey;
+        if (masterKey !== dupeKey && mapa[masterKey] && mapa[dupeKey]) {
+          var m = mapa[masterKey], d = mapa[dupeKey];
+          if (!m.pessoais.telefone && d.pessoais.telefone) m.pessoais.telefone = d.pessoais.telefone;
+          if (!m.pessoais.cpf && d.pessoais.cpf) m.pessoais.cpf = d.pessoais.cpf;
+          if (!m.pessoais.idade && d.pessoais.idade) m.pessoais.idade = d.pessoais.idade;
+          if (!m.pessoais.dataNasc && d.pessoais.dataNasc) m.pessoais.dataNasc = d.pessoais.dataNasc;
+          if (!m.pessoais.genero && d.pessoais.genero) m.pessoais.genero = d.pessoais.genero;
+          m.anamneses   = m.anamneses.concat(d.anamneses);
+          m.fichasCustom= m.fichasCustom.concat(d.fichasCustom);
+          m.agenda      = m.agenda.concat(d.agenda);
+          m.atendimentos= m.atendimentos.concat(d.atendimentos);
+          delete mapa[dupeKey];
+          _cpfMapa2[cpf] = masterKey;
+        }
+      }
+    }
   });
   var _excl2 = db.clientesExcluidos || [];
   return Object.values(mapa).filter(function(c) {
