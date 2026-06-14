@@ -59,10 +59,7 @@
           <span>📋</span><span>Modelos Ficha</span>
           <span class="badge" id="badgeModelos">0</span>
         </button>
-        <button class="nav-tab" onclick="showSection('fichas-custom')" data-label="Fichas Custom">
-          <span>📝</span><span>Fichas Custom</span>
-          <span class="badge" id="badgeFichasCustom">0</span>
-        </button>
+        <!-- Fichas Custom movidas para dentro de Modelos Ficha -->
         <button class="nav-tab" onclick="fecharDrawer();showSection('clientes')" data-label="Clientes">
           <span>👥</span><span>Clientes</span>
           <span class="badge" id="badgeClientes">0</span>
@@ -1075,8 +1072,8 @@
     </div>
   </section>
 
-  <!-- Fichas Customizadas -->
-  <section class="section" id="sec-fichas-custom">
+  <!-- Fichas Customizadas (movidas para sub-aba em Modelos Ficha) -->
+  <section class="section" id="sec-fichas-custom" style="display:none!important">
     <div class="main">
       <div class="section-title">Fichas Customizadas</div>
       <div class="section-sub">Fichas preenchidas pelas clientes com modelos personalizados</div>
@@ -1194,14 +1191,52 @@
   <section class="section" id="sec-modelos">
     <div class="main">
       <div class="section-title">Modelos de Ficha</div>
-      <div class="section-sub">Crie fichas de anamnese personalizadas por tratamento</div>
+      <div class="section-sub">Crie fichas personalizadas por tratamento</div>
       <div class="divider"></div>
-      <div style="margin-bottom:1.5rem">
-        <button class="btn btn-primary" onclick="abrirEditorModelo(null)">+ Novo Modelo de Ficha</button>
+
+      <!-- Sub-abas -->
+      <div style="display:flex;gap:0.5rem;margin-bottom:1.5rem">
+        <button id="sub-btn-modelos" class="agenda-btn active" onclick="mostrarSubAbaModelos('modelos')">📋 Modelos</button>
+        <button id="sub-btn-fichas-preenchidas" class="agenda-btn" onclick="mostrarSubAbaModelos('fichas')">📝 Fichas Preenchidas</button>
       </div>
-      <div id="modelosAnamneseList">
-        <div class="empty-state"><div class="empty-icon">📋</div><p>Carregando modelos...</p></div>
+
+      <!-- SUB-ABA MODELOS -->
+      <div id="sub-aba-modelos-lista">
+        <div style="margin-bottom:1.5rem">
+          <button class="btn btn-primary" onclick="abrirEditorModelo(null)">+ Novo Modelo de Ficha</button>
+        </div>
+        <div id="modelosAnamneseList">
+          <div class="empty-state"><div class="empty-icon">📋</div><p>Carregando modelos...</p></div>
+        </div>
       </div>
+
+      <!-- SUB-ABA FICHAS PREENCHIDAS -->
+      <div id="sub-aba-fichas-preenchidas" style="display:none">
+        <div class="filters-bar">
+          <input type="text" class="filter-input" id="filtFichaCustomNome2" placeholder="🔍 Buscar cliente..." oninput="renderFichasCustom()">
+          <input type="date" class="filter-input" id="filtFichaCustomDe2" onchange="renderFichasCustom()">
+          <input type="date" class="filter-input" id="filtFichaCustomAte2" onchange="renderFichasCustom()">
+          <button class="btn btn-secondary btn-sm" onclick="document.getElementById('filtFichaCustomNome2').value='';document.getElementById('filtFichaCustomDe2').value='';document.getElementById('filtFichaCustomAte2').value='';renderFichasCustom()">✕ Limpar</button>
+        </div>
+        <div class="panel">
+          <table style="width:100%">
+            <thead>
+              <tr>
+                <th>Cliente</th>
+                <th>Modelo</th>
+                <th>Data</th>
+                <th>Assinatura</th>
+                <th>Esteticista</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="tbodyFichasCustom2">
+              <tr><td colspan="6"><div class="empty-state"><div class="empty-icon">📝</div><p>Nenhuma ficha preenchida</p></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
     </div>
   </section>
 
