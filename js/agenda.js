@@ -546,7 +546,7 @@ function renderAgenda() {
           ${pendentes > 0 ? `<span class="badge-pendente">${pendentes} pendente${pendentes>1?'s':''}</span>` : '<span class="badge-realizado">Concluído</span>'}
           <button class="btn btn-edit btn-sm" onclick="event.stopPropagation();editarAgenda('${ag.id}')" style="margin-left:0.5rem;font-size:11px;padding:4px 10px">✏️ Editar</button>
           <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();novoCiclo('${ag.id}')" style="font-size:11px" title="Adicionar novas sessões para esta cliente">🔄 Novo Ciclo</button>
-          ${(function(){ var _cores=[]; ag.sessoes.forEach(function(s){ if(s.cor && _cores.indexOf(s.cor)<0) _cores.push(s.cor); }); if(_cores.length<=1) return ''; return '<button class="btn btn-sm" onclick="event.stopPropagation();excluirCiclo(\''+ag.id+'\')" style="font-size:11px;background:#FFF5F5;border:1px solid #FFCDD2;color:#C62828" title="Excluir um ciclo">🗑 Ciclo</button>'; })()}
+          ${(function(){ var _coresSet=[]; ag.sessoes.forEach(function(s){ var c=s.cor||'__original__'; if(_coresSet.indexOf(c)<0) _coresSet.push(c); }); if(_coresSet.length<=1) return ''; return '<button class="btn btn-sm" onclick="event.stopPropagation();excluirCiclo(\''+ag.id+'\')" style="font-size:11px;background:#FFF5F5;border:1px solid #FFCDD2;color:#C62828" title="Excluir um ciclo">🗑 Ciclo</button>'; })()}
           <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();waRetorno('${ag.id}')" style="font-size:11px;background:#E7F7EE;border-color:#7DB87D;color:#276749" title="Mensagem de retorno no WhatsApp">💬</button>
           <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();waOrcamento('${ag.id}')" style="font-size:11px;background:#FFF8E7;border-color:#F6C94E;color:#7A5C00" title="Enviar orçamento no WhatsApp">💰</button>
           <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();excluirAgenda('${ag.id}')">✕</button>
@@ -660,13 +660,13 @@ function excluirCiclo(agId) {
   var ag = db.agenda.find(function(x){ return x.id === agId; });
   if (!ag) return;
 
-  // Identificar ciclos distintos por cor
+  // Identificar ciclos distintos por cor — sessões sem cor = ciclo original
   var ciclos = [];
   ag.sessoes.forEach(function(s) {
-    var cor = s.cor || ag.cor || '#D4A0A8';
+    var cor = s.cor || '__original__';
     var ciclo = ciclos.find(function(c){ return c.cor === cor; });
     if (!ciclo) {
-      ciclo = { cor: cor, sessoes: [], temRealizado: false };
+      ciclo = { cor: cor, corExibir: s.cor || ag.cor || '#D4A0A8', sessoes: [], temRealizado: false };
       ciclos.push(ciclo);
     }
     ciclo.sessoes.push(s);
@@ -693,7 +693,7 @@ function excluirCiclo(agId) {
     var aviso = c.temRealizado ? '<span style="font-size:10px;color:#C62828;margin-left:6px">⚠️ tem sessão realizada</span>' : '';
     return '<div style="display:flex;align-items:center;justify-content:space-between;padding:0.6rem 0.8rem;border:1px solid var(--border);border-radius:8px;margin-bottom:6px">'
       + '<div style="display:flex;align-items:center;gap:8px">'
-      + '<span style="width:14px;height:14px;border-radius:50%;background:' + c.cor + ';display:inline-block;flex-shrink:0"></span>'
+      + '<span style="width:14px;height:14px;border-radius:50%;background:' + c.corExibir + ';display:inline-block;flex-shrink:0"></span>'
       + '<span style="font-size:13px">' + label + ' · ' + c.sessoes.length + ' sessão(ões)' + aviso + '</span>'
       + '</div>'
       + '<button onclick="confirmarExcluirCiclo(\"' + agId + '\",' + idx + ')" style="background:#FFEBEE;border:1px solid #FFCDD2;color:#C62828;border-radius:6px;padding:3px 10px;font-size:11px;cursor:pointer">🗑 Excluir</button>'
@@ -731,7 +731,7 @@ function confirmarExcluirCiclo(agId, cicloIdx) {
 
   // Remover sessões deste ciclo
   ag.sessoes = ag.sessoes.filter(function(s) {
-    return (s.cor || ag.cor || '#D4A0A8') !== ciclo.cor;
+    return (s.cor || '__original__') !== ciclo.cor;
   });
 
   document.getElementById('excluir-ciclo-modal').remove();
