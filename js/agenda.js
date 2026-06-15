@@ -678,44 +678,83 @@ function excluirCiclo(agId) {
     return;
   }
 
-  // Montar modal de seleção de ciclo
   var old = document.getElementById('excluir-ciclo-modal');
   if (old) old.remove();
+
+  window._ciclosExcluir = ciclos;
+  window._agIdExcluir = agId;
 
   var modal = document.createElement('div');
   modal.id = 'excluir-ciclo-modal';
   modal.style.cssText = 'position:fixed;inset:0;background:rgba(28,28,30,0.6);z-index:9997;display:flex;align-items:center;justify-content:center;padding:1rem';
 
-  var ciclosHtml = ciclos.map(function(c, idx) {
+  var box = document.createElement('div');
+  box.style.cssText = 'background:white;border-radius:16px;max-width:460px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3)';
+
+  // Header
+  var header = document.createElement('div');
+  header.style.cssText = 'padding:1.2rem 1.5rem;background:linear-gradient(135deg,#1C1C1E,#2C2C2E);border-radius:16px 16px 0 0;display:flex;justify-content:space-between;align-items:center';
+  header.innerHTML = '<span style="font-family:Cormorant Garamond,serif;font-size:18px;color:#FAF0F2;letter-spacing:2px">🗑 Excluir Ciclo</span>';
+  var btnFechar = document.createElement('button');
+  btnFechar.textContent = '✕';
+  btnFechar.style.cssText = 'background:none;border:none;color:#FAF0F2;font-size:20px;cursor:pointer';
+  btnFechar.onclick = function(){ document.getElementById('excluir-ciclo-modal').remove(); };
+  header.appendChild(btnFechar);
+  box.appendChild(header);
+
+  // Body
+  var body = document.createElement('div');
+  body.style.cssText = 'padding:1.5rem';
+  var desc = document.createElement('div');
+  desc.style.cssText = 'font-size:12px;color:var(--text-light);margin-bottom:1rem';
+  desc.textContent = 'Selecione qual ciclo deseja excluir:';
+  body.appendChild(desc);
+
+  ciclos.forEach(function(c, idx) {
     var primData = c.sessoes.map(function(s){ return s.data; }).sort()[0];
     var ultData  = c.sessoes.map(function(s){ return s.data; }).sort().reverse()[0];
     var label = fmtDate(primData) + (ultData !== primData ? ' – ' + fmtDate(ultData) : '');
-    var aviso = c.temRealizado ? '<span style="font-size:10px;color:#C62828;margin-left:6px">⚠️ tem sessão realizada</span>' : '';
-    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:0.6rem 0.8rem;border:1px solid var(--border);border-radius:8px;margin-bottom:6px">'
-      + '<div style="display:flex;align-items:center;gap:8px">'
-      + '<span style="width:14px;height:14px;border-radius:50%;background:' + c.corExibir + ';display:inline-block;flex-shrink:0"></span>'
-      + '<span style="font-size:13px">' + label + ' · ' + c.sessoes.length + ' sessão(ões)' + aviso + '</span>'
-      + '</div>'
-      + '<button onclick="confirmarExcluirCiclo(\"' + agId + '\",' + idx + ')" style="background:#FFEBEE;border:1px solid #FFCDD2;color:#C62828;border-radius:6px;padding:3px 10px;font-size:11px;cursor:pointer">🗑 Excluir</button>'
-      + '</div>';
-  }).join('');
 
-  modal.innerHTML = '<div style="background:white;border-radius:16px;max-width:460px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3)">'
-    + '<div style="padding:1.2rem 1.5rem;background:linear-gradient(135deg,#1C1C1E,#2C2C2E);border-radius:16px 16px 0 0;display:flex;justify-content:space-between;align-items:center">'
-    + '<span style="font-family:Cormorant Garamond,serif;font-size:18px;color:#FAF0F2;letter-spacing:2px">🗑 Excluir Ciclo</span>'
-    + '<button onclick="document.getElementById(\"excluir-ciclo-modal\").remove()" style="background:none;border:none;color:#FAF0F2;font-size:20px;cursor:pointer">✕</button>'
-    + '</div>'
-    + '<div style="padding:1.5rem">'
-    + '<div style="font-size:12px;color:var(--text-light);margin-bottom:1rem">Selecione qual ciclo deseja excluir:</div>'
-    + ciclosHtml
-    + '<button class="btn btn-secondary btn-sm" onclick="document.getElementById(\"excluir-ciclo-modal\").remove()" style="margin-top:0.5rem">Cancelar</button>'
-    + '</div></div>';
+    var row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:0.6rem 0.8rem;border:1px solid var(--border);border-radius:8px;margin-bottom:6px';
 
+    var left = document.createElement('div');
+    left.style.cssText = 'display:flex;align-items:center;gap:8px';
+    var bolinha = document.createElement('span');
+    bolinha.style.cssText = 'width:14px;height:14px;border-radius:50%;background:' + c.corExibir + ';display:inline-block;flex-shrink:0';
+    var texto = document.createElement('span');
+    texto.style.cssText = 'font-size:13px';
+    texto.textContent = label + ' · ' + c.sessoes.length + ' sessão(ões)';
+    if (c.temRealizado) {
+      var aviso = document.createElement('span');
+      aviso.style.cssText = 'font-size:10px;color:#C62828;margin-left:6px';
+      aviso.textContent = '⚠️ tem sessão realizada';
+      texto.appendChild(aviso);
+    }
+    left.appendChild(bolinha);
+    left.appendChild(texto);
+
+    var btnExcl = document.createElement('button');
+    btnExcl.textContent = '🗑 Excluir';
+    btnExcl.style.cssText = 'background:#FFEBEE;border:1px solid #FFCDD2;color:#C62828;border-radius:6px;padding:3px 10px;font-size:11px;cursor:pointer';
+    btnExcl.onclick = (function(i){ return function(){ confirmarExcluirCiclo(agId, i); }; })(idx);
+
+    row.appendChild(left);
+    row.appendChild(btnExcl);
+    body.appendChild(row);
+  });
+
+  var btnCancel = document.createElement('button');
+  btnCancel.className = 'btn btn-secondary btn-sm';
+  btnCancel.textContent = 'Cancelar';
+  btnCancel.style.marginTop = '0.5rem';
+  btnCancel.onclick = function(){ document.getElementById('excluir-ciclo-modal').remove(); };
+  body.appendChild(btnCancel);
+
+  box.appendChild(body);
+  modal.appendChild(box);
   document.body.appendChild(modal);
   modal.addEventListener('click', function(e){ if(e.target===modal) modal.remove(); });
-
-  // Guardar ciclos para uso no confirmar
-  window._ciclosExcluir = ciclos;
 }
 
 function confirmarExcluirCiclo(agId, cicloIdx) {
