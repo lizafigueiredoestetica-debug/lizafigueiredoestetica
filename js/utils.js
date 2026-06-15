@@ -766,15 +766,39 @@ function _renderClienteAba(key, aba, c) {
     if (!c.agenda.length) return '<div class="empty-state" style="padding:2rem"><div class="empty-icon">📅</div><p>Nenhum pacote</p></div>';
     return c.agenda.map(function(ag) {
       var real = ag.sessoes.filter(function(s){ return s.status==='realizado'; }).length;
-      var saldo = _calcSaldoPacote(ag);
+      // Calcular por ciclo para aba Pacotes
+      var cicloMapP = {}; var cicloOrderP = [];
+      ag.sessoes.forEach(function(s){ var k=s.cor||'__original__'; if(!cicloMapP[k]){ cicloMapP[k]=[]; cicloOrderP.push(k); } cicloMapP[k].push(s); });
+      var cicloInfoHtml = cicloOrderP.map(function(cicloKey, ci) {
+        var sessoesCiclo = cicloMapP[cicloKey];
+        var isOriginal = cicloKey === '__original__';
+        var corExibir = sessoesCiclo[0].cor || ag.cor || '#D4A0A8';
+        var totalCiclo = 0;
+        var sessaoComProt = sessoesCiclo.find(function(s){ return s.protocoloId && s.protocoloValor; });
+        if(sessaoComProt){ totalCiclo = parseFloat(sessaoComProt.protocoloValor)||0; }
+        else { var idsC={}; sessoesCiclo.forEach(function(s){ (s.servicoIds||[]).forEach(function(id){ if(idsC[id]) return; idsC[id]=true; var sv=db.servicos.find(function(x){return x.id===id;}); if(sv&&sv.preco) totalCiclo+=parseFloat(sv.preco)||0; }); }); }
+        var sinalCiclo = isOriginal ? (parseFloat(ag.sinal)||0) : (sessoesCiclo[0]&&sessoesCiclo[0].sinalCiclo ? parseFloat(sessoesCiclo[0].sinalCiclo) : 0);
+        var datasC = sessoesCiclo.map(function(s){return s.data;}).filter(Boolean).sort();
+        var dMinC = datasC[0]||''; var dMaxC = datasC[datasC.length-1]||'';
+        var pagoCiclo = db.atendimentos.filter(function(a){
+          return a.cliente && a.cliente.toLowerCase().trim()===ag.cliente.toLowerCase().trim()
+            && a.pagto!=='sinal' && (!dMinC||a.data>=dMinC) && (!dMaxC||a.data<=dMaxC);
+        }).reduce(function(s,a){return s+(parseFloat(a.valor)||0);},0);
+        var restCiclo = Math.max(0, totalCiclo - sinalCiclo - pagoCiclo);
+        if(!totalCiclo && !sinalCiclo) return '';
+        var prefix = cicloOrderP.length > 1 ? 'Ciclo '+(ci+1)+': ' : '';
+        return '<span style="border-left:3px solid '+corExibir+';padding-left:6px">'+prefix
+          +(sinalCiclo>0?'💰 Sinal: '+fmtMoney(sinalCiclo)+' | ':'')
+          +(totalCiclo>0?'Total: '+fmtMoney(totalCiclo)+' | ':'')
+          +(pagoCiclo>0?'Pago: '+fmtMoney(pagoCiclo)+' | ':'')
+          +(restCiclo>0?'<span style="color:var(--danger);font-weight:600">Restante: '+fmtMoney(restCiclo)+'</span>':'<span style="color:var(--success)">✓ Quitado</span>')
+          +'</span>';
+      }).filter(Boolean).join('<br>');
       return '<div style="background:var(--cream);border-radius:10px;padding:0.75rem 1rem;margin-bottom:0.75rem;border-left:4px solid '+(ag.cor||'#D4A0A8')+'">'
         + '<div style="font-weight:600;font-size:13px;margin-bottom:4px">'+_agServicos(ag)+(ag.obs?' · <span style="font-weight:400;color:var(--text-light)">'+ag.obs+'</span>':'')+'</div>'
-        + '<div style="display:flex;gap:1rem;flex-wrap:wrap;font-size:12px;color:var(--text-mid)">'
+        + '<div style="display:flex;gap:0.4rem;flex-wrap:wrap;font-size:12px;color:var(--text-mid);flex-direction:column">'
         + '<span>📅 '+real+'/'+ag.sessoes.length+' sessões</span>'
-        + (saldo.sinal>0?'<span>💰 Sinal: '+fmtMoney(saldo.sinal)+'</span>':'')
-        + (saldo.totalPacote>0?'<span>Total: '+fmtMoney(saldo.totalPacote)+'</span>':'')
-        + (saldo.totalPago>0?'<span>Pago: '+fmtMoney(saldo.totalPago)+'</span>':'')
-        + (saldo.saldo>0?'<span style="color:var(--danger);font-weight:600">Restante: '+fmtMoney(saldo.saldo)+'</span>':'<span style="color:var(--success)">✓ Quitado</span>')
+        + cicloInfoHtml
         + '</div>'
         + '</div>';
     }).join('');
@@ -1368,17 +1392,36 @@ function _renderClienteAba(key, aba, c) {
     var resumoPacote = '';
     if (c.agenda.length > 0) {
       c.agenda.forEach(function(ag) {
-        var saldo = _calcSaldoPacote(ag);
-        if (saldo.totalPacote > 0 || saldo.sinal > 0) {
-          resumoPacote += '<div style="background:linear-gradient(135deg,#FFF8F9,#FFF0F5);border:1px solid #D4A0A8;border-radius:10px;padding:0.75rem 1rem;margin-bottom:0.75rem">'
-            +'<div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--gold-dark);margin-bottom:0.5rem;font-weight:600">📦 '+_agServicos(ag)+'</div>'
+        // Calcular e mostrar por ciclo
+        var cicloMapF = {}; var cicloOrderF = [];
+        ag.sessoes.forEach(function(s){ var k=s.cor||'__original__'; if(!cicloMapF[k]){ cicloMapF[k]=[]; cicloOrderF.push(k); } cicloMapF[k].push(s); });
+        cicloOrderF.forEach(function(cicloKey, ci) {
+          var sessoesCiclo = cicloMapF[cicloKey];
+          var isOriginal = cicloKey === '__original__';
+          var corExibir = sessoesCiclo[0].cor || ag.cor || '#D4A0A8';
+          var totalCiclo = 0;
+          var sessaoComProt = sessoesCiclo.find(function(s){ return s.protocoloId && s.protocoloValor; });
+          if(sessaoComProt){ totalCiclo = parseFloat(sessaoComProt.protocoloValor)||0; }
+          else { var idsC={}; sessoesCiclo.forEach(function(s){ (s.servicoIds||[]).forEach(function(id){ if(idsC[id]) return; idsC[id]=true; var sv=db.servicos.find(function(x){return x.id===id;}); if(sv&&sv.preco) totalCiclo+=parseFloat(sv.preco)||0; }); }); }
+          var sinalCiclo = isOriginal ? (parseFloat(ag.sinal)||0) : (sessoesCiclo[0]&&sessoesCiclo[0].sinalCiclo ? parseFloat(sessoesCiclo[0].sinalCiclo) : 0);
+          var datasC = sessoesCiclo.map(function(s){return s.data;}).filter(Boolean).sort();
+          var dMinC = datasC[0]||''; var dMaxC = datasC[datasC.length-1]||'';
+          var pagoCiclo = c.atendimentos.filter(function(a){
+            return a.pagto!=='sinal' && (!dMinC||a.data>=dMinC) && (!dMaxC||a.data<=dMaxC);
+          }).reduce(function(s,a){return s+(parseFloat(a.valor)||0);},0);
+          var restCiclo = Math.max(0, totalCiclo - sinalCiclo - pagoCiclo);
+          if(!totalCiclo && !sinalCiclo) return;
+          var labelCiclo = cicloOrderF.length > 1 ? '📦 Ciclo '+(ci+1)+' — ' : '📦 ';
+          var nomeCiclo = sessaoComProt ? sessaoComProt.protocoloNome : _agServicos(ag);
+          resumoPacote += '<div style="background:linear-gradient(135deg,#FFF8F9,#FFF0F5);border:1px solid #D4A0A8;border-left:4px solid '+corExibir+';border-radius:10px;padding:0.75rem 1rem;margin-bottom:0.75rem">'
+            +'<div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--gold-dark);margin-bottom:0.5rem;font-weight:600">'+labelCiclo+nomeCiclo+'</div>'
             +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:0.5rem">'
-            +'<div style="text-align:center;background:white;border-radius:8px;padding:0.5rem"><div style="font-size:9px;color:var(--text-light);text-transform:uppercase;letter-spacing:1px">Total Pacote</div><div style="font-family:Cormorant Garamond,serif;font-size:16px;color:var(--text-dark)">'+fmtMoney(saldo.totalPacote)+'</div></div>'
-            +'<div style="text-align:center;background:white;border-radius:8px;padding:0.5rem"><div style="font-size:9px;color:var(--text-light);text-transform:uppercase;letter-spacing:1px">Sinal</div><div style="font-family:Cormorant Garamond,serif;font-size:16px;color:#276749">'+fmtMoney(saldo.sinal)+'</div></div>'
-            +'<div style="text-align:center;background:white;border-radius:8px;padding:0.5rem"><div style="font-size:9px;color:var(--text-light);text-transform:uppercase;letter-spacing:1px">Já Pago</div><div style="font-family:Cormorant Garamond,serif;font-size:16px;color:#276749">'+fmtMoney(saldo.totalPago)+'</div></div>'
-            +'<div style="text-align:center;background:white;border-radius:8px;padding:0.5rem"><div style="font-size:9px;color:var(--text-light);text-transform:uppercase;letter-spacing:1px">Restante</div><div style="font-family:Cormorant Garamond,serif;font-size:16px;color:'+(saldo.saldo>0?'var(--danger)':'var(--success)')+'">'+fmtMoney(saldo.saldo)+'</div></div>'
+            +'<div style="text-align:center;background:white;border-radius:8px;padding:0.5rem"><div style="font-size:9px;color:var(--text-light);text-transform:uppercase;letter-spacing:1px">Total Pacote</div><div style="font-family:Cormorant Garamond,serif;font-size:16px;color:var(--text-dark)">'+fmtMoney(totalCiclo)+'</div></div>'
+            +'<div style="text-align:center;background:white;border-radius:8px;padding:0.5rem"><div style="font-size:9px;color:var(--text-light);text-transform:uppercase;letter-spacing:1px">Sinal</div><div style="font-family:Cormorant Garamond,serif;font-size:16px;color:#276749">'+fmtMoney(sinalCiclo)+'</div></div>'
+            +'<div style="text-align:center;background:white;border-radius:8px;padding:0.5rem"><div style="font-size:9px;color:var(--text-light);text-transform:uppercase;letter-spacing:1px">Já Pago</div><div style="font-family:Cormorant Garamond,serif;font-size:16px;color:#276749">'+fmtMoney(pagoCiclo)+'</div></div>'
+            +'<div style="text-align:center;background:white;border-radius:8px;padding:0.5rem"><div style="font-size:9px;color:var(--text-light);text-transform:uppercase;letter-spacing:1px">Restante</div><div style="font-family:Cormorant Garamond,serif;font-size:16px;color:'+(restCiclo>0?'var(--danger)':'var(--success)')+'">'+fmtMoney(restCiclo)+'</div></div>'
             +'</div></div>';
-        }
+        });
       });
     }
 
