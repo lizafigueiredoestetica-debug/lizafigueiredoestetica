@@ -777,7 +777,12 @@ function _renderClienteAba(key, aba, c) {
         var sessaoComProt = sessoesCiclo.find(function(s){ return s.protocoloId && s.protocoloValor; });
         if(sessaoComProt){ totalCiclo = parseFloat(sessaoComProt.protocoloValor)||0; }
         else { var idsC={}; sessoesCiclo.forEach(function(s){ (s.servicoIds||[]).forEach(function(id){ if(idsC[id]) return; idsC[id]=true; var sv=db.servicos.find(function(x){return x.id===id;}); if(sv&&sv.preco) totalCiclo+=parseFloat(sv.preco)||0; }); }); }
-        var sinalCiclo = isOriginal ? (parseFloat(ag.sinal)||0) : (sessoesCiclo[0]&&sessoesCiclo[0].sinalCiclo ? parseFloat(sessoesCiclo[0].sinalCiclo) : 0);
+        var _datasC4 = sessoesCiclo.map(function(s){return s.data;}).filter(Boolean).sort();
+        var _dMinC4 = _datasC4[0]||''; var _dMaxC4 = _datasC4[_datasC4.length-1]||'';
+        var _atSinalP = db.atendimentos.find(function(a){ return a.cliente&&a.cliente.toLowerCase().trim()===ag.cliente.toLowerCase().trim()&&a.pagto==='sinal'; });
+        var _dSinalP = _atSinalP ? _atSinalP.data : null;
+        var _sinalAquiP = _dSinalP && _dSinalP >= _dMinC4 && _dSinalP <= _dMaxC4;
+        var sinalCiclo = _sinalAquiP ? (parseFloat(ag.sinal)||0) : (isOriginal&&!_dSinalP?(parseFloat(ag.sinal)||0):(!isOriginal?(sessoesCiclo[0]&&sessoesCiclo[0].sinalCiclo?parseFloat(sessoesCiclo[0].sinalCiclo):0):0));
         var datasC = sessoesCiclo.map(function(s){return s.data;}).filter(Boolean).sort();
         var dMinC = datasC[0]||''; var dMaxC = datasC[datasC.length-1]||'';
         var pagoCiclo = db.atendimentos.filter(function(a){
@@ -1403,7 +1408,12 @@ function _renderClienteAba(key, aba, c) {
           var sessaoComProt = sessoesCiclo.find(function(s){ return s.protocoloId && s.protocoloValor; });
           if(sessaoComProt){ totalCiclo = parseFloat(sessaoComProt.protocoloValor)||0; }
           else { var idsC={}; sessoesCiclo.forEach(function(s){ (s.servicoIds||[]).forEach(function(id){ if(idsC[id]) return; idsC[id]=true; var sv=db.servicos.find(function(x){return x.id===id;}); if(sv&&sv.preco) totalCiclo+=parseFloat(sv.preco)||0; }); }); }
-          var sinalCiclo = isOriginal ? (parseFloat(ag.sinal)||0) : (sessoesCiclo[0]&&sessoesCiclo[0].sinalCiclo ? parseFloat(sessoesCiclo[0].sinalCiclo) : 0);
+          var _datasC3 = sessoesCiclo.map(function(s){return s.data;}).filter(Boolean).sort();
+          var _dMinC3 = _datasC3[0]||''; var _dMaxC3 = _datasC3[_datasC3.length-1]||'';
+          var _atSinalU = db.atendimentos.find(function(a){ return a.cliente&&a.cliente.toLowerCase().trim()===ag.cliente.toLowerCase().trim()&&a.pagto==='sinal'; });
+          var _dSinalU = _atSinalU ? _atSinalU.data : null;
+          var _sinalAquiU = _dSinalU && _dSinalU >= _dMinC3 && _dSinalU <= _dMaxC3;
+          var sinalCiclo = _sinalAquiU ? (parseFloat(ag.sinal)||0) : (isOriginal&&!_dSinalU?(parseFloat(ag.sinal)||0):(!isOriginal?(sessoesCiclo[0]&&sessoesCiclo[0].sinalCiclo?parseFloat(sessoesCiclo[0].sinalCiclo):0):0));
           var datasC = sessoesCiclo.map(function(s){return s.data;}).filter(Boolean).sort();
           var dMinC = datasC[0]||''; var dMaxC = datasC[datasC.length-1]||'';
           var pagoCiclo = c.atendimentos.filter(function(a){
