@@ -546,6 +546,7 @@ function renderAgenda() {
           ${pendentes > 0 ? `<span class="badge-pendente">${pendentes} pendente${pendentes>1?'s':''}</span>` : '<span class="badge-realizado">Concluído</span>'}
           <button class="btn btn-edit btn-sm" onclick="event.stopPropagation();editarAgenda('${ag.id}')" style="margin-left:0.5rem;font-size:11px;padding:4px 10px">✏️ Editar</button>
           <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();novoCiclo('${ag.id}')" style="font-size:11px" title="Adicionar novas sessões para esta cliente">🔄 Novo Ciclo</button>
+          ${(function(){ var _cores=[]; ag.sessoes.forEach(function(s){ if(s.cor && _cores.indexOf(s.cor)<0) _cores.push(s.cor); }); if(_cores.length<=1) return ''; return '<button class="btn btn-sm" onclick="event.stopPropagation();excluirCiclo(\''+ag.id+'\')" style="font-size:11px;background:#FFF5F5;border:1px solid #FFCDD2;color:#C62828" title="Excluir um ciclo">🗑 Ciclo</button>'; })()}
           <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();waRetorno('${ag.id}')" style="font-size:11px;background:#E7F7EE;border-color:#7DB87D;color:#276749" title="Mensagem de retorno no WhatsApp">💬</button>
           <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();waOrcamento('${ag.id}')" style="font-size:11px;background:#FFF8E7;border-color:#F6C94E;color:#7A5C00" title="Enviar orçamento no WhatsApp">💰</button>
           <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();excluirAgenda('${ag.id}')">✕</button>
@@ -573,6 +574,7 @@ function renderAgenda() {
             <div class="agenda-sessao-status" style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap">
               ${badge}
               ${(s.status !== 'realizado' && s.status !== 'falta') ? `<button class="btn btn-primary btn-sm" onclick="realizarSessao('${ag.id}',${i})" style="font-size:11px;padding:4px 10px">✓ Realizar</button>` : ''}
+              ${s.status === 'realizado' ? `<button onclick="desfazerSessao('${ag.id}',${i})" style="background:#FFF5F5;border:1px solid #FFCDD2;color:#C62828;border-radius:8px;padding:4px 8px;font-size:11px;cursor:pointer" title="Desfazer realização">↩ Desfazer</button>` : ''}
               ${(s.status !== 'realizado' && s.status !== 'falta') ? `<button onclick="waConfirmarAgendamento('${ag.id}',${i})" style="background:#E7F7EE;border:1px solid #7DB87D;color:#276749;border-radius:8px;padding:4px 8px;font-size:11px;cursor:pointer" title="Confirmar sessão pelo WhatsApp">📲 Confirmar</button>` : ''}
               ${(s.status !== 'realizado' && s.status !== 'falta') ? `<button onclick="waLembrete('${ag.id}',${i})" style="background:#FFF8E7;border:1px solid #F6C94E;color:#7A5C00;border-radius:8px;padding:4px 8px;font-size:11px;cursor:pointer" title="Enviar lembrete pelo WhatsApp">⏰ Lembrete</button>` : ''}
               ${(s.status !== 'realizado' && s.status !== 'falta') ? `<button onclick="waReagendar('${ag.id}',${i})" style="background:#F3E8FF;border:1px solid #C084FC;color:#7C3AED;border-radius:8px;padding:4px 8px;font-size:11px;cursor:pointer" title="Reagendar pelo WhatsApp">🔄 Reagendar</button>` : ''}
@@ -652,6 +654,105 @@ function _calcSaldoPacote(ag) {
     totalPago: totalPago,
     saldo: Math.max(0, saldo)
   };
+}
+
+function excluirCiclo(agId) {
+  var ag = db.agenda.find(function(x){ return x.id === agId; });
+  if (!ag) return;
+
+  // Identificar ciclos distintos por cor
+  var ciclos = [];
+  ag.sessoes.forEach(function(s) {
+    var cor = s.cor || ag.cor || '#D4A0A8';
+    var ciclo = ciclos.find(function(c){ return c.cor === cor; });
+    if (!ciclo) {
+      ciclo = { cor: cor, sessoes: [], temRealizado: false };
+      ciclos.push(ciclo);
+    }
+    ciclo.sessoes.push(s);
+    if (s.status === 'realizado') ciclo.temRealizado = true;
+  });
+
+  if (ciclos.length <= 1) {
+    showToast('Este pacote tem apenas um ciclo. Use o botão ✕ para excluir o pacote inteiro.');
+    return;
+  }
+
+  // Montar modal de seleção de ciclo
+  var old = document.getElementById('excluir-ciclo-modal');
+  if (old) old.remove();
+
+  var modal = document.createElement('div');
+  modal.id = 'excluir-ciclo-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(28,28,30,0.6);z-index:9997;display:flex;align-items:center;justify-content:center;padding:1rem';
+
+  var ciclosHtml = ciclos.map(function(c, idx) {
+    var primData = c.sessoes.map(function(s){ return s.data; }).sort()[0];
+    var ultData  = c.sessoes.map(function(s){ return s.data; }).sort().reverse()[0];
+    var label = fmtDate(primData) + (ultData !== primData ? ' – ' + fmtDate(ultData) : '');
+    var aviso = c.temRealizado ? '<span style="font-size:10px;color:#C62828;margin-left:6px">⚠️ tem sessão realizada</span>' : '';
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:0.6rem 0.8rem;border:1px solid var(--border);border-radius:8px;margin-bottom:6px">'
+      + '<div style="display:flex;align-items:center;gap:8px">'
+      + '<span style="width:14px;height:14px;border-radius:50%;background:' + c.cor + ';display:inline-block;flex-shrink:0"></span>'
+      + '<span style="font-size:13px">' + label + ' · ' + c.sessoes.length + ' sessão(ões)' + aviso + '</span>'
+      + '</div>'
+      + '<button onclick="confirmarExcluirCiclo(\"' + agId + '\",' + idx + ')" style="background:#FFEBEE;border:1px solid #FFCDD2;color:#C62828;border-radius:6px;padding:3px 10px;font-size:11px;cursor:pointer">🗑 Excluir</button>'
+      + '</div>';
+  }).join('');
+
+  modal.innerHTML = '<div style="background:white;border-radius:16px;max-width:460px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3)">'
+    + '<div style="padding:1.2rem 1.5rem;background:linear-gradient(135deg,#1C1C1E,#2C2C2E);border-radius:16px 16px 0 0;display:flex;justify-content:space-between;align-items:center">'
+    + '<span style="font-family:Cormorant Garamond,serif;font-size:18px;color:#FAF0F2;letter-spacing:2px">🗑 Excluir Ciclo</span>'
+    + '<button onclick="document.getElementById(\"excluir-ciclo-modal\").remove()" style="background:none;border:none;color:#FAF0F2;font-size:20px;cursor:pointer">✕</button>'
+    + '</div>'
+    + '<div style="padding:1.5rem">'
+    + '<div style="font-size:12px;color:var(--text-light);margin-bottom:1rem">Selecione qual ciclo deseja excluir:</div>'
+    + ciclosHtml
+    + '<button class="btn btn-secondary btn-sm" onclick="document.getElementById(\"excluir-ciclo-modal\").remove()" style="margin-top:0.5rem">Cancelar</button>'
+    + '</div></div>';
+
+  document.body.appendChild(modal);
+  modal.addEventListener('click', function(e){ if(e.target===modal) modal.remove(); });
+
+  // Guardar ciclos para uso no confirmar
+  window._ciclosExcluir = ciclos;
+}
+
+function confirmarExcluirCiclo(agId, cicloIdx) {
+  var ag = db.agenda.find(function(x){ return x.id === agId; });
+  if (!ag) return;
+  var ciclos = window._ciclosExcluir;
+  if (!ciclos || !ciclos[cicloIdx]) return;
+  var ciclo = ciclos[cicloIdx];
+
+  var msg = 'Excluir ' + ciclo.sessoes.length + ' sessão(ões) deste ciclo?';
+  if (ciclo.temRealizado) msg += '\n\n⚠️ Atenção: este ciclo tem sessões já realizadas!';
+  if (!confirm(msg)) return;
+
+  // Remover sessões deste ciclo
+  ag.sessoes = ag.sessoes.filter(function(s) {
+    return (s.cor || ag.cor || '#D4A0A8') !== ciclo.cor;
+  });
+
+  document.getElementById('excluir-ciclo-modal').remove();
+  saveData();
+  renderAll();
+  showToast('✅ Ciclo excluído com sucesso!');
+  _salvarAgenda(ag);
+}
+
+function desfazerSessao(agId, sessaoIdx) {
+  if (!confirm('Desfazer a realização desta sessão? O status voltará para pendente.')) return;
+  var ag = db.agenda.find(function(x){ return x.id === agId; });
+  if (!ag) return;
+  var s = ag.sessoes[sessaoIdx];
+  if (!s) return;
+  s.status = 'pendente';
+  s.atendimentoId = null;
+  saveData();
+  renderAll();
+  showToast('Sessão revertida para pendente.');
+  _salvarAgenda(ag);
 }
 
 function realizarSessao(agId, sessaoIdx) {
