@@ -539,9 +539,39 @@ function renderAgenda() {
         </div>
         <div class="agenda-cliente-badges"><span title="${ag.cor||'#D4A0A8'}" style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${ag.cor||'#D4A0A8'};flex-shrink:0"></span>
           ${temHoje ? '<span class="badge-hoje">Hoje</span>' : ''}
-          ${ag.sinal > 0 ? '<span style="background:#E7F7EE;color:#276749;border-radius:12px;padding:2px 8px;font-size:10px;font-weight:500;letter-spacing:0.5px">💰 Sinal R$'+parseFloat(ag.sinal).toFixed(2).replace('.',',')+'</span>' : ''}
           <button onclick="event.stopPropagation();_editarSinalRapido('${ag.id}')" style="background:#FFF8E7;border:1px solid #F6C94E;color:#7A5C00;border-radius:8px;padding:2px 8px;font-size:10px;cursor:pointer" title="Editar sinal">✏️ Sinal</button>
-          ${(function(){ var _s=_calcSaldoPacote(ag); if(!_s.totalPacote) return ''; return '<span style="background:#EDF4FF;color:#1565C0;border-radius:12px;padding:2px 10px;font-size:10px;font-weight:500;letter-spacing:0.5px" title="Total: R$'+_s.totalPacote.toFixed(2)+' | Sinal: R$'+_s.sinal.toFixed(2)+' | Pago: R$'+_s.totalPago.toFixed(2)+'">💳 Restante: R$'+_s.saldo.toFixed(2).replace('.',',')+'</span>'; })()}
+          ${(function(){
+            var cicloMap = {}; var cicloOrder = [];
+            ag.sessoes.forEach(function(s){ var k=s.cor||'__original__'; if(!cicloMap[k]){ cicloMap[k]=[]; cicloOrder.push(k); } cicloMap[k].push(s); });
+            if(cicloOrder.length === 0) return '';
+            return cicloOrder.map(function(cicloKey, ci){
+              var sessoesCiclo = cicloMap[cicloKey];
+              var isOriginal = cicloKey === '__original__';
+              var corExibir = sessoesCiclo[0].cor || ag.cor || '#D4A0A8';
+              // Total do ciclo
+              var totalCiclo = 0;
+              var sessaoComProt = sessoesCiclo.find(function(s){ return s.protocoloId && s.protocoloValor; });
+              if(sessaoComProt){ totalCiclo = parseFloat(sessaoComProt.protocoloValor)||0; }
+              else { var idsC={}; sessoesCiclo.forEach(function(s){ (s.servicoIds||[]).forEach(function(id){ if(idsC[id]) return; idsC[id]=true; var sv=db.servicos.find(function(x){return x.id===id;}); if(sv&&sv.preco) totalCiclo+=parseFloat(sv.preco)||0; }); }); }
+              // Sinal do ciclo
+              var sinalCiclo = isOriginal ? (parseFloat(ag.sinal)||0) : (sessoesCiclo[0]&&sessoesCiclo[0].sinalCiclo ? parseFloat(sessoesCiclo[0].sinalCiclo) : 0);
+              // Atendimentos pagos no intervalo do ciclo
+              var datasC = sessoesCiclo.map(function(s){return s.data;}).filter(Boolean).sort();
+              var dMinC = datasC[0]||''; var dMaxC = datasC[datasC.length-1]||'';
+              var pagoCiclo = db.atendimentos.filter(function(a){
+                return a.cliente && a.cliente.toLowerCase().trim()===ag.cliente.toLowerCase().trim()
+                  && a.pagto!=='sinal'
+                  && (!dMinC||a.data>=dMinC) && (!dMaxC||a.data<=dMaxC);
+              }).reduce(function(s,a){return s+(parseFloat(a.valor)||0);},0);
+              var restCiclo = totalCiclo - sinalCiclo - pagoCiclo;
+              if(!totalCiclo && !sinalCiclo) return '';
+              var label = cicloOrder.length > 1 ? 'Ciclo '+(ci+1)+': ' : '';
+              var cor = restCiclo <= 0 ? '#276749' : '#1565C0';
+              var bg  = restCiclo <= 0 ? '#E7F7EE' : '#EDF4FF';
+              var txt = restCiclo <= 0 ? '✓ Quitado' : '💳 Restante: R$'+Math.abs(restCiclo).toFixed(2).replace('.',',');
+              return '<span style="background:'+bg+';color:'+cor+';border-radius:12px;padding:2px 10px;font-size:10px;font-weight:500;letter-spacing:0.5px;border-left:3px solid '+corExibir+'" title="Total: R$'+totalCiclo.toFixed(2)+' | Sinal: R$'+sinalCiclo.toFixed(2)+' | Pago: R$'+pagoCiclo.toFixed(2)+'">'+label+txt+'</span>';
+            }).join('');
+          })()}
           <span class="badge-pill badge-ativo">${realizados}/${total} sessões</span>
           ${pendentes > 0 ? `<span class="badge-pendente">${pendentes} pendente${pendentes>1?'s':''}</span>` : '<span class="badge-realizado">Concluído</span>'}
           <button class="btn btn-edit btn-sm" onclick="event.stopPropagation();editarAgenda('${ag.id}')" style="margin-left:0.5rem;font-size:11px;padding:4px 10px">✏️ Editar</button>
@@ -606,46 +636,79 @@ function toggleAgendaCliente(agId) {
 
 // ── Calcular saldo financeiro do pacote ──
 function _calcSaldoPacote(ag) {
-  var totalPacote = 0;
-  // Somar protocolos únicos (por protocoloId) + serviços de sessões sem protocolo
-  var protocolosContados = {};
+  // Agrupar sessões por ciclo (cor)
+  var cicloMap = {};
+  var cicloOrder = [];
   ag.sessoes.forEach(function(s) {
-    if (s.protocoloId && s.protocoloValor) {
-      // Contar cada protocolo apenas uma vez
-      if (!protocolosContados[s.protocoloId]) {
-        protocolosContados[s.protocoloId] = true;
-        totalPacote += parseFloat(s.protocoloValor) || 0;
-      }
-    } else {
-      // Sessão sem protocolo: somar preços dos serviços individualmente
-      var ids = s.servicoIds || [];
-      var idsContados = {};
-      ids.forEach(function(id) {
-        if (idsContados[id]) return;
-        idsContados[id] = true;
-        var sv = db.servicos.find(function(x){ return x.id === id; });
-        if (sv && sv.preco) totalPacote += parseFloat(sv.preco) || 0;
-      });
-    }
+    var cicloKey = s.cor || '__original__';
+    if (!cicloMap[cicloKey]) { cicloMap[cicloKey] = []; cicloOrder.push(cicloKey); }
+    cicloMap[cicloKey].push(s);
   });
 
-  // Sinal pago na entrada
-  var sinal = parseFloat(ag.sinal) || 0;
+  // Calcular saldo de cada ciclo separadamente
+  var totalPacote = 0, sinal = 0, totalPago = 0;
 
-  // Total já pago via atendimentos — buscar dentro da janela exata do pacote
-  var _datas = ag.sessoes.map(function(s){ return s.data; }).filter(Boolean).sort();
-  var dataMin = _datas[0] || '';
-  var dataMax = _datas[_datas.length-1] || '';
-  var totalPago = db.atendimentos
-    .filter(function(a) {
-      return a.cliente && a.cliente.toLowerCase().trim() === ag.cliente.toLowerCase().trim()
-        && a.pagto !== 'sinal'
-        && (!dataMin || a.data >= dataMin)
-        && (!dataMax || a.data <= dataMax);
-    })
-    .reduce(function(sum, a) { return sum + (parseFloat(a.valor) || 0); }, 0);
+  cicloOrder.forEach(function(cicloKey) {
+    var sessoesCiclo = cicloMap[cicloKey];
+    var isOriginal = cicloKey === '__original__';
 
-  // Saldo = total − sinal − atendimentos (sinal deduzido separado para exibição)
+    // Total do ciclo
+    var totalCiclo = 0;
+    var sessaoComProt = sessoesCiclo.find(function(s){ return s.protocoloId && s.protocoloValor; });
+    if (sessaoComProt) {
+      totalCiclo = parseFloat(sessaoComProt.protocoloValor) || 0;
+    } else {
+      var idsContados = {};
+      sessoesCiclo.forEach(function(s) {
+        (s.servicoIds || []).forEach(function(id) {
+          if (idsContados[id]) return;
+          idsContados[id] = true;
+          var sv = db.servicos.find(function(x){ return x.id === id; });
+          if (sv && sv.preco) totalCiclo += parseFloat(sv.preco) || 0;
+        });
+      });
+    }
+
+    // Sinal do ciclo
+    var sinalCiclo = isOriginal
+      ? (parseFloat(ag.sinal) || 0)
+      : (sessoesCiclo[0] && sessoesCiclo[0].sinalCiclo ? parseFloat(sessoesCiclo[0].sinalCiclo) : 0);
+
+    // Atendimentos pagos dentro da janela deste ciclo (excluindo sinal)
+    var datasC = sessoesCiclo.map(function(s){ return s.data; }).filter(Boolean).sort();
+    var dMinC = datasC[0] || '';
+    var dMaxC = datasC[datasC.length-1] || '';
+    var pagoCiclo = db.atendimentos
+      .filter(function(a) {
+        return a.cliente && a.cliente.toLowerCase().trim() === ag.cliente.toLowerCase().trim()
+          && a.pagto !== 'sinal'
+          && a.agendaId === ag.id  // somente atendimentos vinculados a este agendamento
+          && (!dMinC || a.data >= dMinC)
+          && (!dMaxC || a.data <= dMaxC);
+      })
+      .reduce(function(sum, a){ return sum + (parseFloat(a.valor)||0); }, 0);
+
+    totalPacote += totalCiclo;
+    sinal       += sinalCiclo;
+    totalPago   += pagoCiclo;
+  });
+
+  // Fallback: se agendaId não estiver nos atendimentos, usar busca por data global
+  if (totalPago === 0) {
+    var _datas = ag.sessoes.map(function(s){ return s.data; }).filter(Boolean).sort();
+    var dataMin = _datas[0] || '';
+    var dataMax = _datas[_datas.length-1] || '';
+    totalPago = db.atendimentos
+      .filter(function(a) {
+        return a.cliente && a.cliente.toLowerCase().trim() === ag.cliente.toLowerCase().trim()
+          && a.pagto !== 'sinal'
+          && (!dataMin || a.data >= dataMin)
+          && (!dataMax || a.data <= dataMax);
+      })
+      .reduce(function(sum, a){ return sum + (parseFloat(a.valor)||0); }, 0);
+  }
+
+  // Saldo = total − sinal − atendimentos
   var saldo = totalPacote - sinal - totalPago;
 
   return {
