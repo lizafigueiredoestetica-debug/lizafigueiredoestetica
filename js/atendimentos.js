@@ -38,7 +38,9 @@ function salvarAtendimento() {
   }
   _agsParaVerificar.forEach(function(_ag) {
     var _sinalJaIncluido = db.atendimentos.some(function(a) {
-      return a.agendaId === _ag.id && a.pagto === 'sinal';
+      return a.pagto === 'sinal'
+        && (a.agendaId === _ag.id
+            || (a.cliente && a.cliente.toLowerCase().trim() === _ag.cliente.toLowerCase().trim()));
     });
     if (!_sinalJaIncluido) {
       var _sinalVal = parseFloat(_ag.sinal);
@@ -49,15 +51,13 @@ function salvarAtendimento() {
       }
     }
   });
-  // Limpar agendaId vinculado após uso (guardar antes de limpar)
-  var _agIdParaAtend = _agIdVinculado;
+  // Limpar agendaId vinculado após uso
   var _agIdEl = document.getElementById('atend-agenda-id');
   if (_agIdEl) _agIdEl.value = '';
 
   db.atendimentos.push({
     id: uid(), data, cliente, valor: _valorFinal,
     pagto,
-    agendaId: _agIdParaAtend || undefined,
     servicoIds: [...selectedServicos],
     servicoNomesCache: _nomesCache,
     materiais: materiaisUsados,
