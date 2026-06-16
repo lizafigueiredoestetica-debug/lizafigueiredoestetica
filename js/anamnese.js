@@ -1189,11 +1189,15 @@ function salvarNovoCiclo(agId) {
   const ncCor = (document.getElementById('nc-cor')||{value:''}).value || ag.cor || '#D4A0A8';
   const ncSinal = parseFloat((document.getElementById('nc-sinal')||{value:'0'}).value) || 0;
 
-  novasSessoes.forEach(function(s){ s.cor = ncCor; });
+  novasSessoes.forEach(function(s){
+    s.cor = ncCor;
+    // Salvar sinal deste ciclo em cada sessao — independente do sinal global
+    if (ncSinal > 0) s.sinalCiclo = ncSinal;
+  });
 
   ag.sessoes = ag.sessoes.concat(novasSessoes);
   if (obs) ag.obs = obs;
-  if (ncSinal > 0) { ag.sinal = ncSinal; ag.sinalPago = true; }
+  // Nao sobrescrever ag.sinal (sinal do ciclo original) — cada ciclo tem sinalCiclo nas sessoes
   saveData(); renderAll();
   document.getElementById('novo-ciclo-modal').remove();
   showToast('✅ ' + novasSessoes.length + ' nova(s) sessão(ões) adicionada(s) para ' + ag.cliente + '!');
