@@ -101,6 +101,7 @@ async function _salvarSessoes(agId, sessoes) {
       protocolo_id: s.protocoloId || null,
       protocolo_nome: s.protocoloNome || null,
       protocolo_valor: s.protocoloValor || null,
+      sinal_ciclo: s.sinalCiclo || null,
       atualizado_em: new Date().toISOString()
     });
   }
@@ -245,7 +246,8 @@ async function _carregarDaNuvem() {
             checkinData: s.checkin_data, checkinHora: s.checkin_hora,
             checkinNome: s.checkin_nome, atendimentoId: s.atendimento_id,
             cor: s.cor || null,
-            protocoloId: s.protocolo_id || null, protocoloNome: s.protocolo_nome || null, protocoloValor: s.protocolo_valor || null
+            protocoloId: s.protocolo_id || null, protocoloNome: s.protocolo_nome || null, protocoloValor: s.protocolo_valor || null,
+            sinalCiclo: s.sinal_ciclo || null
           };
         })
       };
