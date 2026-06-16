@@ -561,7 +561,12 @@ function renderAgenda() {
               var _dSinal = _atSinal ? _atSinal.data : null;
               var _sinalAqui = _dSinal && _dSinal >= dMinC && _dSinal <= dMaxC;
               var sinalCiclo = _sinalAqui ? (parseFloat(ag.sinal)||0) : (isOriginal&&!_dSinal ? (parseFloat(ag.sinal)||0) : (!isOriginal?(sessoesCiclo[0]&&sessoesCiclo[0].sinalCiclo?parseFloat(sessoesCiclo[0].sinalCiclo):0):0));
+              var _temAgendaId = db.atendimentos.some(function(a){ return a.agendaId === ag.id; });
               var pagoCiclo = db.atendimentos.filter(function(a){
+                if (_temAgendaId) {
+                  return a.agendaId === ag.id && a.pagto!=='sinal'
+                    && (!dMinC||a.data>=dMinC) && (!dMaxC||a.data<=dMaxC);
+                }
                 return a.cliente && a.cliente.toLowerCase().trim()===ag.cliente.toLowerCase().trim()
                   && a.pagto!=='sinal'
                   && (!dMinC||a.data>=dMinC) && (!dMaxC||a.data<=dMaxC);
@@ -690,11 +695,16 @@ function _calcSaldoPacote(ag) {
     var datasC = sessoesCiclo.map(function(s){ return s.data; }).filter(Boolean).sort();
     var dMinC = datasC[0] || '';
     var dMaxC = datasC[datasC.length-1] || '';
+    var _temAgendaIdCalc = db.atendimentos.some(function(a){ return a.agendaId === ag.id; });
     var pagoCiclo = db.atendimentos
       .filter(function(a) {
+        if (_temAgendaIdCalc) {
+          return a.agendaId === ag.id && a.pagto !== 'sinal'
+            && (!dMinC || a.data >= dMinC)
+            && (!dMaxC || a.data <= dMaxC);
+        }
         return a.cliente && a.cliente.toLowerCase().trim() === ag.cliente.toLowerCase().trim()
           && a.pagto !== 'sinal'
-          && a.agendaId === ag.id  // somente atendimentos vinculados a este agendamento
           && (!dMinC || a.data >= dMinC)
           && (!dMaxC || a.data <= dMaxC);
       })
@@ -704,21 +714,6 @@ function _calcSaldoPacote(ag) {
     sinal       += sinalCiclo;
     totalPago   += pagoCiclo;
   });
-
-  // Fallback: se agendaId não estiver nos atendimentos, usar busca por data global
-  if (totalPago === 0) {
-    var _datas = ag.sessoes.map(function(s){ return s.data; }).filter(Boolean).sort();
-    var dataMin = _datas[0] || '';
-    var dataMax = _datas[_datas.length-1] || '';
-    totalPago = db.atendimentos
-      .filter(function(a) {
-        return a.cliente && a.cliente.toLowerCase().trim() === ag.cliente.toLowerCase().trim()
-          && a.pagto !== 'sinal'
-          && (!dataMin || a.data >= dataMin)
-          && (!dataMax || a.data <= dataMax);
-      })
-      .reduce(function(sum, a){ return sum + (parseFloat(a.valor)||0); }, 0);
-  }
 
   // Saldo = total − sinal − atendimentos
   var saldo = totalPacote - sinal - totalPago;
