@@ -221,43 +221,6 @@ async function _carregarDaNuvem() {
         pagto: a.pagto, agendaId: a.agenda_id || undefined, servicoIds: a.servico_ids || [], materiais: a.materiais || [], obs: a.obs
       };
     });
-
-    // ── Migração retroativa: vincular atendimentos sem agendaId ao ciclo correto ──
-    // Executado após db.agenda estar montado (mais abaixo), por isso usa setTimeout
-    setTimeout(function() {
-      var vinculados = 0;
-      db.atendimentos.forEach(function(atend) {
-        if (atend.agendaId || atend.pagto === 'sinal') return; // já vinculado ou sinal
-        // Buscar agendamento do mesmo cliente cuja janela de sessões contém a data
-        var agMatch = null;
-        db.agenda.forEach(function(ag) {
-          if (!ag.cliente || ag.cliente.toLowerCase().trim() !== atend.cliente.toLowerCase().trim()) return;
-          if (!ag.sessoes || !ag.sessoes.length) return;
-          var datas = ag.sessoes.map(function(s){ return s.data; }).filter(Boolean).sort();
-          var dMin = datas[0]; var dMax = datas[datas.length-1];
-          if (atend.data >= dMin && atend.data <= dMax) {
-            // Preferir o agendamento mais específico (janela menor)
-            if (!agMatch) { agMatch = ag; return; }
-            var dCurMin = agMatch.sessoes.map(function(s){return s.data;}).filter(Boolean).sort()[0];
-            var dCurMax = agMatch.sessoes.map(function(s){return s.data;}).filter(Boolean).sort().slice(-1)[0];
-            var janelaAtual = (new Date(dCurMax) - new Date(dCurMin));
-            var janelaMatch = (new Date(dMax) - new Date(dMin));
-            if (janelaMatch < janelaAtual) agMatch = ag;
-          }
-        });
-        if (agMatch) {
-          atend.agendaId = agMatch.id;
-          vinculados++;
-          // Persistir no Supabase em background
-          _supaUpsert('atendimentos', { id: atend.id, agenda_id: agMatch.id });
-        }
-      });
-      if (vinculados > 0) {
-        saveData();
-        addLog('INFO', '🔗 Migração: ' + vinculados + ' atendimento(s) vinculado(s) retroativamente.');
-      }
-    }, 500);
-    // ── Fim migração ──
     db.despAdm = (despAdm || []).map(function(d) {
       return { id: d.id, desc: d.descricao, cat: d.cat, valor: d.valor, data: d.data, recorrencia: d.recorrencia };
     });
@@ -290,6 +253,32 @@ async function _carregarDaNuvem() {
 
     if(!db.acomp) db.acomp = [];
     if(!db.entradaEstoque) db.entradaEstoque = [];
+
+    // Migracao retroativa: vincular atendimentos sem agendaId ao ciclo correto
+    var _vinculados = 0;
+    db.atendimentos.forEach(function(atend) {
+      if (atend.agendaId || atend.pagto === 'sinal') return;
+      var agMatch = null;
+      db.agenda.forEach(function(ag) {
+        if (!ag.cliente || ag.cliente.toLowerCase().trim() !== atend.cliente.toLowerCase().trim()) return;
+        if (!ag.sessoes || !ag.sessoes.length) return;
+        var datas = ag.sessoes.map(function(s){ return s.data; }).filter(Boolean).sort();
+        var dMin = datas[0]; var dMax = datas[datas.length-1];
+        if (!dMin || !dMax) return;
+        if (atend.data >= dMin && atend.data <= dMax) {
+          if (!agMatch) { agMatch = ag; return; }
+          var dCurMin = agMatch.sessoes.map(function(s){return s.data;}).filter(Boolean).sort()[0];
+          var dCurMax = agMatch.sessoes.map(function(s){return s.data;}).filter(Boolean).sort().slice(-1)[0];
+          if ((new Date(dMax) - new Date(dMin)) < (new Date(dCurMax) - new Date(dCurMin))) agMatch = ag;
+        }
+      });
+      if (agMatch) {
+        atend.agendaId = agMatch.id;
+        _vinculados++;
+        _supaUpsert('atendimentos', { id: atend.id, agenda_id: agMatch.id });
+      }
+    });
+    if (_vinculados > 0) addLog('INFO', 'Migracao: ' + _vinculados + ' atendimento(s) vinculado(s) retroativamente.');
 
     // ── Carregar clientesExcluidos da tabela configuracoes ──
     try {
