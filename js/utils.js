@@ -603,6 +603,34 @@ function _consolidarClientes() {
       }
     }
   });
+  // ── Mesclar registros com mesmo telefone (quando CPF não disponível) ──
+  var _telMapa = {};
+  Object.keys(mapa).forEach(function(key) {
+    if (!mapa[key]) return;
+    var tel = (mapa[key].pessoais.telefone || '').replace(/\D/g,'');
+    if (!tel) return;
+    if (!_telMapa[tel]) { _telMapa[tel] = key; }
+    else {
+      var existKey = _telMapa[tel];
+      if (existKey === key || !mapa[existKey] || !mapa[key]) return;
+      var masterKey = mapa[existKey].nome.length >= mapa[key].nome.length ? existKey : key;
+      var dupeKey   = masterKey === existKey ? key : existKey;
+      if (masterKey !== dupeKey && mapa[masterKey] && mapa[dupeKey]) {
+        var m = mapa[masterKey], d = mapa[dupeKey];
+        if (!m.pessoais.cpf && d.pessoais.cpf) m.pessoais.cpf = d.pessoais.cpf;
+        if (!m.pessoais.idade && d.pessoais.idade) m.pessoais.idade = d.pessoais.idade;
+        if (!m.pessoais.dataNasc && d.pessoais.dataNasc) m.pessoais.dataNasc = d.pessoais.dataNasc;
+        if (!m.pessoais.genero && d.pessoais.genero) m.pessoais.genero = d.pessoais.genero;
+        m.anamneses    = m.anamneses.concat(d.anamneses);
+        m.fichasCustom = m.fichasCustom.concat(d.fichasCustom);
+        m.agenda       = m.agenda.concat(d.agenda);
+        m.atendimentos = m.atendimentos.concat(d.atendimentos);
+        delete mapa[dupeKey];
+        _telMapa[tel] = masterKey;
+      }
+    }
+  });
+
   var _excl = db.clientesExcluidos || [];
   return Object.values(mapa).filter(function(c) {
     return _excl.indexOf(c.nome.toLowerCase().trim()) < 0;
@@ -1284,6 +1312,34 @@ function _consolidarClientes() {
       }
     }
   });
+  // ── Mesclar por telefone ──
+  var _telMapa2 = {};
+  Object.keys(mapa).forEach(function(key) {
+    if (!mapa[key]) return;
+    var tel = (mapa[key].pessoais.telefone || '').replace(/\D/g,'');
+    if (!tel) return;
+    if (!_telMapa2[tel]) { _telMapa2[tel] = key; }
+    else {
+      var existKey = _telMapa2[tel];
+      if (existKey === key || !mapa[existKey] || !mapa[key]) return;
+      var masterKey = mapa[existKey].nome.length >= mapa[key].nome.length ? existKey : key;
+      var dupeKey   = masterKey === existKey ? key : existKey;
+      if (masterKey !== dupeKey && mapa[masterKey] && mapa[dupeKey]) {
+        var m = mapa[masterKey], d = mapa[dupeKey];
+        if (!m.pessoais.cpf && d.pessoais.cpf) m.pessoais.cpf = d.pessoais.cpf;
+        if (!m.pessoais.idade && d.pessoais.idade) m.pessoais.idade = d.pessoais.idade;
+        if (!m.pessoais.dataNasc && d.pessoais.dataNasc) m.pessoais.dataNasc = d.pessoais.dataNasc;
+        if (!m.pessoais.genero && d.pessoais.genero) m.pessoais.genero = d.pessoais.genero;
+        m.anamneses    = m.anamneses.concat(d.anamneses);
+        m.fichasCustom = m.fichasCustom.concat(d.fichasCustom);
+        m.agenda       = m.agenda.concat(d.agenda);
+        m.atendimentos = m.atendimentos.concat(d.atendimentos);
+        delete mapa[dupeKey];
+        _telMapa2[tel] = masterKey;
+      }
+    }
+  });
+
   var _excl2 = db.clientesExcluidos || [];
   return Object.values(mapa).filter(function(c) {
     return _excl2.indexOf(c.nome.toLowerCase().trim()) < 0;
