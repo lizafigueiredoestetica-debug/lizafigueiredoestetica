@@ -561,12 +561,7 @@ function renderAgenda() {
               var _dSinal = _atSinal ? _atSinal.data : null;
               var _sinalAqui = _dSinal && _dSinal >= dMinC && _dSinal <= dMaxC;
               var sinalCiclo = _sinalAqui ? (parseFloat(ag.sinal)||0) : (isOriginal&&!_dSinal ? (parseFloat(ag.sinal)||0) : (!isOriginal?(sessoesCiclo[0]&&sessoesCiclo[0].sinalCiclo?parseFloat(sessoesCiclo[0].sinalCiclo):0):0));
-              var _temAgendaId = db.atendimentos.some(function(a){ return a.agendaId === ag.id; });
               var pagoCiclo = db.atendimentos.filter(function(a){
-                if (_temAgendaId) {
-                  return a.agendaId === ag.id && a.pagto!=='sinal'
-                    && (!dMinC||a.data>=dMinC) && (!dMaxC||a.data<=dMaxC);
-                }
                 return a.cliente && a.cliente.toLowerCase().trim()===ag.cliente.toLowerCase().trim()
                   && a.pagto!=='sinal'
                   && (!dMinC||a.data>=dMinC) && (!dMaxC||a.data<=dMaxC);
@@ -644,7 +639,7 @@ function toggleAgendaCliente(agId) {
 
 // ── Calcular saldo financeiro do pacote ──
 function _calcSaldoPacote(ag) {
-  // Agrupar sessões por ciclo (cor)
+  // Agrupar sessoes por ciclo (cor)
   var cicloMap = {};
   var cicloOrder = [];
   ag.sessoes.forEach(function(s) {
@@ -653,16 +648,16 @@ function _calcSaldoPacote(ag) {
     cicloMap[cicloKey].push(s);
   });
 
-  // Calcular saldo de cada ciclo separadamente
+  // Calcular saldo de cada ciclo independentemente
   var totalPacote = 0, sinal = 0, totalPago = 0;
 
   cicloOrder.forEach(function(cicloKey) {
     var sessoesCiclo = cicloMap[cicloKey];
     var isOriginal = cicloKey === '__original__';
 
-    // Total do ciclo
+    // Total do ciclo — protocolo ou soma de servicos
     var totalCiclo = 0;
-    var sessaoComProt = sessoesCiclo.find(function(s){ return s.protocoloId && s.protocoloValor; });
+    var sessaoComProt = sessoesCiclo.find(function(s){ return s.protocoloValor; });
     if (sessaoComProt) {
       totalCiclo = parseFloat(sessaoComProt.protocoloValor) || 0;
     } else {
@@ -677,34 +672,31 @@ function _calcSaldoPacote(ag) {
       });
     }
 
-    // Sinal do ciclo — atribuir ao ciclo cuja janela de datas contém o atendimento de sinal
-    var _atendSinalAg = db.atendimentos.find(function(a){
-      return a.cliente && a.cliente.toLowerCase().trim() === ag.cliente.toLowerCase().trim() && a.pagto === 'sinal';
-    });
-    var _dataSinalAg = _atendSinalAg ? _atendSinalAg.data : null;
-    var _datasC2 = sessoesCiclo.map(function(s){return s.data;}).filter(Boolean).sort();
-    var _dMinC2 = _datasC2[0]||''; var _dMaxC2 = _datasC2[_datasC2.length-1]||'';
-    var _sinalNesteCiclo = _dataSinalAg && _dataSinalAg >= _dMinC2 && _dataSinalAg <= _dMaxC2;
-    var sinalCiclo = _sinalNesteCiclo
-      ? (parseFloat(ag.sinal) || 0)
-      : (isOriginal && !_dataSinalAg ? (parseFloat(ag.sinal) || 0)
-        : (!isOriginal ? (sessoesCiclo[0] && sessoesCiclo[0].sinalCiclo ? parseFloat(sessoesCiclo[0].sinalCiclo) : 0)
-          : 0));
+    // Sinal do ciclo:
+    // - Ciclo original: usa ag.sinal (campo global do agendamento)
+    // - Ciclos novos: usa sinalCiclo da primeira sessao do ciclo (salvo no novo ciclo)
+    var sinalCiclo = 0;
+    if (isOriginal) {
+      sinalCiclo = parseFloat(ag.sinal) || 0;
+    } else {
+      var primSessao = sessoesCiclo[0];
+      sinalCiclo = primSessao && primSessao.sinalCiclo ? parseFloat(primSessao.sinalCiclo) : 0;
+    }
 
-    // Atendimentos pagos dentro da janela deste ciclo (excluindo sinal)
+    // Atendimentos deste ciclo — por agendaId + janela de datas do ciclo
     var datasC = sessoesCiclo.map(function(s){ return s.data; }).filter(Boolean).sort();
     var dMinC = datasC[0] || '';
     var dMaxC = datasC[datasC.length-1] || '';
-    var _temAgendaIdCalc = db.atendimentos.some(function(a){ return a.agendaId === ag.id; });
+    var _temAgId = db.atendimentos.some(function(a){ return a.agendaId === ag.id; });
     var pagoCiclo = db.atendimentos
       .filter(function(a) {
-        if (_temAgendaIdCalc) {
-          return a.agendaId === ag.id && a.pagto !== 'sinal'
+        if (a.pagto === 'sinal') return false;
+        if (_temAgId) {
+          return a.agendaId === ag.id
             && (!dMinC || a.data >= dMinC)
             && (!dMaxC || a.data <= dMaxC);
         }
         return a.cliente && a.cliente.toLowerCase().trim() === ag.cliente.toLowerCase().trim()
-          && a.pagto !== 'sinal'
           && (!dMinC || a.data >= dMinC)
           && (!dMaxC || a.data <= dMaxC);
       })
@@ -715,7 +707,7 @@ function _calcSaldoPacote(ag) {
     totalPago   += pagoCiclo;
   });
 
-  // Saldo = total − sinal − atendimentos
+  // Saldo = total - sinal - atendimentos
   var saldo = totalPacote - sinal - totalPago;
 
   return {
