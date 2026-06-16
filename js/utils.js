@@ -1472,7 +1472,12 @@ function _renderClienteAba(key, aba, c) {
           var sinalCiclo = _sinalAquiU ? (parseFloat(ag.sinal)||0) : (isOriginal&&!_dSinalU?(parseFloat(ag.sinal)||0):(!isOriginal?(sessoesCiclo[0]&&sessoesCiclo[0].sinalCiclo?parseFloat(sessoesCiclo[0].sinalCiclo):0):0));
           var datasC = sessoesCiclo.map(function(s){return s.data;}).filter(Boolean).sort();
           var dMinC = datasC[0]||''; var dMaxC = datasC[datasC.length-1]||'';
+          var _temAgIdF = c.atendimentos.some(function(a){ return a.agendaId === ag.id; });
           var pagoCiclo = c.atendimentos.filter(function(a){
+            if (_temAgIdF) {
+              return a.agendaId === ag.id && a.pagto!=='sinal'
+                && (!dMinC||a.data>=dMinC) && (!dMaxC||a.data<=dMaxC);
+            }
             return a.pagto!=='sinal' && (!dMinC||a.data>=dMinC) && (!dMaxC||a.data<=dMaxC);
           }).reduce(function(s,a){return s+(parseFloat(a.valor)||0);},0);
           var restCiclo = Math.max(0, totalCiclo - sinalCiclo - pagoCiclo);
