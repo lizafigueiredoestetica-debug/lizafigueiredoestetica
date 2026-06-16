@@ -49,13 +49,15 @@ function salvarAtendimento() {
       }
     }
   });
-  // Limpar agendaId vinculado após uso
+  // Limpar agendaId vinculado após uso (guardar antes de limpar)
+  var _agIdParaAtend = _agIdVinculado;
   var _agIdEl = document.getElementById('atend-agenda-id');
   if (_agIdEl) _agIdEl.value = '';
 
   db.atendimentos.push({
     id: uid(), data, cliente, valor: _valorFinal,
     pagto,
+    agendaId: _agIdParaAtend || undefined,
     servicoIds: [...selectedServicos],
     servicoNomesCache: _nomesCache,
     materiais: materiaisUsados,
