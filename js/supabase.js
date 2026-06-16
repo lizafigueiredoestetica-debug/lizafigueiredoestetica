@@ -218,7 +218,7 @@ async function _carregarDaNuvem() {
     db.atendimentos = (atendimentos || []).map(function(a) {
       return {
         id: a.id, data: a.data, cliente: a.cliente, valor: a.valor,
-        pagto: a.pagto, agendaId: a.agenda_id || undefined, servicoIds: a.servico_ids || [], materiais: a.materiais || [], obs: a.obs
+        pagto: a.pagto, agendaId: a.agenda_id || undefined, _agendaIdExplicito: (a.agenda_id === null), servicoIds: a.servico_ids || [], materiais: a.materiais || [], obs: a.obs
       };
     });
     db.despAdm = (despAdm || []).map(function(d) {
@@ -255,9 +255,10 @@ async function _carregarDaNuvem() {
     if(!db.entradaEstoque) db.entradaEstoque = [];
 
     // Migracao retroativa: vincular atendimentos sem agendaId ao ciclo correto
+    // Pula atendimentos com _agendaIdExplicito=true (foram desvinculados manualmente)
     var _vinculados = 0;
     db.atendimentos.forEach(function(atend) {
-      if (atend.agendaId || atend.pagto === 'sinal') return;
+      if (atend.agendaId || atend._agendaIdExplicito || atend.pagto === 'sinal') return;
       var agMatch = null;
       db.agenda.forEach(function(ag) {
         if (!ag.cliente || ag.cliente.toLowerCase().trim() !== atend.cliente.toLowerCase().trim()) return;
