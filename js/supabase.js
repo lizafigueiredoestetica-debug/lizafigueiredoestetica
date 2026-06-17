@@ -144,7 +144,7 @@ async function _salvarAnamnese(a) {
   return _supaUpsert('anamneses', { id: a.id, data_cadastro: a.dataCadastro, pessoais: a.pessoais, saude: a.saude, hormonal: a.hormonal, habitos: a.habitos, av_fisica: a.avFisica, av_corporal: a.avCorporal, incomoda: a.incomoda, assinatura: a.assinatura, data_assinatura: a.dataAssinatura, modelo_id: a.modelo_id || null, modelo_nome: a.modelo_nome || null, modelo_respostas: a.modelo_respostas || null, atualizado_em: new Date().toISOString() });
 }
 async function _salvarAtendimento(a) {
-  return _supaUpsert('atendimentos', { id: a.id, data: a.data, cliente: a.cliente, valor: a.valor, pagto: a.pagto, agenda_id: a.agendaId || null, servico_ids: a.servicoIds || [], materiais: a.materiais || [], obs: a.obs, atualizado_em: new Date().toISOString() });
+  return _supaUpsert('atendimentos', { id: a.id, data: a.data, cliente: a.cliente, valor: a.valor, pagto: a.pagto, agenda_id: a.agendaId || null, cor_ciclo: a.corCiclo || null, servico_ids: a.servicoIds || [], materiais: a.materiais || [], obs: a.obs, atualizado_em: new Date().toISOString() });
 }
 async function _salvarAgenda(ag) {
   await _supaUpsert('agenda', { id: ag.id, cliente: ag.cliente, tel: ag.tel, cpf: ag.cpf || '', obs: ag.obs, sinal: ag.sinal, sinal_pago: ag.sinalPago, cor: ag.cor || '#D4A0A8', recorrencia: ag.recorrencia || '', atualizado_em: new Date().toISOString() });
@@ -219,7 +219,7 @@ async function _carregarDaNuvem() {
     db.atendimentos = (atendimentos || []).map(function(a) {
       return {
         id: a.id, data: a.data, cliente: a.cliente, valor: a.valor,
-        pagto: a.pagto, agendaId: a.agenda_id || undefined, _agendaIdExplicito: (a.agenda_id === null), servicoIds: a.servico_ids || [], materiais: a.materiais || [], obs: a.obs
+        pagto: a.pagto, agendaId: a.agenda_id || undefined, _agendaIdExplicito: (a.agenda_id === null), corCiclo: a.cor_ciclo || undefined, servicoIds: a.servico_ids || [], materiais: a.materiais || [], obs: a.obs
       };
     });
     db.despAdm = (despAdm || []).map(function(d) {
