@@ -683,28 +683,17 @@ function _calcSaldoPacote(ag) {
       sinalCiclo = primSessao && primSessao.sinalCiclo ? parseFloat(primSessao.sinalCiclo) : 0;
     }
 
-    // Atendimentos deste ciclo — por agendaId + corCiclo (permite ciclos com mesmas datas)
+    // Atendimentos deste ciclo — somente por agendaId (sem fallback por data)
     var datasC = sessoesCiclo.map(function(s){ return s.data; }).filter(Boolean).sort();
     var dMinC = datasC[0] || '';
     var dMaxC = datasC[datasC.length-1] || '';
     var _temAgId = db.atendimentos.some(function(a){ return a.agendaId === ag.id; });
-    var pagoCiclo = db.atendimentos
+    var pagoCiclo = _temAgId ? db.atendimentos
       .filter(function(a) {
-        if (a.pagto === 'sinal') return false;
-        if (_temAgId) {
-          if (a.agendaId !== ag.id) return false;
-          // Se tem corCiclo definido, usar para separar ciclos com mesmas datas
-          if (a.corCiclo !== undefined) {
-            return isOriginal ? (!a.corCiclo) : (a.corCiclo === cicloKey);
-          }
-          // Fallback: usar janela de datas
-          return (!dMinC || a.data >= dMinC) && (!dMaxC || a.data <= dMaxC);
-        }
-        return a.cliente && a.cliente.toLowerCase().trim() === ag.cliente.toLowerCase().trim()
-          && (!dMinC || a.data >= dMinC)
-          && (!dMaxC || a.data <= dMaxC);
+        return a.agendaId === ag.id && a.pagto !== 'sinal'
+          && (!dMinC || a.data >= dMinC) && (!dMaxC || a.data <= dMaxC);
       })
-      .reduce(function(sum, a){ return sum + (parseFloat(a.valor)||0); }, 0);
+      .reduce(function(sum, a){ return sum + (parseFloat(a.valor)||0); }, 0) : 0;
 
     totalPacote += totalCiclo;
     sinal       += sinalCiclo;
