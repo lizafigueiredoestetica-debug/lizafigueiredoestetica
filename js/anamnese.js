@@ -985,11 +985,11 @@ function novoCiclo(agId) {
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
           <div>
             <div style="font-size:10px;letter-spacing:2px;color:var(--text-light);margin-bottom:4px">TELEFONE</div>
-            <input type="text" id="nc-tel" value="${ag.tel||\'\'}" placeholder="(21) 99999-9999" style="width:100%;padding:0.5rem 0.75rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none">
+            <input type="text" id="nc-tel" value="${ag.tel||''}" placeholder="(21) 99999-9999" style="width:100%;padding:0.5rem 0.75rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none">
           </div>
           <div>
             <div style="font-size:10px;letter-spacing:2px;color:var(--text-light);margin-bottom:4px">CPF</div>
-            <input type="text" id="nc-cpf" value="${ag.cpf||\'\'}" placeholder="000.000.000-00" style="width:100%;padding:0.5rem 0.75rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none">
+            <input type="text" id="nc-cpf" value="${ag.cpf||''}" placeholder="000.000.000-00" style="width:100%;padding:0.5rem 0.75rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none">
           </div>
         </div>
         <div style="margin-bottom:1rem">
