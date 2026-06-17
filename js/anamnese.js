@@ -1189,19 +1189,29 @@ function salvarNovoCiclo(agId) {
   const ncCor = (document.getElementById('nc-cor')||{value:''}).value || ag.cor || '#D4A0A8';
   const ncSinal = parseFloat((document.getElementById('nc-sinal')||{value:'0'}).value) || 0;
 
-  novasSessoes.forEach(function(s){
-    s.cor = ncCor;
-    // Salvar sinal deste ciclo em cada sessao — independente do sinal global
-    if (ncSinal > 0) s.sinalCiclo = ncSinal;
-  });
+  // Novo ciclo = novo agendamento independente
+  var novoAg = {
+    id: uid(),
+    cliente: ag.cliente,
+    tel: ag.tel || '',
+    cpf: ag.cpf || '',
+    sinal: ncSinal,
+    sinalPago: ncSinal > 0,
+    servicoId: '',
+    servicoIds: [],
+    servicoNome: '—',
+    obs: obs || ag.obs || '',
+    cor: ncCor,
+    recorrencia: '',
+    sessoes: novasSessoes
+  };
 
-  ag.sessoes = ag.sessoes.concat(novasSessoes);
+  db.agenda.push(novoAg);
   if (obs) ag.obs = obs;
-  // Nao sobrescrever ag.sinal (sinal do ciclo original) — cada ciclo tem sinalCiclo nas sessoes
   saveData(); renderAll();
   document.getElementById('novo-ciclo-modal').remove();
   showToast('✅ ' + novasSessoes.length + ' nova(s) sessão(ões) adicionada(s) para ' + ag.cliente + '!');
-  _salvarAgenda(ag);
+  _salvarAgenda(novoAg);
 }
 
 
