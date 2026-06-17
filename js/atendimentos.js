@@ -51,13 +51,28 @@ function salvarAtendimento() {
       }
     }
   });
-  // Limpar agendaId vinculado após uso
+  // Limpar agendaId vinculado após uso (guardar antes de limpar)
+  var _agIdParaAtend = _agIdVinculado;
   var _agIdEl = document.getElementById('atend-agenda-id');
   if (_agIdEl) _agIdEl.value = '';
+
+  // Capturar cor do ciclo da sessao sendo realizada
+  var _corCicloAtend = undefined;
+  if (_agIdParaAtend) {
+    var _agParaAtend = db.agenda.find(function(ag){ return ag.id === _agIdParaAtend; });
+    if (_agParaAtend) {
+      var _sessaoRef = _agParaAtend.sessoes.find(function(s){
+        return s.data === data && s.status === 'realizado';
+      });
+      if (_sessaoRef && _sessaoRef.cor) _corCicloAtend = _sessaoRef.cor;
+    }
+  }
 
   db.atendimentos.push({
     id: uid(), data, cliente, valor: _valorFinal,
     pagto,
+    agendaId: _agIdParaAtend || undefined,
+    corCiclo: _corCicloAtend,
     servicoIds: [...selectedServicos],
     servicoNomesCache: _nomesCache,
     materiais: materiaisUsados,
