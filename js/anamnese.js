@@ -981,7 +981,17 @@ function novoCiclo(agId) {
         <button onclick="document.getElementById('novo-ciclo-modal').remove()" style="background:none;border:none;color:#FAF0F2;font-size:20px;cursor:pointer">✕</button>
       </div>
       <div style="padding:1.5rem;max-height:80vh;overflow-y:auto">
-        <div style="font-size:12px;color:var(--text-light);margin-bottom:1rem">Adiciona novas sessões à ficha existente da cliente, sem perder o histórico.</div>
+        <div style="font-size:12px;color:var(--text-light);margin-bottom:1rem">Cria um novo agendamento independente para a cliente, com sinal, protocolo e financeiro próprios.</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
+          <div>
+            <div style="font-size:10px;letter-spacing:2px;color:var(--text-light);margin-bottom:4px">TELEFONE</div>
+            <input type="text" id="nc-tel" value="${ag.tel||\'\'}" placeholder="(21) 99999-9999" style="width:100%;padding:0.5rem 0.75rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none">
+          </div>
+          <div>
+            <div style="font-size:10px;letter-spacing:2px;color:var(--text-light);margin-bottom:4px">CPF</div>
+            <input type="text" id="nc-cpf" value="${ag.cpf||\'\'}" placeholder="000.000.000-00" style="width:100%;padding:0.5rem 0.75rem;border:1px solid var(--border);border-radius:8px;font-family:Jost,sans-serif;font-size:13px;outline:none">
+          </div>
+        </div>
         <div style="margin-bottom:1rem">
           <div style="font-size:10px;letter-spacing:2px;color:var(--text-light);margin-bottom:8px">COR NA AGENDA</div>
           <input type="hidden" id="nc-cor" value="${ag.cor||'#D4A0A8'}">
@@ -1009,7 +1019,7 @@ function novoCiclo(agId) {
         </div>
         <div id="nc-sessoes" style="margin-bottom:1rem"></div>
         <div style="display:flex;gap:0.75rem">
-          <button class="btn btn-primary" onclick="salvarNovoCiclo('${agId}')">✓ Adicionar Sessões</button>
+          <button class="btn btn-primary" onclick="salvarNovoCiclo('${agId}')">✓ Criar Novo Ciclo</button>
           <button class="btn btn-secondary" onclick="document.getElementById('novo-ciclo-modal').remove()">Cancelar</button>
         </div>
       </div>
@@ -1189,28 +1199,27 @@ function salvarNovoCiclo(agId) {
   const ncCor = (document.getElementById('nc-cor')||{value:''}).value || ag.cor || '#D4A0A8';
   const ncSinal = parseFloat((document.getElementById('nc-sinal')||{value:'0'}).value) || 0;
 
-  // Novo ciclo = novo agendamento independente
+  var _ncTel = (document.getElementById('nc-tel')||{value:''}).value || ag.tel || '';
+  var _ncCpf = (document.getElementById('nc-cpf')||{value:''}).value || ag.cpf || '';
+
   var novoAg = {
     id: uid(),
     cliente: ag.cliente,
-    tel: ag.tel || '',
-    cpf: ag.cpf || '',
+    tel: _ncTel,
+    cpf: _ncCpf,
     sinal: ncSinal,
     sinalPago: ncSinal > 0,
-    servicoId: '',
-    servicoIds: [],
-    servicoNome: '—',
-    obs: obs || ag.obs || '',
+    servicoId: '', servicoIds: [], servicoNome: '—',
+    obs: obs || '',
     cor: ncCor,
     recorrencia: '',
     sessoes: novasSessoes
   };
 
   db.agenda.push(novoAg);
-  if (obs) ag.obs = obs;
   saveData(); renderAll();
   document.getElementById('novo-ciclo-modal').remove();
-  showToast('✅ ' + novasSessoes.length + ' nova(s) sessão(ões) adicionada(s) para ' + ag.cliente + '!');
+  showToast('✅ Novo ciclo criado para ' + ag.cliente + '!');
   _salvarAgenda(novoAg);
 }
 
