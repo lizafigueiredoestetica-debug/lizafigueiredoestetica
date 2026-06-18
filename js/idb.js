@@ -16,7 +16,13 @@ function _abrirIDB(cb) {
       db2.createObjectStore('fotos', { keyPath: 'id' });
     }
   };
-  req.onsuccess = function(e) { _idb = e.target.result; cb(_idb); };
+  req.onsuccess = function(e) {
+    _idb = e.target.result;
+    // Resetar referência quando conexão for fechada (evita InvalidStateError)
+    _idb.onclose = function() { _idb = null; };
+    _idb.onversionchange = function() { _idb.close(); _idb = null; };
+    cb(_idb);
+  };
   req.onerror = function() { console.error('IDB erro'); cb(null); };
 }
 
