@@ -24,7 +24,8 @@ function salvarAtendimento() {
   var _nomesCache = selectedServicos.map(function(id){ var sv=db.servicos.find(function(x){return x.id===id;}); return sv?sv.nome:''; }).filter(Boolean);
 
   // Verificar sinal do pacote para incluir — por agendaId específico se veio do realizarSessao
-  var _agIdVinculado = (document.getElementById('atend-agenda-id')||{value:''}).value || '';
+  var _agIdVinculado = (document.getElementById('atend-agenda-id')||{value:''}).value
+    || (typeof _agIdVinculadoGlobal !== 'undefined' ? _agIdVinculadoGlobal : '') || '';
   var _agsParaVerificar = [];
   if (_agIdVinculado) {
     // Veio do realizarSessao: verificar só o agendamento específico
