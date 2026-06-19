@@ -556,16 +556,30 @@ function renderAgenda() {
               var sessaoComProt = sessoesCiclo.find(function(s){ return s.protocoloId && s.protocoloValor; });
               if(sessaoComProt){ totalCiclo = parseFloat(sessaoComProt.protocoloValor)||0; }
               else { var idsC={}; sessoesCiclo.forEach(function(s){ (s.servicoIds||[]).forEach(function(id){ if(idsC[id]) return; idsC[id]=true; var sv=db.servicos.find(function(x){return x.id===id;}); if(sv&&sv.preco) totalCiclo+=parseFloat(sv.preco)||0; }); }); }
-              // Sinal do ciclo — pela data do atendimento de sinal
+              // Sinal do ciclo — por agendaId+corCiclo (mesma regra de _calcSaldoPacote), com fallback por data
               var datasC = sessoesCiclo.map(function(s){return s.data;}).filter(Boolean).sort();
               var dMinC = datasC[0]||''; var dMaxC = datasC[datasC.length-1]||'';
-              var _atSinal = db.atendimentos.find(function(a){ return a.cliente&&a.cliente.toLowerCase().trim()===ag.cliente.toLowerCase().trim()&&a.pagto==='sinal'; });
+              var _temAgIdBadge = db.atendimentos.some(function(a){ return a.agendaId === ag.id; });
+              var _atSinal = db.atendimentos.find(function(a){
+                if (a.pagto !== 'sinal') return false;
+                if (_temAgIdBadge) {
+                  if (a.agendaId !== ag.id) return false;
+                  if (a.corCiclo !== undefined) return isOriginal ? (!a.corCiclo) : (a.corCiclo === cicloKey);
+                  return true;
+                }
+                return a.cliente && a.cliente.toLowerCase().trim()===ag.cliente.toLowerCase().trim();
+              });
               var _dSinal = _atSinal ? _atSinal.data : null;
               var _sinalAqui = _dSinal && _dSinal >= dMinC && _dSinal <= dMaxC;
               var sinalCiclo = _sinalAqui ? (parseFloat(ag.sinal)||0) : (isOriginal&&!_dSinal ? (parseFloat(ag.sinal)||0) : (!isOriginal?(sessoesCiclo[0]&&sessoesCiclo[0].sinalCiclo?parseFloat(sessoesCiclo[0].sinalCiclo):0):0));
               var pagoCiclo = db.atendimentos.filter(function(a){
+                if (a.pagto === 'sinal') return false;
+                if (_temAgIdBadge) {
+                  if (a.agendaId !== ag.id) return false;
+                  if (a.corCiclo !== undefined) return isOriginal ? (!a.corCiclo) : (a.corCiclo === cicloKey);
+                  return (!dMinC||a.data>=dMinC) && (!dMaxC||a.data<=dMaxC);
+                }
                 return a.cliente && a.cliente.toLowerCase().trim()===ag.cliente.toLowerCase().trim()
-                  && a.pagto!=='sinal'
                   && (!dMinC||a.data>=dMinC) && (!dMaxC||a.data<=dMaxC);
               }).reduce(function(s,a){return s+(parseFloat(a.valor)||0);},0);
               var restCiclo = totalCiclo - sinalCiclo - pagoCiclo;
