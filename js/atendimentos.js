@@ -39,9 +39,10 @@ function salvarAtendimento() {
   }
   _agsParaVerificar.forEach(function(_ag) {
     var _sinalJaIncluido = db.atendimentos.some(function(a) {
-      return a.pagto === 'sinal'
-        && (a.agendaId === _ag.id
-            || (a.cliente && a.cliente.toLowerCase().trim() === _ag.cliente.toLowerCase().trim()));
+      if (a.pagto !== 'sinal') return false;
+      if (a.agendaId) return a.agendaId === _ag.id;
+      // Fallback apenas para sinais antigos sem agendaId (dados legados)
+      return a.cliente && a.cliente.toLowerCase().trim() === _ag.cliente.toLowerCase().trim();
     });
     if (!_sinalJaIncluido) {
       var _sinalVal = parseFloat(_ag.sinal);
