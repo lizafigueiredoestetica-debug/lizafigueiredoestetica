@@ -1096,18 +1096,22 @@ function gerarCamposNovoCiclo(agId) {
             var wasSelected = this.classList.contains('selected');
             // Desmarcar todos os protocolos desta sessão
             chipsWrap.querySelectorAll('[data-protocolo-id]').forEach(function(c){ c.classList.remove('selected'); });
+            // Desmarcar os serviços de QUALQUER protocolo cadastrado, para não acumular
+            // serviços de um protocolo anterior ao trocar para outro
+            if (db.protocolos) {
+              db.protocolos.forEach(function(pAny) {
+                (pAny.servicoIds || []).forEach(function(sid) {
+                  var sc = document.getElementById('ncchip_' + idx + '_' + sid);
+                  if (sc) sc.classList.remove('selected');
+                });
+              });
+            }
             if (!wasSelected) {
               this.classList.add('selected');
               // Selecionar automaticamente os serviços do protocolo
               prot.servicoIds.forEach(function(sid) {
                 var sc = document.getElementById('ncchip_' + idx + '_' + sid);
                 if (sc) sc.classList.add('selected');
-              });
-            } else {
-              // Desmarcar serviços do protocolo
-              prot.servicoIds.forEach(function(sid) {
-                var sc = document.getElementById('ncchip_' + idx + '_' + sid);
-                if (sc) sc.classList.remove('selected');
               });
             }
           };
