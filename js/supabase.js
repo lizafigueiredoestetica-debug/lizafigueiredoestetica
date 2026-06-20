@@ -444,7 +444,7 @@ async function _pollingNovos() {
     if (novosAtend && novosAtend.length) {
       novosAtend.forEach(function(a) {
         var idx = db.atendimentos.findIndex(function(x){ return x.id === a.id; });
-        var obj = { id: a.id, data: a.data, cliente: a.cliente, valor: a.valor, pagto: a.pagto, servicoIds: a.servico_ids || [], materiais: a.materiais || [], obs: a.obs };
+        var obj = { id: a.id, data: a.data, cliente: a.cliente, valor: a.valor, pagto: a.pagto, agendaId: a.agenda_id || undefined, corCiclo: a.cor_ciclo || undefined, servicoIds: a.servico_ids || [], materiais: a.materiais || [], obs: a.obs };
         if (idx >= 0) db.atendimentos[idx] = obj; else db.atendimentos.push(obj);
       });
       houveMudanca = true;
@@ -453,7 +453,7 @@ async function _pollingNovos() {
       novasSessoes.forEach(function(s) {
         var ag = db.agenda.find(function(x){ return x.id === s.agenda_id; });
         if (ag) {
-          var obj = { data: s.data, hora: s.hora || '', horaFim: s.hora_fim || '', status: s.status, servicoIds: s.servico_ids || [], servico: s.servico || '', checkinData: s.checkin_data, checkinHora: s.checkin_hora, checkinNome: s.checkin_nome, atendimentoId: s.atendimento_id, protocoloId: s.protocolo_id || null, protocoloNome: s.protocolo_nome || null, protocoloValor: s.protocolo_valor || null };
+          var obj = { data: s.data, hora: s.hora || '', horaFim: s.hora_fim || '', status: s.status, servicoIds: s.servico_ids || [], servico: s.servico || '', checkinData: s.checkin_data, checkinHora: s.checkin_hora, checkinNome: s.checkin_nome, atendimentoId: s.atendimento_id, cor: s.cor || undefined, sinalCiclo: s.sinal_ciclo || undefined, protocoloId: s.protocolo_id || null, protocoloNome: s.protocolo_nome || null, protocoloValor: s.protocolo_valor || null };
           ag.sessoes[s.indice] = obj;
         }
       });
