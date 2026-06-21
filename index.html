@@ -188,6 +188,12 @@
         <button class="period-btn" onclick="setPeriod('mes',this)">Este mês</button>
         <button class="period-btn" onclick="setPeriod('todos',this)">Tudo</button>
       </div>
+      <span style="font-size:11px;color:var(--text-light);letter-spacing:1px;margin-left:0.5rem">OU BUSCAR DE/ATÉ:</span>
+      <input type="date" id="dashPeriodoDe" class="filter-input" style="width:auto">
+      <span style="font-size:11px;color:var(--text-light)">até</span>
+      <input type="date" id="dashPeriodoAte" class="filter-input" style="width:auto">
+      <button class="btn btn-secondary btn-sm" onclick="setPeriodoCustom()">🔍 Buscar</button>
+      <button class="btn btn-secondary btn-sm" onclick="limparPeriodoCustom()">✕ Limpar</button>
     </div>
 
     <!-- Summary Cards -->
