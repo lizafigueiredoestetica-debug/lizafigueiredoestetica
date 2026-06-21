@@ -17,6 +17,27 @@ function _normNome(s) {
 
 function uid() { return Date.now().toString(36) + Math.random().toString(36).substr(2); }
 
+// ── Resolve um servicoId, aceitando tanto o ID real quanto o NOME em texto
+// (lançamentos antigos salvavam o nome do serviço no lugar do ID). Faz o
+// casamento por nome normalizado (sem acento, minúsculas, trim) como fallback. ──
+var _mapaServicosPorNomeCache = null;
+function _mapaServicosPorNome() {
+  if (_mapaServicosPorNomeCache && _mapaServicosPorNomeCache._len === db.servicos.length) return _mapaServicosPorNomeCache;
+  var mapa = {};
+  db.servicos.forEach(function(s) { mapa[_normalizarTexto(s.nome)] = s; });
+  mapa._len = db.servicos.length;
+  _mapaServicosPorNomeCache = mapa;
+  return mapa;
+}
+function _normalizarTexto(s) {
+  return (s||'').toString().toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+function _buscarServico(servicoIdOuNome) {
+  var porId = db.servicos.find(function(x){ return x.id === servicoIdOuNome; });
+  if (porId) return porId;
+  return _mapaServicosPorNome()[_normalizarTexto(servicoIdOuNome)] || null;
+}
+
 function _hoje() {
   var d = new Date();
   var utc = d.getTime() + d.getTimezoneOffset() * 60000;
@@ -804,7 +825,7 @@ function _renderClienteAba(key, aba, c) {
         var totalCiclo = 0;
         var sessaoComProt = sessoesCiclo.find(function(s){ return s.protocoloId && s.protocoloValor; });
         if(sessaoComProt){ totalCiclo = parseFloat(sessaoComProt.protocoloValor)||0; }
-        else { var idsC={}; sessoesCiclo.forEach(function(s){ (s.servicoIds||[]).forEach(function(id){ if(idsC[id]) return; idsC[id]=true; var sv=db.servicos.find(function(x){return x.id===id;}); if(sv&&sv.preco) totalCiclo+=parseFloat(sv.preco)||0; }); }); }
+        else { var idsC={}; sessoesCiclo.forEach(function(s){ (s.servicoIds||[]).forEach(function(id){ if(idsC[id]) return; idsC[id]=true; var sv=_buscarServico(id); if(sv&&sv.preco) totalCiclo+=parseFloat(sv.preco)||0; }); }); }
         var _datasC4 = sessoesCiclo.map(function(s){return s.data;}).filter(Boolean).sort();
         var _dMinC4 = _datasC4[0]||''; var _dMaxC4 = _datasC4[_datasC4.length-1]||'';
         var _atSinalP = db.atendimentos.find(function(a){ return a.cliente&&a.cliente.toLowerCase().trim()===ag.cliente.toLowerCase().trim()&&a.pagto==='sinal'; });
@@ -1464,7 +1485,7 @@ function _renderClienteAba(key, aba, c) {
           var totalCiclo = 0;
           var sessaoComProt = sessoesCiclo.find(function(s){ return s.protocoloId && s.protocoloValor; });
           if(sessaoComProt){ totalCiclo = parseFloat(sessaoComProt.protocoloValor)||0; }
-          else { var idsC={}; sessoesCiclo.forEach(function(s){ (s.servicoIds||[]).forEach(function(id){ if(idsC[id]) return; idsC[id]=true; var sv=db.servicos.find(function(x){return x.id===id;}); if(sv&&sv.preco) totalCiclo+=parseFloat(sv.preco)||0; }); }); }
+          else { var idsC={}; sessoesCiclo.forEach(function(s){ (s.servicoIds||[]).forEach(function(id){ if(idsC[id]) return; idsC[id]=true; var sv=_buscarServico(id); if(sv&&sv.preco) totalCiclo+=parseFloat(sv.preco)||0; }); }); }
           var _datasC3 = sessoesCiclo.map(function(s){return s.data;}).filter(Boolean).sort();
           var _dMinC3 = _datasC3[0]||''; var _dMaxC3 = _datasC3[_datasC3.length-1]||'';
           var _atSinalU = db.atendimentos.find(function(a){ return a.cliente&&a.cliente.toLowerCase().trim()===ag.cliente.toLowerCase().trim()&&a.pagto==='sinal'; });
@@ -1474,12 +1495,18 @@ function _renderClienteAba(key, aba, c) {
           var datasC = sessoesCiclo.map(function(s){return s.data;}).filter(Boolean).sort();
           var dMinC = datasC[0]||''; var dMaxC = datasC[datasC.length-1]||'';
           var _temAgIdF = c.atendimentos.some(function(a){ return a.agendaId === ag.id; });
-          var pagoCiclo = _temAgIdF ? c.atendimentos.filter(function(a){
-            return a.agendaId === ag.id && a.pagto!=='sinal'
+          var pagoCiclo = c.atendimentos.filter(function(a){
+            if (a.pagto === 'sinal') return false;
+            if (_temAgIdF) {
+              if (a.agendaId !== ag.id) return false;
+              if (a.corCiclo !== undefined) return isOriginal ? (!a.corCiclo) : (a.corCiclo === cicloKey);
+              return (!dMinC||a.data>=dMinC) && (!dMaxC||a.data<=dMaxC);
+            }
+            return a.cliente && a.cliente.toLowerCase().trim()===ag.cliente.toLowerCase().trim()
               && (!dMinC||a.data>=dMinC) && (!dMaxC||a.data<=dMaxC);
-          }).reduce(function(s,a){return s+(parseFloat(a.valor)||0);},0) : 0;
+          }).reduce(function(s,a){return s+(parseFloat(a.valor)||0);},0);
           var restCiclo = Math.max(0, totalCiclo - sinalCiclo - pagoCiclo);
-          if(!totalCiclo && !sinalCiclo) return;
+          if(!totalCiclo && !sinalCiclo && !pagoCiclo) return;
           var labelCiclo = cicloOrderF.length > 1 ? '📦 Ciclo '+(ci+1)+' — ' : '📦 ';
           var nomeCiclo = sessaoComProt ? sessaoComProt.protocoloNome : _agServicos(ag);
           resumoPacote += '<div style="background:linear-gradient(135deg,#FFF8F9,#FFF0F5);border:1px solid #D4A0A8;border-left:4px solid '+corExibir+';border-radius:10px;padding:0.75rem 1rem;margin-bottom:0.75rem">'
