@@ -18,6 +18,8 @@ let db = {
 };
 
 let currentPeriod = 'hoje';
+let _periodoDe = '';
+let _periodoAte = '';
 let selectedServicos = [];
 let selectedMateriais = {};
 
@@ -101,6 +103,26 @@ function setPeriod(p, btn) {
   renderDashboard();
 }
 
+// ── Filtro por período customizado (De/Até) ──
+function setPeriodoCustom() {
+  var de = document.getElementById('dashPeriodoDe').value;
+  var ate = document.getElementById('dashPeriodoAte').value;
+  if (!de && !ate) { showToast('Preencha pelo menos uma data!'); return; }
+  _periodoDe = de;
+  _periodoAte = ate;
+  currentPeriod = 'custom';
+  document.querySelectorAll('.period-btn').forEach(function(b){ b.classList.remove('active'); });
+  renderDashboard();
+}
+
+function limparPeriodoCustom() {
+  document.getElementById('dashPeriodoDe').value = '';
+  document.getElementById('dashPeriodoAte').value = '';
+  _periodoDe = '';
+  _periodoAte = '';
+  setPeriod('hoje', document.querySelector('.period-btn'));
+}
+
 function filterByPeriod(items, dateField) {
   const now = new Date();
   const today = now.toISOString().split('T')[0];
@@ -113,6 +135,11 @@ function filterByPeriod(items, dateField) {
       return d >= w.toISOString().split('T')[0];
     }
     if(currentPeriod === 'mes') return d.startsWith(now.getFullYear()+'-'+(String(now.getMonth()+1).padStart(2,'0')));
+    if(currentPeriod === 'custom') {
+      if (_periodoDe && d < _periodoDe) return false;
+      if (_periodoAte && d > _periodoAte) return false;
+      return true;
+    }
     return true;
   });
 }
