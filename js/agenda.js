@@ -909,11 +909,19 @@ function realizarSessao(agId, sessaoIdx) {
   if(dataEl) dataEl.value = sessao.data;
 
   // Pré-selecionar serviços da sessão específica
-  const srvIds = sessao.servicoIds && sessao.servicoIds.length
+  const srvIdsBrutos = sessao.servicoIds && sessao.servicoIds.length
     ? sessao.servicoIds
     : (ag.servicoId ? [ag.servicoId] : []);
 
-  selectedServicos = [...srvIds];
+  // Normalizar para ID real (cobre sessões antigas que salvaram o NOME do serviço
+  // em texto): sem isso, o chip do serviço real aparece como "não selecionado" e um
+  // clique nele duplica o serviço em vez de desmarcá-lo.
+  const srvIds = srvIdsBrutos.map(function(termo) {
+    var sv = _buscarServico(termo);
+    return sv ? sv.id : termo;
+  });
+
+  selectedServicos = [...new Set(srvIds)];
   renderServiceChips();
 
   // Calcular valor total — usar protocolo se existir, senão soma dos serviços
