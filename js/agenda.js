@@ -559,16 +559,22 @@ function renderAgenda() {
               // Sinal do ciclo — pela data do atendimento de sinal
               var datasC = sessoesCiclo.map(function(s){return s.data;}).filter(Boolean).sort();
               var dMinC = datasC[0]||''; var dMaxC = datasC[datasC.length-1]||'';
-              var _atSinal = db.atendimentos.find(function(a){ return a.cliente&&a.cliente.toLowerCase().trim()===ag.cliente.toLowerCase().trim()&&a.pagto==='sinal'; });
-              var _dSinal = _atSinal ? _atSinal.data : null;
-              var _sinalAqui = _dSinal && _dSinal >= dMinC && _dSinal <= dMaxC;
-              var sinalCiclo = _sinalAqui ? (parseFloat(ag.sinal)||0) : (isOriginal&&!_dSinal ? (parseFloat(ag.sinal)||0) : (!isOriginal?(sessoesCiclo[0]&&sessoesCiclo[0].sinalCiclo?parseFloat(sessoesCiclo[0].sinalCiclo):0):0));
+              var _temAgIdBadge = db.atendimentos.some(function(a){ return a.agendaId === ag.id; });
+              // O sinal cadastrado (ag.sinal / sinalCiclo) conta como dinheiro já recebido,
+              // mesmo sem haver um atendimento pagto='sinal' lançado especificamente para
+              // este ciclo (a Liza pode ter registrado o sinal sem formalizar o atendimento).
+              var sinalCiclo = isOriginal ? (parseFloat(ag.sinal)||0) : (sessoesCiclo[0]&&sessoesCiclo[0].sinalCiclo?parseFloat(sessoesCiclo[0].sinalCiclo):0);
               var pagoCiclo = db.atendimentos.filter(function(a){
+                if (a.pagto === 'sinal') return false;
+                if (_temAgIdBadge) {
+                  if (a.agendaId !== ag.id) return false;
+                  if (a.corCiclo !== undefined) return isOriginal ? (!a.corCiclo) : (a.corCiclo === cicloKey);
+                  return (!dMinC||a.data>=dMinC) && (!dMaxC||a.data<=dMaxC);
+                }
                 return a.cliente && a.cliente.toLowerCase().trim()===ag.cliente.toLowerCase().trim()
-                  && a.pagto!=='sinal'
                   && (!dMinC||a.data>=dMinC) && (!dMaxC||a.data<=dMaxC);
               }).reduce(function(s,a){return s+(parseFloat(a.valor)||0);},0);
-              var restCiclo = totalCiclo - sinalCiclo - pagoCiclo;
+              var restCiclo = Math.max(0, totalCiclo - sinalCiclo - pagoCiclo);
               if(!totalCiclo && !sinalCiclo) return '';
               var label = cicloOrder.length > 1 ? 'Ciclo '+(ci+1)+': ' : '';
               var cor = restCiclo <= 0 ? '#276749' : '#1565C0';
