@@ -209,7 +209,7 @@ function showSection(id) {
   if (tab) tab.classList.add('active');
   try { localStorage.setItem('lizafig_secao', id); } catch(e) {}
   // Render específico por seção
-  if (id === 'agenda') { renderAgenda(); if (typeof renderDisponibilidade === 'function') renderDisponibilidade(); }
+  if (id === 'agenda') renderAgenda();
   if (id === 'dashboard') renderDashboard();
   if (id === 'atendimentos') { if(typeof renderAtendimentos==='function') renderAtendimentos(); if(typeof renderServiceChips==='function') renderServiceChips(); }
   if (id === 'servicos') renderServicos();
@@ -230,6 +230,7 @@ function showSection(id) {
   if (id === 'aniversariantes') renderAniversariantesAba();
   if (id === 'checkins') renderCheckins();
   if (id === 'clientes') renderClientes();
+  if (id === 'radar') renderRadarCadastro();
 }
 
 function renderAll() {
@@ -826,12 +827,8 @@ function _renderClienteAba(key, aba, c) {
         var sessaoComProt = sessoesCiclo.find(function(s){ return s.protocoloId && s.protocoloValor; });
         if(sessaoComProt){ totalCiclo = parseFloat(sessaoComProt.protocoloValor)||0; }
         else { var idsC={}; sessoesCiclo.forEach(function(s){ (s.servicoIds||[]).forEach(function(id){ if(idsC[id]) return; idsC[id]=true; var sv=_buscarServico(id); if(sv&&sv.preco) totalCiclo+=parseFloat(sv.preco)||0; }); }); }
-        var _datasC4 = sessoesCiclo.map(function(s){return s.data;}).filter(Boolean).sort();
-        var _dMinC4 = _datasC4[0]||''; var _dMaxC4 = _datasC4[_datasC4.length-1]||'';
-        var _atSinalP = db.atendimentos.find(function(a){ return a.cliente&&a.cliente.toLowerCase().trim()===ag.cliente.toLowerCase().trim()&&a.pagto==='sinal'; });
-        var _dSinalP = _atSinalP ? _atSinalP.data : null;
-        var _sinalAquiP = _dSinalP && _dSinalP >= _dMinC4 && _dSinalP <= _dMaxC4;
-        var sinalCiclo = _sinalAquiP ? (parseFloat(ag.sinal)||0) : (isOriginal&&!_dSinalP?(parseFloat(ag.sinal)||0):(!isOriginal?(sessoesCiclo[0]&&sessoesCiclo[0].sinalCiclo?parseFloat(sessoesCiclo[0].sinalCiclo):0):0));
+        // O sinal cadastrado conta como dinheiro já recebido, mesmo sem atendimento pagto='sinal' formalizado
+        var sinalCiclo = isOriginal ? (parseFloat(ag.sinal)||0) : (sessoesCiclo[0]&&sessoesCiclo[0].sinalCiclo?parseFloat(sessoesCiclo[0].sinalCiclo):0);
         var datasC = sessoesCiclo.map(function(s){return s.data;}).filter(Boolean).sort();
         var dMinC = datasC[0]||''; var dMaxC = datasC[datasC.length-1]||'';
         var _temAgIdP = db.atendimentos.some(function(a){ return a.agendaId === ag.id; });
@@ -1486,12 +1483,8 @@ function _renderClienteAba(key, aba, c) {
           var sessaoComProt = sessoesCiclo.find(function(s){ return s.protocoloId && s.protocoloValor; });
           if(sessaoComProt){ totalCiclo = parseFloat(sessaoComProt.protocoloValor)||0; }
           else { var idsC={}; sessoesCiclo.forEach(function(s){ (s.servicoIds||[]).forEach(function(id){ if(idsC[id]) return; idsC[id]=true; var sv=_buscarServico(id); if(sv&&sv.preco) totalCiclo+=parseFloat(sv.preco)||0; }); }); }
-          var _datasC3 = sessoesCiclo.map(function(s){return s.data;}).filter(Boolean).sort();
-          var _dMinC3 = _datasC3[0]||''; var _dMaxC3 = _datasC3[_datasC3.length-1]||'';
-          var _atSinalU = db.atendimentos.find(function(a){ return a.cliente&&a.cliente.toLowerCase().trim()===ag.cliente.toLowerCase().trim()&&a.pagto==='sinal'; });
-          var _dSinalU = _atSinalU ? _atSinalU.data : null;
-          var _sinalAquiU = _dSinalU && _dSinalU >= _dMinC3 && _dSinalU <= _dMaxC3;
-          var sinalCiclo = _sinalAquiU ? (parseFloat(ag.sinal)||0) : (isOriginal&&!_dSinalU?(parseFloat(ag.sinal)||0):(!isOriginal?(sessoesCiclo[0]&&sessoesCiclo[0].sinalCiclo?parseFloat(sessoesCiclo[0].sinalCiclo):0):0));
+          // O sinal cadastrado conta como dinheiro já recebido, mesmo sem atendimento pagto='sinal' formalizado
+          var sinalCiclo = isOriginal ? (parseFloat(ag.sinal)||0) : (sessoesCiclo[0]&&sessoesCiclo[0].sinalCiclo?parseFloat(sessoesCiclo[0].sinalCiclo):0);
           var datasC = sessoesCiclo.map(function(s){return s.data;}).filter(Boolean).sort();
           var dMinC = datasC[0]||''; var dMaxC = datasC[datasC.length-1]||'';
           var _temAgIdF = c.atendimentos.some(function(a){ return a.agendaId === ag.id; });
