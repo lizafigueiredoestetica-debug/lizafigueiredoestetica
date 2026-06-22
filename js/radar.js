@@ -77,13 +77,20 @@ function renderRadarCadastro() {
   }
 
   el.innerHTML = '<div class="table-wrap"><table style="width:100%"><thead><tr>'
-    + '<th>Nome</th><th>Instagram</th><th>WhatsApp</th><th>Primeira pergunta</th><th>Classificação</th><th>Último contato</th><th>Status da negociação</th><th></th>'
+    + '<th>Nome / Ações rápidas</th><th>Instagram</th><th>WhatsApp</th><th>Primeira pergunta</th><th>Classificação</th><th>Último contato</th><th>Status da negociação</th><th></th>'
     + '</tr></thead><tbody>'
     + leads.map(function(l) {
         var corClass = l.classificacao === 'quente' ? 'badge-inativo' : 'badge-pendente';
         var labelClass = l.classificacao === 'quente' ? '🔥 Quente' : '🧊 Frio';
+        var temTel = !!l.telefone;
+        var acoes = '<div style="display:flex;gap:3px;margin-top:4px;flex-wrap:wrap">'
+          + '<button class="btn btn-secondary btn-sm" style="padding:3px 7px;font-size:10px" title="Responder a dúvida que o lead enviou" onclick="radarResponderDuvida(\'' + l.id + '\')" ' + (temTel?'':'disabled') + '>💬</button>'
+          + '<button class="btn btn-secondary btn-sm" style="padding:3px 7px;font-size:10px" title="Enviar orçamento" onclick="radarEnviarOrcamento(\'' + l.id + '\')" ' + (temTel?'':'disabled') + '>💰</button>'
+          + '<button class="btn btn-secondary btn-sm" style="padding:3px 7px;font-size:10px" title="Reaquecer lead (retomar contato)" onclick="radarReaquecerLead(\'' + l.id + '\')" ' + (temTel?'':'disabled') + '>🔥</button>'
+          + '<button class="btn btn-secondary btn-sm" style="padding:3px 7px;font-size:10px" title="Convidar para agendar" onclick="radarConviteAgendar(\'' + l.id + '\')" ' + (temTel?'':'disabled') + '>📅</button>'
+          + '</div>';
         return '<tr>'
-          + '<td><strong>' + l.nome + '</strong></td>'
+          + '<td><strong>' + l.nome + '</strong>' + acoes + '</td>'
           + '<td>' + (l.instagram ? '<a href="https://instagram.com/' + l.instagram.replace('@','') + '" target="_blank">' + l.instagram + '</a>' : '—') + '</td>'
           + '<td>' + (l.telefone ? '<button class="btn btn-secondary btn-sm" onclick="window.open(\'https://wa.me/55' + l.telefone.replace(/\D/g,'') + '\',\'_blank\')">📲 ' + l.telefone + '</button>' : '—') + '</td>'
           + '<td style="max-width:220px;font-size:12px;color:var(--text-mid)">' + (l.primeiraPergunta || '—') + '</td>'
@@ -156,6 +163,43 @@ function _radarPerguntasFrequentes() {
     if (!encontrou) contagem['Outras'] = (contagem['Outras']||0) + 1;
   });
   return Object.entries(contagem).sort(function(a,b){ return b[1]-a[1]; });
+}
+
+// ===================== AÇÕES DE WHATSAPP POR LEAD =====================
+function _radarAbrirWhatsapp(telefone, msg) {
+  if (!telefone) { showToast('Este lead não tem telefone cadastrado.'); return; }
+  var tel = telefone.replace(/\D/g,'');
+  window.open('https://wa.me/55' + tel + '?text=' + encodeURIComponent(msg), '_blank');
+}
+
+function radarResponderDuvida(id) {
+  var lead = (db.leads||[]).find(function(l){ return l.id === id; });
+  if (!lead) return;
+  var msg = _getMensagem('radar_responder_duvida')
+    .replace(/{nome}/g, lead.nome.split(' ')[0])
+    .replace(/{pergunta}/g, lead.primeiraPergunta || 'sua dúvida');
+  _radarAbrirWhatsapp(lead.telefone, msg);
+}
+
+function radarEnviarOrcamento(id) {
+  var lead = (db.leads||[]).find(function(l){ return l.id === id; });
+  if (!lead) return;
+  var msg = _getMensagem('radar_orcamento').replace(/{nome}/g, lead.nome.split(' ')[0]);
+  _radarAbrirWhatsapp(lead.telefone, msg);
+}
+
+function radarReaquecerLead(id) {
+  var lead = (db.leads||[]).find(function(l){ return l.id === id; });
+  if (!lead) return;
+  var msg = _getMensagem('radar_reaquecer').replace(/{nome}/g, lead.nome.split(' ')[0]);
+  _radarAbrirWhatsapp(lead.telefone, msg);
+}
+
+function radarConviteAgendar(id) {
+  var lead = (db.leads||[]).find(function(l){ return l.id === id; });
+  if (!lead) return;
+  var msg = _getMensagem('radar_convite_agendar').replace(/{nome}/g, lead.nome.split(' ')[0]);
+  _radarAbrirWhatsapp(lead.telefone, msg);
 }
 
 function renderRadarIndicadores() {
