@@ -71,6 +71,30 @@ var _MENSAGENS_PADRAO = {
     descricao: 'Enviada pela cliente ao solicitar orçamento na página de agendamento',
     variaveis: [],
     texto: 'Olá Liza! 🌸 Gostaria de solicitar um orçamento e tirar algumas dúvidas sobre os serviços disponíveis.'
+  },
+  radar_responder_duvida: {
+    nome: '💬 Responder Dúvida (Radar)',
+    descricao: 'Enviada para responder a primeira pergunta que o lead fez, continuando a conversa',
+    variaveis: ['{nome}', '{pergunta}'],
+    texto: 'Olá {nome}! 🌸\n\nVi sua mensagem sobre "{pergunta}" e fico feliz em te ajudar! 💆‍♀️\n\nMe conta um pouco mais sobre o que você está buscando, que eu te explico tudo com calma e já te passo as melhores opções. 😊'
+  },
+  radar_orcamento: {
+    nome: '💰 Enviar Orçamento (Radar)',
+    descricao: 'Enviada para apresentar valores e condições do serviço de interesse do lead',
+    variaveis: ['{nome}'],
+    texto: 'Olá {nome}! 🌸\n\nSeparei algumas informações para você sobre nossos tratamentos! ✨\n\nTrabalho com protocolos personalizados para garantir o melhor resultado. Posso te passar os valores e formas de pagamento certinho — me diga se prefere conversar por aqui ou já agendar uma avaliação gratuita!\n\nQualquer dúvida, estou à disposição! 💆‍♀️'
+  },
+  radar_reaquecer: {
+    nome: '🔥 Reaquecer Lead (Radar)',
+    descricao: 'Enviada para retomar contato com um lead que parou de responder',
+    variaveis: ['{nome}'],
+    texto: 'Olá {nome}! 🌸\n\nPassando para saber se ainda está com interesse em agendar seu horário. Separei um espaço especial pra você essa semana! ✨\n\nSe ainda tiver alguma dúvida, é só me chamar que te ajudo com todo carinho. 💕'
+  },
+  radar_convite_agendar: {
+    nome: '📅 Convite para Agendar (Radar)',
+    descricao: 'Enviada para convidar o lead a marcar o primeiro horário',
+    variaveis: ['{nome}'],
+    texto: 'Olá {nome}! 🌸\n\nQue tal já garantirmos seu horário? Tenho disponibilidade essa semana e adoraria te receber para começarmos seu tratamento! 💆‍♀️✨\n\nMe diga qual dia funciona melhor pra você que eu já confirmo tudo!'
   }
 };
 
