@@ -18,6 +18,26 @@
 <link rel="stylesheet" href="css/dashboard.css">
 <link rel="stylesheet" href="css/components.css">
 
+<!-- CSS isolado: painel de Disponibilidade (não altera classes existentes) -->
+<style>
+.disp-month-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
+.disp-dow { text-align:center; font-size:10px; letter-spacing:1px; text-transform:uppercase; color:var(--text-light); padding:4px 0; font-weight:600; }
+.disp-dow.disp-fim-semana { color:#C4708A; }
+.disp-day { position:relative; border:1.5px solid #E8D5D9; border-radius:10px; min-height:54px; padding:6px; cursor:pointer; transition:all 0.15s; background:#fff; }
+.disp-day:hover { transform:translateY(-1px); box-shadow:0 2px 8px rgba(0,0,0,0.08); }
+.disp-day.outro-mes { visibility:hidden; pointer-events:none; }
+.disp-day.disp-liberado { background:#EAF7EE; border-color:#7DB87D; }
+.disp-day.disp-fechado { background:#FBEAEA; border-color:#E3A2A2; }
+.disp-day.disp-passado { background:#F5F5F5; border-color:#E0E0E0; opacity:0.55; cursor:not-allowed; }
+.disp-day.disp-passado:hover { transform:none; box-shadow:none; }
+.disp-day.disp-hoje { box-shadow:0 0 0 2px #D4A0A8 inset; }
+.disp-day .disp-day-num { font-size:12px; font-weight:500; color:#444; }
+.disp-icone { position:absolute; bottom:6px; right:8px; font-size:13px; }
+.disp-legenda { display:flex; gap:1rem; flex-wrap:wrap; font-size:11px; color:var(--text-light); margin-top:0.75rem; }
+.disp-legenda span { display:flex; align-items:center; gap:4px; }
+.disp-dot { width:10px; height:10px; border-radius:3px; display:inline-block; }
+</style>
+
 <!-- Biblioteca PDF -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
@@ -876,6 +896,34 @@
       <div id="calGrid"></div>
     </div>
 
+    <!-- Disponibilidade para agendamento público -->
+    <div class="cal-wrap" id="dispWrap" style="margin-top:1.25rem">
+      <div class="cal-header">
+        <div class="cal-nav">
+          <button class="cal-nav-btn" onclick="dispNavegar(-1)">&#8249;</button>
+          <div class="cal-title" id="dispTitulo"></div>
+          <button class="cal-nav-btn" onclick="dispNavegar(1)">&#8250;</button>
+        </div>
+        <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap">
+          <button class="cal-today-btn" onclick="dispHoje()">Hoje</button>
+        </div>
+      </div>
+      <div style="padding:0 0.25rem 0.5rem">
+        <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-light);margin-bottom:6px">🔓 Disponibilidade para agendamento público</div>
+        <div style="font-size:12px;color:var(--text-light);margin-bottom:0.75rem">Clique em um dia para liberar ou bloquear. Dias bloqueados não aparecem para a cliente marcar horário sozinha.</div>
+      </div>
+      <div id="dispGrid"></div>
+      <div class="disp-legenda">
+        <span><span class="disp-dot" style="background:#EAF7EE;border:1px solid #7DB87D"></span> Liberado</span>
+        <span><span class="disp-dot" style="background:#FBEAEA;border:1px solid #E3A2A2"></span> Bloqueado</span>
+        <span><span class="disp-dot" style="background:#F5F5F5;border:1px solid #E0E0E0"></span> Já passou</span>
+      </div>
+      <div style="display:flex;gap:0.5rem;margin-top:0.85rem;flex-wrap:wrap">
+        <button class="btn btn-secondary btn-sm" onclick="dispLiberarSemana(_dispSegundaVisivel())">✓ Liberar semana atual</button>
+        <button class="btn btn-secondary btn-sm" onclick="dispBloquearSemana(_dispSegundaVisivel())">🔒 Bloquear semana atual</button>
+      </div>
+    </div>
+
     <!-- Filtros abaixo do calendário -->
     <div class="agenda-filtros" style="margin-bottom:0.75rem">
       <button class="agenda-btn active" onclick="setAgendaFiltro('hoje',this)">Hoje</button>
@@ -1310,6 +1358,8 @@
 <script src="js/anamnese.js"></script>
 <!-- 13. Calendário -->
 <script src="js/calendario.js"></script>
+
+<script src="js/disponibilidade.js"></script>
 <!-- 14. IndexedDB + Fotos (Supabase Storage) -->
 <script src="js/idb.js"></script>
 <!-- 14b. Mensagens WhatsApp customizáveis -->
