@@ -298,6 +298,21 @@ async function _carregarDaNuvem() {
       }
     } catch(e) { db.clientesExcluidos = db.clientesExcluidos || []; }
 
+    // ── Carregar diasDisponiveis (dias liberados para agendamento público) da tabela configuracoes ──
+    try {
+      var respDD = await fetch(SUPA_URL + '/rest/v1/configuracoes?id=eq.dias_disponiveis&select=valor', {
+        headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY }
+      });
+      if (respDD.ok) {
+        var rowsDD = await respDD.json();
+        if (rowsDD && rowsDD.length && rowsDD[0].valor) {
+          db.diasDisponiveis = JSON.parse(rowsDD[0].valor);
+        } else {
+          db.diasDisponiveis = [];
+        }
+      }
+    } catch(e) { db.diasDisponiveis = db.diasDisponiveis || []; }
+
     localStorage.setItem('lizafig_db', JSON.stringify(db));
     var now = new Date().toLocaleString('pt-BR');
     localStorage.setItem('lizafig_lastsync', now);
@@ -558,6 +573,25 @@ async function _salvarClientesExcluidos() {
     });
   } catch(e) {
     addLog('WARN', '⚠️ Erro ao salvar clientesExcluidos: ' + e.message);
+  }
+}
+
+// ── Salvar lista de dias liberados para agendamento público ──
+async function _salvarDiasDisponiveis() {
+  try {
+    var lista = db.diasDisponiveis || [];
+    await fetch(SUPA_URL + '/rest/v1/configuracoes', {
+      method: 'POST',
+      headers: {
+        'apikey': SUPA_KEY,
+        'Authorization': 'Bearer ' + SUPA_KEY,
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates,return=minimal'
+      },
+      body: JSON.stringify({ id: 'dias_disponiveis', valor: JSON.stringify(lista) })
+    });
+  } catch(e) {
+    addLog('WARN', '⚠️ Erro ao salvar diasDisponiveis: ' + e.message);
   }
 }
 
