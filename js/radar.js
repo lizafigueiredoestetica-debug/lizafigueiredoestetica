@@ -13,6 +13,13 @@ function mostrarSubAbaRadar(aba) {
   if (aba === 'indicadores') renderRadarIndicadores();
 }
 
+function limparFiltrosRadar() {
+  document.getElementById('radarFiltroNome').value = '';
+  document.getElementById('radarFiltroDe').value = '';
+  document.getElementById('radarFiltroAte').value = '';
+  renderRadarCadastro();
+}
+
 // ===================== CADASTRO (CRUD) =====================
 function salvarLeadRadar() {
   var nome = document.getElementById('radar-nome').value.trim();
@@ -64,15 +71,73 @@ function editarCampoRadar(id, campo, valor) {
   if (typeof _salvarLead === 'function') _salvarLead(lead);
 }
 
+function abrirEdicaoLeadRadar(id) {
+  var lead = (db.leads||[]).find(function(l){ return l.id === id; });
+  if (!lead) return;
+  var old = document.getElementById('modal-editor-lead'); if (old) old.remove();
+
+  var modal = document.createElement('div');
+  modal.id = 'modal-editor-lead';
+  modal.className = 'cal-modal';
+  modal.innerHTML = '<div class="cal-modal-box" style="max-width:480px">'
+    + '<div class="cal-modal-header">'
+    + '<span style="color:#FAF0F2;font-family:Cormorant Garamond,serif;font-size:17px">✏️ Editar Lead</span>'
+    + '<button onclick="document.getElementById(\'modal-editor-lead\').remove()" style="background:none;border:none;color:white;font-size:20px;cursor:pointer">✕</button>'
+    + '</div>'
+    + '<div class="cal-modal-body">'
+    + '<div class="form-group" style="margin-bottom:0.75rem"><label>Nome e Sobrenome</label><input type="text" id="edit-radar-nome" value="' + (lead.nome||'').replace(/"/g,'&quot;') + '"></div>'
+    + '<div class="form-group" style="margin-bottom:0.75rem"><label>Instagram</label><input type="text" id="edit-radar-instagram" value="' + (lead.instagram||'').replace(/"/g,'&quot;') + '"></div>'
+    + '<div class="form-group" style="margin-bottom:0.75rem"><label>Contato / WhatsApp</label><input type="text" id="edit-radar-telefone" value="' + (lead.telefone||'').replace(/"/g,'&quot;') + '"></div>'
+    + '<div class="form-group" style="margin-bottom:0.75rem"><label>Primeira pergunta que fez</label><input type="text" id="edit-radar-pergunta" value="' + (lead.primeiraPergunta||'').replace(/"/g,'&quot;') + '"></div>'
+    + '<div class="form-group" style="margin-bottom:0.75rem"><label>Classificação</label><select id="edit-radar-classificacao">'
+      + '<option value="frio"' + (lead.classificacao!=='quente'?' selected':'') + '>🧊 Frio</option>'
+      + '<option value="quente"' + (lead.classificacao==='quente'?' selected':'') + '>🔥 Quente</option>'
+    + '</select></div>'
+    + '<div class="form-group" style="margin-bottom:0.75rem"><label>Último contato</label><input type="date" id="edit-radar-ultimo-contato" value="' + (lead.ultimoContato||'') + '"></div>'
+    + '<div class="form-group" style="margin-bottom:0.75rem"><label>Status da negociação</label><input type="text" id="edit-radar-status" value="' + (lead.statusNegociacao||'').replace(/"/g,'&quot;') + '"></div>'
+    + '<div class="cal-modal-actions">'
+    + '<button class="btn btn-primary btn-sm" onclick="salvarEdicaoLeadRadar(\'' + id + '\')">✓ Salvar</button>'
+    + '<button class="btn btn-secondary btn-sm" onclick="document.getElementById(\'modal-editor-lead\').remove()">Cancelar</button>'
+    + '</div></div></div>';
+
+  document.body.appendChild(modal);
+  modal.addEventListener('click', function(e){ if (e.target === modal) modal.remove(); });
+}
+
+function salvarEdicaoLeadRadar(id) {
+  var lead = (db.leads||[]).find(function(l){ return l.id === id; });
+  if (!lead) return;
+
+  lead.nome = document.getElementById('edit-radar-nome').value.trim();
+  lead.instagram = document.getElementById('edit-radar-instagram').value.trim();
+  lead.telefone = document.getElementById('edit-radar-telefone').value.trim();
+  lead.primeiraPergunta = document.getElementById('edit-radar-pergunta').value.trim();
+  lead.classificacao = document.getElementById('edit-radar-classificacao').value;
+  lead.ultimoContato = document.getElementById('edit-radar-ultimo-contato').value;
+  lead.statusNegociacao = document.getElementById('edit-radar-status').value.trim();
+
+  if (!lead.nome) { showToast('O nome não pode ficar vazio!'); return; }
+
+  saveData();
+  if (typeof _salvarLead === 'function') _salvarLead(lead);
+  document.getElementById('modal-editor-lead').remove();
+  renderRadarCadastro();
+  showToast('Lead atualizado!');
+}
+
 function renderRadarCadastro() {
   var el = document.getElementById('radarCadastroLista');
   if (!el) return;
   var busca = (document.getElementById('radarFiltroNome')||{value:''}).value.toLowerCase();
+  var de = (document.getElementById('radarFiltroDe')||{value:''}).value;
+  var ate = (document.getElementById('radarFiltroAte')||{value:''}).value;
   var leads = (db.leads||[]).slice().sort(function(a,b){ return (b.criadoEm||'').localeCompare(a.criadoEm||''); });
   if (busca) leads = leads.filter(function(l){ return l.nome.toLowerCase().indexOf(busca) >= 0; });
+  if (de) leads = leads.filter(function(l){ return l.ultimoContato && l.ultimoContato >= de; });
+  if (ate) leads = leads.filter(function(l){ return l.ultimoContato && l.ultimoContato <= ate; });
 
   if (!leads.length) {
-    el.innerHTML = '<div class="empty-state"><div class="empty-icon">🎯</div><p>Nenhum lead cadastrado ainda no Radar</p></div>';
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">🎯</div><p>Nenhum lead encontrado com esse filtro</p></div>';
     return;
   }
 
@@ -100,7 +165,10 @@ function renderRadarCadastro() {
           + '</select></td>'
           + '<td><input type="date" value="' + (l.ultimoContato||'') + '" onchange="editarCampoRadar(\'' + l.id + '\',\'ultimoContato\',this.value)" style="font-size:12px;padding:3px;border-radius:6px;border:1px solid var(--border)"></td>'
           + '<td style="max-width:220px"><input type="text" value="' + (l.statusNegociacao||'').replace(/"/g,'&quot;') + '" placeholder="Ex: Passei o preço e sumiu" onchange="editarCampoRadar(\'' + l.id + '\',\'statusNegociacao\',this.value)" style="font-size:12px;padding:4px 8px;border-radius:6px;border:1px solid var(--border);width:100%"></td>'
-          + '<td><button class="btn btn-danger" onclick="excluirLeadRadar(\'' + l.id + '\')">✕</button></td>'
+          + '<td style="display:flex;gap:4px">'
+          + '<button class="btn btn-edit" onclick="abrirEdicaoLeadRadar(\'' + l.id + '\')">✏️</button>'
+          + '<button class="btn btn-danger" onclick="excluirLeadRadar(\'' + l.id + '\')">✕</button>'
+          + '</td>'
           + '</tr>';
       }).join('')
     + '</tbody></table></div>';
