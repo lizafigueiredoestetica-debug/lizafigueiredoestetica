@@ -202,17 +202,40 @@ function _getFotos(agId) {
 }
 
 function _buildFotologHtml(agId) {
-  // Carrega async do IndexedDB e injeta no DOM
+  // Carregamento sob demanda: só busca fotos quando o usuário clicar para abrir.
+  // Isso evita baixar todas as fotos de todos os clientes a cada renderAcomp().
+  // Se o fotolog já estava aberto (ex: após salvar/excluir uma foto, que chama
+  // renderAcomp() de novo), mantemos aberto para não regredir o comportamento atual.
+  if (!window._fotologAbertos) window._fotologAbertos = {};
   var wrapId = 'fotolog_' + agId.replace(/[^a-z0-9]/gi,'');
-  setTimeout(function() {
-    _idbGetFotos(agId, function(fotos) {
-      var el = document.getElementById(wrapId);
-      if (el) el.innerHTML = _fotologConteudo(agId, fotos);
-    });
-  }, 0);
+  if (window._fotologAbertos[agId]) {
+    setTimeout(function() {
+      _idbGetFotos(agId, function(fotos) {
+        var el = document.getElementById(wrapId);
+        if (el) el.innerHTML = _fotologConteudo(agId, fotos);
+      });
+    }, 0);
+    return '<div class="fotolog-wrap" id="' + wrapId + '">'
+      + '<div class="fotolog-titulo"><span>📷 Fotolog de Evolução</span>'
+      + '</div><div style="padding:1rem;color:var(--text-light);font-size:12px">Carregando...</div></div>';
+  }
   return '<div class="fotolog-wrap" id="' + wrapId + '">'
-    + '<div class="fotolog-titulo"><span>📷 Fotolog de Evolução</span>'
-    + '</div><div style="padding:1rem;color:var(--text-light);font-size:12px">Carregando...</div></div>';
+    + '<div class="fotolog-titulo" style="display:flex;align-items:center;justify-content:space-between">'
+    + '<span>📷 Fotolog de Evolução</span>'
+    + '<button class="btn btn-secondary btn-sm" onclick="_abrirFotolog(\'' + agId + '\',\'' + wrapId + '\')" style="font-size:11px">Ver fotos</button>'
+    + '</div></div>';
+}
+
+function _abrirFotolog(agId, wrapId) {
+  if (!window._fotologAbertos) window._fotologAbertos = {};
+  window._fotologAbertos[agId] = true;
+  var el = document.getElementById(wrapId);
+  if (!el) return;
+  el.innerHTML = '<div class="fotolog-titulo"><span>📷 Fotolog de Evolução</span></div><div style="padding:1rem;color:var(--text-light);font-size:12px">Carregando...</div>';
+  _idbGetFotos(agId, function(fotos) {
+    var el2 = document.getElementById(wrapId);
+    if (el2) el2.innerHTML = _fotologConteudo(agId, fotos);
+  });
 }
 
 function _fotologConteudo(agId, fotos) {
@@ -254,7 +277,7 @@ function _fotologConteudo(agId, fotos) {
 function _fotoSlot(agId, grupoKey, foto, tipo) {
   if (foto) {
     return '<div class="fotolog-foto-wrap" onclick="abrirLightbox(\'' + foto.url.replace(/'/g,"\\'") + '\')">'
-      + '<img src="' + foto.url + '" alt="' + tipo + '">'
+      + '<img src="' + foto.url + '" alt="' + tipo + '" loading="lazy">'
       + '<div class="fotolog-foto-label">' + tipo + '</div>'
       + '<button class="fotolog-foto-del" onclick="event.stopPropagation();excluirFoto(\'' + agId + '\',\'' + foto.id + '\')" title="Remover foto">✕</button>'
       + '</div>';
