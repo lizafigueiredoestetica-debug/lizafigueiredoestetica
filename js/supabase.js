@@ -298,20 +298,11 @@ async function _carregarDaNuvem() {
       }
     } catch(e) { db.clientesExcluidos = db.clientesExcluidos || []; }
 
-    // ── Carregar diasDisponiveis (dias liberados para agendamento público) da tabela configuracoes ──
-    try {
-      var respDD = await fetch(SUPA_URL + '/rest/v1/configuracoes?id=eq.dias_disponiveis&select=valor', {
-        headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY }
-      });
-      if (respDD.ok) {
-        var rowsDD = await respDD.json();
-        if (rowsDD && rowsDD.length && rowsDD[0].valor) {
-          db.diasDisponiveis = JSON.parse(rowsDD[0].valor);
-        } else {
-          db.diasDisponiveis = [];
-        }
-      }
-    } catch(e) { db.diasDisponiveis = db.diasDisponiveis || []; }
+    // Radar de Clientes — carregamento isolado: se a tabela "leads" ainda não
+    // existir ou falhar, não deve travar o carregamento principal do sistema
+    if (typeof _carregarLeadsDaNuvem === 'function') {
+      try { await _carregarLeadsDaNuvem(); } catch(eRadar) { addLog('WARN', '⚠️ Radar de Clientes indisponível: ' + eRadar.message); }
+    }
 
     localStorage.setItem('lizafig_db', JSON.stringify(db));
     var now = new Date().toLocaleString('pt-BR');
@@ -444,13 +435,14 @@ async function _pollingNovos() {
     var desde = _ultimoSync;
     var agora = new Date().toISOString();
     // Apenas tabelas com coluna atualizado_em
-    var [novosAtend, novasSessoes, novosServ, novasMat, novasAnam, novaAgenda] = await Promise.all([
+    var [novosAtend, novasSessoes, novosServ, novasMat, novasAnam, novaAgenda, novosLeads] = await Promise.all([
       _supaGetNovos('atendimentos', desde),
       _supaGetNovos('sessoes', desde),
       _supaGetNovos('servicos', desde),
       _supaGetNovos('materiais', desde),
       _supaGetNovos('anamneses', desde),
-      _supaGetNovos('agenda', desde)
+      _supaGetNovos('agenda', desde),
+      _supaGetNovos('leads', desde)
     ]);
     var novosAdm = null, novosExtra = null, novaCat = null;
 
@@ -463,6 +455,18 @@ async function _pollingNovos() {
         if (idx >= 0) db.atendimentos[idx] = obj; else db.atendimentos.push(obj);
       });
       houveMudanca = true;
+    }
+    if (novosLeads && novosLeads.length) {
+      if (!db.leads) db.leads = [];
+      novosLeads.forEach(function(l) {
+        var idx = db.leads.findIndex(function(x){ return x.id === l.id; });
+        var obj = { id: l.id, nome: l.nome, instagram: l.instagram || '', telefone: l.telefone || '', primeiraPergunta: l.primeira_pergunta || '', classificacao: l.classificacao || 'frio', ultimoContato: l.ultimo_contato || '', statusNegociacao: l.status_negociacao || '', criadoEm: l.criado_em };
+        if (idx >= 0) db.leads[idx] = obj; else db.leads.push(obj);
+      });
+      houveMudanca = true;
+      if (typeof renderRadarCadastro === 'function' && document.getElementById('sec-radar') && document.getElementById('sec-radar').classList.contains('active')) {
+        renderRadarCadastro();
+      }
     }
     if (novasSessoes && novasSessoes.length) {
       novasSessoes.forEach(function(s) {
@@ -573,25 +577,6 @@ async function _salvarClientesExcluidos() {
     });
   } catch(e) {
     addLog('WARN', '⚠️ Erro ao salvar clientesExcluidos: ' + e.message);
-  }
-}
-
-// ── Salvar lista de dias liberados para agendamento público ──
-async function _salvarDiasDisponiveis() {
-  try {
-    var lista = db.diasDisponiveis || [];
-    await fetch(SUPA_URL + '/rest/v1/configuracoes', {
-      method: 'POST',
-      headers: {
-        'apikey': SUPA_KEY,
-        'Authorization': 'Bearer ' + SUPA_KEY,
-        'Content-Type': 'application/json',
-        'Prefer': 'resolution=merge-duplicates,return=minimal'
-      },
-      body: JSON.stringify({ id: 'dias_disponiveis', valor: JSON.stringify(lista) })
-    });
-  } catch(e) {
-    addLog('WARN', '⚠️ Erro ao salvar diasDisponiveis: ' + e.message);
   }
 }
 
