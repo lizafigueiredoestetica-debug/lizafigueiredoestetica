@@ -2180,7 +2180,8 @@ function _gerarSessoesRecorrentes(sessoesBase, recorrencia) {
       sessoes.push({
         data: _fmtDataLocal(atual),
         hora: hora, horaFim: horaFimFixa, status: 'pendente', atendimentoId: null,
-        servicoIds: primeira.servicoIds || [], servico: primeira.servico || ''
+        servicoIds: primeira.servicoIds || [], servico: primeira.servico || '',
+        protocoloId: primeira.protocoloId || null, protocoloNome: primeira.protocoloNome || null, protocoloValor: primeira.protocoloValor || null
       });
       atual.setDate(atual.getDate() + 7);
     }
@@ -2189,7 +2190,8 @@ function _gerarSessoesRecorrentes(sessoesBase, recorrencia) {
       sessoes.push({
         data: _fmtDataLocal(atual),
         hora: hora, horaFim: horaFimFixa, status: 'pendente', atendimentoId: null,
-        servicoIds: primeira.servicoIds || [], servico: primeira.servico || ''
+        servicoIds: primeira.servicoIds || [], servico: primeira.servico || '',
+        protocoloId: primeira.protocoloId || null, protocoloNome: primeira.protocoloNome || null, protocoloValor: primeira.protocoloValor || null
       });
       atual.setDate(atual.getDate() + 14);
     }
@@ -2198,7 +2200,8 @@ function _gerarSessoesRecorrentes(sessoesBase, recorrencia) {
       sessoes.push({
         data: _fmtDataLocal(atual),
         hora: hora, horaFim: horaFimFixa, status: 'pendente', atendimentoId: null,
-        servicoIds: primeira.servicoIds || [], servico: primeira.servico || ''
+        servicoIds: primeira.servicoIds || [], servico: primeira.servico || '',
+        protocoloId: primeira.protocoloId || null, protocoloNome: primeira.protocoloNome || null, protocoloValor: primeira.protocoloValor || null
       });
       atual.setMonth(atual.getMonth() + 1);
     }
@@ -2212,7 +2215,8 @@ function _gerarSessoesRecorrentes(sessoesBase, recorrencia) {
         sessoes.push({
           data: _fmtDataLocal(d),
           hora: hora, horaFim: horaFimFixa, status: 'pendente', atendimentoId: null,
-          servicoIds: primeira.servicoIds || [], servico: primeira.servico || ''
+          servicoIds: primeira.servicoIds || [], servico: primeira.servico || '',
+          protocoloId: primeira.protocoloId || null, protocoloNome: primeira.protocoloNome || null, protocoloValor: primeira.protocoloValor || null
         });
       }
       d.setDate(d.getDate() + 1);
