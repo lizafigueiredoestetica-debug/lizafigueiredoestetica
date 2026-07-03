@@ -178,6 +178,13 @@ function toggleChipProtocolo(el, id) {
   el.classList.toggle('selected');
 }
 
+function _filtrarChipsProtocolo() {
+  var v = (document.getElementById('filtProtChips').value || '').toLowerCase().trim();
+  document.querySelectorAll('#prot-chips .service-chip').forEach(function(c) {
+    c.style.display = c.textContent.toLowerCase().includes(v) ? '' : 'none';
+  });
+}
+
 function _getSelecionadosProtocolo(containerId) {
   var ids = [];
   document.querySelectorAll('#' + containerId + ' .service-chip.selected').forEach(function(el) {
