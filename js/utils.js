@@ -1557,8 +1557,14 @@ function _renderClienteAba(key, aba, c) {
     return c.agenda.map(function(ag){
       var real=ag.sessoes.filter(function(s){return s.status==='realizado';}).length;
       var saldo=_calcSaldoPacote(ag);
+      var _sessaoProt=ag.sessoes.find(function(s){return !!s.protocoloValor;});
       return '<div style="background:var(--cream);border-radius:10px;padding:0.75rem 1rem;margin-bottom:0.75rem;border-left:4px solid '+(ag.cor||'#D4A0A8')+'">'
+        +'<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:0.5rem">'
         +'<div style="font-weight:600;font-size:13px;margin-bottom:4px">'+_agServicos(ag)+'</div>'
+        +(_sessaoProt
+            ? '<button onclick="_desvincularProtocolo(\''+ag.id+'\')" title="Desvincular protocolo" style="font-size:10px;color:var(--text-light);background:white;border:1px solid var(--border);border-radius:6px;padding:2px 8px;cursor:pointer;white-space:nowrap;flex-shrink:0">🔓 '+_sessaoProt.protocoloNome+'</button>'
+            : '<button onclick="_abrirVincularProtocolo(\''+ag.id+'\')" title="Vincular a um protocolo cadastrado" style="font-size:10px;color:var(--gold-dark);background:white;border:1px solid var(--gold-light);border-radius:6px;padding:2px 8px;cursor:pointer;white-space:nowrap;flex-shrink:0">🔗 Vincular protocolo</button>')
+        +'</div>'
         +'<div style="display:flex;gap:1rem;flex-wrap:wrap;font-size:12px;color:var(--text-mid)">'
         +'<span>📅 '+real+'/'+ag.sessoes.length+' sessões</span>'
         +(saldo.sinal>0?'<span>💰 Sinal: '+fmtMoney(saldo.sinal)+'</span>':'')
@@ -1606,6 +1612,108 @@ function _renderClienteAba(key, aba, c) {
     }).join('');
   }
   return '';
+}
+
+// ── Vincular/Desvincular Protocolo a um pacote (correção manual, com confirmação humana) ──
+function _candidatosProtocolo(ag) {
+  var idsAg = [...new Set(ag.sessoes.flatMap(function(s){ return s.servicoIds||[]; }))];
+  var svsAg = idsAg.map(function(id){ return _buscarServico(id); }).filter(Boolean);
+  var nomesNormAg = svsAg.map(function(sv){ return _normalizarTexto(sv.nome); });
+
+  return db.protocolos.filter(function(p){ return p.status === 'ativo'; }).map(function(p){
+    var nomesNormProt = (p.servicoIds||[]).map(function(id){
+      var sv = db.servicos.find(function(x){ return x.id === id; });
+      return sv ? _normalizarTexto(sv.nome) : null;
+    }).filter(Boolean);
+    var bateram = nomesNormAg.filter(function(n){ return nomesNormProt.indexOf(n) >= 0; }).length;
+    var totalProt = nomesNormProt.length || 1;
+    var score = bateram / totalProt;
+    return { protocolo: p, score: score, bateram: bateram, totalProt: totalProt };
+  }).filter(function(c){ return c.score > 0; })
+    .sort(function(a,b){ return b.score - a.score; });
+}
+
+function _abrirVincularProtocolo(agId) {
+  var ag = db.agenda.find(function(a){ return a.id === agId; });
+  if (!ag) return;
+  var candidatos = _candidatosProtocolo(ag);
+
+  var listaHtml = candidatos.length
+    ? candidatos.map(function(cd){
+        return '<div style="display:flex;align-items:center;justify-content:space-between;gap:0.75rem;padding:0.6rem 0.8rem;border:1px solid var(--border);border-radius:8px;margin-bottom:6px">'
+          + '<div><div style="font-weight:600;font-size:13px">'+cd.protocolo.nome+'</div>'
+          + '<div style="font-size:11px;color:var(--text-light)">'+cd.bateram+'/'+cd.totalProt+' serviços do protocolo batem · '+fmtMoney(cd.protocolo.valor)+'</div></div>'
+          + '<button class="btn btn-primary btn-sm" onclick="_confirmarVincularProtocolo(\''+agId+'\',\''+cd.protocolo.id+'\')">Vincular</button>'
+          + '</div>';
+      }).join('')
+    : '<div class="empty-state" style="padding:1rem"><p>Nenhum protocolo com serviços parecidos.</p></div>';
+
+  var todosOptions = db.protocolos.filter(function(p){ return p.status==='ativo'; }).map(function(p){
+    return '<option value="'+p.id+'">'+p.nome+' — '+fmtMoney(p.valor)+'</option>';
+  }).join('');
+
+  var modal = document.createElement('div');
+  modal.id = 'vincular-protocolo-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(28,28,30,0.5);z-index:9995;display:flex;align-items:center;justify-content:center;padding:1rem';
+  modal.innerHTML =
+    '<div style="background:white;border-radius:16px;max-width:480px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3)">'
+    + '<div style="padding:1.1rem 1.5rem;background:linear-gradient(135deg,#1C1C1E,#2C2C2E);border-radius:16px 16px 0 0;display:flex;justify-content:space-between;align-items:center">'
+    + '<span style="font-family:Cormorant Garamond,serif;font-size:17px;color:#FAF0F2;letter-spacing:1.5px">🔗 Vincular Protocolo</span>'
+    + '<button onclick="document.getElementById(\'vincular-protocolo-modal\').remove()" style="background:none;border:none;color:white;font-size:20px;cursor:pointer">✕</button>'
+    + '</div>'
+    + '<div style="padding:1.25rem 1.5rem">'
+    + '<div style="font-size:12px;color:var(--text-light);margin-bottom:0.75rem">Serviços deste pacote: '+_agServicos(ag)+'</div>'
+    + '<div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-light);margin-bottom:6px">Sugestões</div>'
+    + listaHtml
+    + '<div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-light);margin:1rem 0 6px">Ou escolha manualmente</div>'
+    + '<div style="display:flex;gap:0.5rem">'
+    + '<select id="vp-select" style="flex:1;padding:0.5rem;border:1px solid var(--border);border-radius:8px;font-size:12px"><option value="">Selecione...</option>'+todosOptions+'</select>'
+    + '<button class="btn btn-primary btn-sm" onclick="var v=document.getElementById(\'vp-select\').value; if(v) _confirmarVincularProtocolo(\''+agId+'\',v); else showToast(\'Selecione um protocolo!\')">Vincular</button>'
+    + '</div>'
+    + '</div></div>';
+
+  document.body.appendChild(modal);
+  modal.addEventListener('click', function(e){ if (e.target === modal) modal.remove(); });
+}
+
+function _confirmarVincularProtocolo(agId, protId) {
+  var ag = db.agenda.find(function(a){ return a.id === agId; });
+  var prot = db.protocolos.find(function(p){ return p.id === protId; });
+  if (!ag || !prot) { showToast('Erro ao vincular protocolo.'); return; }
+
+  if (!confirm('Vincular este pacote ao protocolo "'+prot.nome+'" (R$ '+parseFloat(prot.valor).toFixed(2).replace('.',',')+')?\n\nIsso substitui o cálculo do valor total do pacote (soma dos serviços) pelo valor fechado do protocolo.')) return;
+
+  ag.sessoes.forEach(function(s){
+    s.protocoloId = prot.id;
+    s.protocoloNome = prot.nome;
+    s.protocoloValor = prot.valor;
+  });
+
+  saveData();
+  _salvarAgenda(ag);
+
+  var modalEl = document.getElementById('vincular-protocolo-modal');
+  if (modalEl) modalEl.remove();
+
+  renderAll();
+  showToast('✅ Pacote vinculado a "'+prot.nome+'"!');
+}
+
+function _desvincularProtocolo(agId) {
+  var ag = db.agenda.find(function(a){ return a.id === agId; });
+  if (!ag) return;
+  if (!confirm('Desvincular o protocolo deste pacote?\n\nO valor volta a ser calculado pela soma dos serviços individuais.')) return;
+
+  ag.sessoes.forEach(function(s){
+    delete s.protocoloId;
+    delete s.protocoloNome;
+    delete s.protocoloValor;
+  });
+
+  saveData();
+  _salvarAgenda(ag);
+  renderAll();
+  showToast('Protocolo desvinculado.');
 }
 
 function _toggleClienteCard(key) {
