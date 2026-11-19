@@ -51,9 +51,16 @@
     }).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.status === 204 ? null : r.json(); });
   }
 
+  // nomes dos serviços (eventos antigos gravaram o código)
+  var NOMES = {gordura:'Gordura Localizada',flacidez:'Tratamento para Flacidez',diastase:'Diástase Abdominal',celulite:'Tratamento para Celulite',
+    estrias:'Tratamento para Estrias',gluteos:'Protocolo para Glúteos',peim:'PEIM (Microvasos)',metodo:'Método Liza Define',
+    lipofuncional:'Massagem Lipofuncional',modeladora:'Massagem Modeladora',drenagem:'Drenagem Linfática',limpeza:'Limpeza de Pele',
+    hydra:'Hydra Glow',laser:'Depilação a Laser'};
+  function nomeServ(s) { return s ? (NOMES[s] || s) : s; }
+
   // ---- analisa os cliques de cada contato ----
   function analisar(c) {
-    var ev = c.eventos || [];
+    var ev = (c.eventos || []).map(function (e) { return { tipo: e.tipo, servico: nomeServ(e.servico), em: e.em }; });
     var abertos = {}, favs = {}, whats = false;
     ev.slice().reverse().forEach(function (e) {            // ordem cronológica
       if (e.servico && (e.tipo === 'abriu' || e.tipo === 'whatsapp')) abertos[e.servico] = (abertos[e.servico] || 0) + 1;
@@ -175,4 +182,70 @@
     window.open('https://wa.me/55' + c.telefone + '?text=' + encodeURIComponent(txt), '_blank');
     if (c.status === 'novo') mudarStatusCatalogo(id, 'contatado');
   };
+  // =====================================================
+  // ALERTAS AUTOMÁTICOS (a cada 30s, consulta leve)
+  // =====================================================
+  var LS_DESDE = 'catalogo_alerta_desde';
+  var _desde = null, _naoVistos = 0;
+  try { _desde = localStorage.getItem(LS_DESDE); } catch (e) {}
+  if (!_desde) _desde = new Date().toISOString();
+
+  function abaCatalogoAberta() {
+    var box = document.getElementById('sub-aba-radar-catalogo');
+    var sec = document.getElementById('sec-radar');
+    return box && box.style.display !== 'none' && sec && sec.offsetParent !== null;
+  }
+  function atualizaBadge() {
+    var btn = document.getElementById('sub-btn-radar-catalogo'); if (!btn) return;
+    btn.innerHTML = '📲 Catálogo' + (_naoVistos ? ' <span style="background:#c0574a;color:#fff;border-radius:10px;padding:1px 7px;font-size:.7rem;margin-left:4px">' + _naoVistos + '</span>' : '');
+  }
+  function popup(html) {
+    var w = document.getElementById('catAlertBox');
+    if (!w) {
+      w = document.createElement('div'); w.id = 'catAlertBox';
+      w.style.cssText = 'position:fixed;right:18px;bottom:18px;z-index:9999;display:flex;flex-direction:column;gap:8px;max-width:340px';
+      document.body.appendChild(w);
+    }
+    var d = document.createElement('div');
+    d.style.cssText = 'background:#fff;border-left:5px solid #A67C68;border-radius:12px;padding:12px 14px;box-shadow:0 10px 28px -10px rgba(0,0,0,.35);font-size:.85rem;cursor:pointer;line-height:1.4';
+    d.innerHTML = html + '<div style="font-size:.7rem;opacity:.6;margin-top:4px">Toque para abrir o Catálogo</div>';
+    d.onclick = function () {
+      d.remove();
+      if (typeof showSection === 'function') showSection('radar');
+      window.mostrarSubAbaRadar('catalogo');
+    };
+    w.appendChild(d);
+    setTimeout(function () { if (d.parentNode) d.remove(); }, 15000);
+  }
+  var TXT = { cadastro: '📲 <b>Novo cadastro</b> no catálogo', retorno: '🔁 <b>Voltou</b> ao catálogo',
+              favoritou: '♥ <b>Favoritou</b>', whatsapp: '💬 <b>Clicou em "Quero saber mais"</b>' };
+
+  function verificarNovidades() {
+    if (typeof SUPA_URL === 'undefined') return;
+    rpc('catalogo_novidades', { p_desde: _desde }).then(function (ev) {
+      if (!ev || !ev.length) return;
+      _desde = ev[ev.length - 1].em;
+      try { localStorage.setItem(LS_DESDE, _desde); } catch (e) {}
+      // agrupa por pessoa para não encher a tela
+      var porPessoa = {};
+      ev.forEach(function (e) { (porPessoa[e.contato] = porPessoa[e.contato] || []).push(e); });
+      Object.keys(porPessoa).forEach(function (k) {
+        var lst = porPessoa[k], nome = esc(lst[0].nome);
+        var linhas = lst.slice(-3).map(function (e) {
+          return TXT[e.tipo] + (e.servico ? ': ' + esc(nomeServ(e.servico)) : '');
+        }).join('<br>');
+        popup('<div style="font-weight:700;margin-bottom:3px">' + nome + '</div>' + linhas);
+      });
+      if (abaCatalogoAberta()) { _naoVistos = 0; carregarCatalogoAdmin(); }
+      else { _naoVistos += Object.keys(porPessoa).length; }
+      atualizaBadge();
+    }).catch(function () {});
+  }
+  var _origMostrar = window.mostrarSubAbaRadar;
+  window.mostrarSubAbaRadar = function (aba) {
+    if (aba === 'catalogo') { _naoVistos = 0; atualizaBadge(); }
+    _origMostrar(aba);
+  };
+  setTimeout(verificarNovidades, 5000);
+  setInterval(function () { if (!document.hidden) verificarNovidades(); }, 30000);
 })();
